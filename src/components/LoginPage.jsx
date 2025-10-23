@@ -183,10 +183,11 @@
 
 
 // STABLE 1 ends //
-console.log("VITE_API_BASE_URL VALUE:", import.meta.env.VITE_API_BASE_URL);
+
+// console.log("VITE_API_BASE_URL VALUE:", import.meta.env.VITE_API_BASE_URL); 
 import React, { useState } from 'react';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
 
 const LoginPage = ({ onLoginSuccess }) => {
   const [username, setUsername] = useState('');
@@ -200,7 +201,8 @@ const LoginPage = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, {
+      // const response = await fetch(`${API_BASE_URL}/login`, {
+         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
