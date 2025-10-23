@@ -1190,6 +1190,7 @@ const App = () => {
             userName={currentUsername}
             userAvatar={currentUserAvatar}
             handleLogout={handleLogout}
+            currentUserRole={currentUserRole}
           />
         );
       case 'accountant':
@@ -1221,7 +1222,7 @@ const App = () => {
       return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
 
       default:
-        return <ViewPage dataEntries={dataEntries} isLoading={isLoading} error={error} openExportModal={() => setShowExportModal(true)} userName={currentUsername} userAvatar={currentUserAvatar} />;
+        return <ViewPage dataEntries={dataEntries} isLoading={isLoading} error={error} openExportModal={() => setShowExportModal(true)} userName={currentUsername} userAvatar={currentUserAvatar}   currentUserRole={currentUserRole} />;
     }
   };
 

@@ -976,7 +976,7 @@ const formatDateForDisplay = (isoString) => {
 };
 
 // const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal }) => {
-  const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout }) => {
+  const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
@@ -1289,6 +1289,8 @@ const formatDateForDisplay = (isoString) => {
             </div>
 
             <div className="flex flex-wrap justify-start items-center gap-3 mb-6">
+              {currentUserRole !== 'accountant' && (
+                <>
                 <button onClick={openAddDataModal} className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5">
                     <Plus size={20} />
                     Add 
@@ -1297,6 +1299,8 @@ const formatDateForDisplay = (isoString) => {
                     <Pencil size={20} />
                     Edit 
                 </button>
+                </>
+              )}
                 <button onClick={handleExport}
                 disabled={isExporting}
                 className="flex items-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 disabled:opacity-50" // <-- Add disabled style
