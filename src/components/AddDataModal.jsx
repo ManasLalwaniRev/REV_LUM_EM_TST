@@ -1138,7 +1138,8 @@ import Modal from './Modal.jsx';
 // const API_BASE_URL = \${import.meta.env.VITE_API_BASE_URL}/entries`;
 const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
 
-const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOptions }) => {
+// const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOptions }) => {
+  const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOptions, onDataAdded }) => {
   const [formData, setFormData] = useState({
     creditCard: '',
     contractShortName: '',

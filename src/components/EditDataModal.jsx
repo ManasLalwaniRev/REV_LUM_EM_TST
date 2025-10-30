@@ -2002,7 +2002,8 @@ const formatDateForInput = (isoString) => {
   return date.toISOString().slice(0, 10);
 };
 
-const EditDataModal = ({ onClose, userId, userRole, username, contractOptions, creditCardOptions }) => {
+// const EditDataModal = ({ onClose, userId, userRole, username, contractOptions, creditCardOptions }) => {
+  const EditDataModal = ({ onClose, userId, userRole, username, contractOptions, creditCardOptions, onDataEdited }) => {
   
   // Helper to find the latest version for each prime key base
   const getLatestVersions = (records) => {
