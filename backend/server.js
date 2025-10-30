@@ -4041,63 +4041,96 @@ app.post('/api/generate-excel', async (req, res) => {
 
         // Load the logo from the server's file system
         // IMPORTANT: Create an 'assets' folder in your backend and place the logo there
-        const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
-        console.log('Checking for logo at path:', logoPath); // Add this line to see the path
-        if (fs.existsSync(logoPath)) {
-          console.log('✅ Logo found! Adding to Excel file.'); // Add this line
-            const logoImage = workbook.addImage({
-                buffer: fs.readFileSync(logoPath),
-                extension: 'png',
-            });
-            // Place the logo, e.g., in cells A1 to C5
-            sheet.addImage(logoImage, 'A1:B6');
-            sheet.getCell('C6').value = new Date().toLocaleString();
+//         const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
+//         console.log('Checking for logo at path:', logoPath); // Add this line to see the path
+//         if (fs.existsSync(logoPath)) {
+//           console.log('✅ Logo found! Adding to Excel file.'); // Add this line
+//             const logoImage = workbook.addImage({
+//                 buffer: fs.readFileSync(logoPath),
+//                 extension: 'png',
+//             });
+//             // Place the logo, e.g., in cells A1 to C5
+//             sheet.addImage(logoImage, 'A1:B6');
+//             sheet.getCell('C6').value = new Date().toLocaleString();
 
-        } else {
-    console.log('❌ Logo not found at path. Skipping image addition.'); // Add this line
-        }
-        // Add a title
-        // sheet.getCell('A6').value = "Lumina Data Export";
-        sheet.getCell('A6').font = { size: 16, bold: true };
+//         } else {
+//     console.log('❌ Logo not found at path. Skipping image addition.'); // Add this line
+//         }
+//         // Add a title
+//         // sheet.getCell('A6').value = "Lumina Data Export";
+//         sheet.getCell('A6').font = { size: 16, bold: true };
 
-        // Define headers from the first data object
-        // const headers = Object.keys(dataForSheet[0]).map(key => ({ header: key, key: key, width: 25 }));
-        // sheet.columns = headers;
+//         // Define headers from the first data object
+//         // const headers = Object.keys(dataForSheet[0]).map(key => ({ header: key, key: key, width: 25 }));
+//         // sheet.columns = headers;
         
-        // Style the header row (starting at row 8)
-        // sheet.getRow(8).font = { bold: true };
+//         // Style the header row (starting at row 8)
+//         // sheet.getRow(8).font = { bold: true };
 
-const headers = Object.keys(dataForSheet[0]);
+// const headers = Object.keys(dataForSheet[0]);
 
-// Insert headers into row 7
-const headerRow = sheet.getRow(7);
-headers.forEach((header, index) => {
-    const cell = headerRow.getCell(index + 1); // ExcelJS is 1-indexed
-    cell.value = header;
-    cell.font = { bold: true };
-    cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE0E0E0' } // Light gray
-    };
-    sheet.getColumn(index + 1).width = 25;
-});
-headerRow.commit();
-dataForSheet.forEach((dataRow, rowIndex) => {
-    const row = sheet.getRow(8 + rowIndex);
-    headers.forEach((header, colIndex) => {
-        row.getCell(colIndex + 1).value = dataRow[header];
-    });
-    row.commit();
-});
-        // sheet.getRow(8).fill = {
-        //     type: 'pattern',
-        //     pattern: 'solid',
-        //     fgColor: { argb: 'FFE0E0E0' } // Light gray
-        // };
+// // Insert headers into row 7
+// const headerRow = sheet.getRow(7);
+// headers.forEach((header, index) => {
+//     const cell = headerRow.getCell(index + 1); // ExcelJS is 1-indexed
+//     cell.value = header;
+//     cell.font = { bold: true };
+//     cell.fill = {
+//         type: 'pattern',
+//         pattern: 'solid',
+//         fgColor: { argb: 'FFE0E0E0' } // Light gray
+//     };
+//     sheet.getColumn(index + 1).width = 25;
+// });
+// headerRow.commit();
+// dataForSheet.forEach((dataRow, rowIndex) => {
+//     const row = sheet.getRow(8 + rowIndex);
+//     headers.forEach((header, colIndex) => {
+//         row.getCell(colIndex + 1).value = dataRow[header];
+//     });
+//     row.commit();
+// });
+//         // sheet.getRow(8).fill = {
+//         //     type: 'pattern',
+//         //     pattern: 'solid',
+//         //     fgColor: { argb: 'FFE0E0E0' } // Light gray
+//         // };
 
-        // Add the data rows (starting at row 9)
-        sheet.addRows(dataForSheet);
+//         // Add the data rows (starting at row 9)
+//         sheet.addRows(dataForSheet);
+
+// Add a title and date
+        sheet.getCell('A1').value = "Lumina Data Export";
+        sheet.getCell('A1').font = { size: 16, bold: true };
+        sheet.getCell('A2').value = new Date().toLocaleString();
+
+        // Get headers from the first data object
+        const headers = Object.keys(dataForSheet[0]);
+
+        // Insert headers into row 4 (giving space for the title)
+        const headerRow = sheet.getRow(4);
+        headers.forEach((header, index) => {
+            const cell = headerRow.getCell(index + 1); // ExcelJS is 1-indexed
+            cell.value = header;
+            cell.font = { bold: true };
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' } // Light gray
+            };
+            // Set column width
+            sheet.getColumn(index + 1).width = 25;
+        });
+        headerRow.commit();
+
+        // Add the data rows starting from row 5
+        dataForSheet.forEach((dataRow, rowIndex) => {
+            const row = sheet.getRow(5 + rowIndex); // Start at row 5
+            headers.forEach((header, colIndex) => {
+                row.getCell(colIndex + 1).value = dataRow[header];
+            });
+            row.commit();
+        });
 
         // Set headers to trigger a file download on the frontend
         res.setHeader(
