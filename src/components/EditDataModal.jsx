@@ -2188,7 +2188,7 @@ const EditDataModal = ({ onClose, userId, userRole, username, contractOptions, c
       const updatedResponse = await fetch(`${API_BASE_URL}?userId=${userId}&userRole=${userRole}`);
       const updatedData = await updatedResponse.json();
       setRecords(snakeToCamel(updatedData));
-
+onDataEdited();
       setSelectedRecord(null);
       setFormData({
         primeKey: '', creditCard: '', contractShortName: '', vendorName: '', chargeDate: '',

@@ -1085,7 +1085,8 @@ import SettingsAndProfilePage from '@/components/SettingsAndProfilePage.jsx';
 import AboutPage from '@/components/AboutPage.jsx';
 
 const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('luminaUser'));
   const [currentPage, setCurrentPage] = useState('view');
   const [showAddDataModal, setShowAddDataModal] = useState(false);
   const [showEditDataModal, setShowEditDataModal] = useState(false);
@@ -1093,10 +1094,14 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // User State
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [currentUsername, setCurrentUsername] = useState(null);
-  const [currentUserRole, setCurrentUserRole] = useState(null);
-  const [currentUserAvatar, setCurrentUserAvatar] = useState(null);
+  // const [currentUserId, setCurrentUserId] = useState(null);
+  // const [currentUsername, setCurrentUsername] = useState(null);
+  // const [currentUserRole, setCurrentUserRole] = useState(null);
+  // const [currentUserAvatar, setCurrentUserAvatar] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem('luminaUserId'));
+  const [currentUsername, setCurrentUsername] = useState(() => localStorage.getItem('luminaUsername'));
+  const [currentUserRole, setCurrentUserRole] = useState(() => localStorage.getItem('luminaUserRole'));
+  const [currentUserAvatar, setCurrentUserAvatar] = useState(() => localStorage.getItem('luminaUserAvatar'));
 
   // Centralized Data State
   const [dataEntries, setDataEntries] = useState([]);
@@ -1159,6 +1164,14 @@ const App = () => {
   }, [isLoggedIn, currentUserId, currentUserRole]);
 
   const handleLoginSuccess = (userId, username, role, avatar) => {
+
+    localStorage.setItem('luminaUser', 'true');
+    localStorage.setItem('luminaUserId', userId);
+    localStorage.setItem('luminaUsername', username);
+    localStorage.setItem('luminaUserRole', role);
+    localStorage.setItem('luminaUserAvatar', avatar);
+
+
     setIsLoggedIn(true);
     setCurrentUserId(userId);
     setCurrentUsername(username);
@@ -1168,6 +1181,13 @@ const App = () => {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('luminaUser');
+    localStorage.removeItem('luminaUserId');
+    localStorage.removeItem('luminaUsername');
+    localStorage.removeItem('luminaUserRole');
+    localStorage.removeItem('luminaUserAvatar');
+
+    
     setIsLoggedIn(false);
     setCurrentUserId(null);
     setCurrentUsername(null);

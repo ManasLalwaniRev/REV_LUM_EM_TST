@@ -1193,6 +1193,12 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
       }
 
       setShowSuccessMessage(true);
+      onDataAdded(); // Tell App.jsx to re-fetch all data
+
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        onClose(); // Close modal
+      }, 3000);
       setTimeout(() => {
         setShowSuccessMessage(false);
         onClose();
