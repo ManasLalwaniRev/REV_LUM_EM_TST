@@ -167,7 +167,8 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Trash2, ArrowLeft, Loader } from 'lucide-react'; // Added Loader icon
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const SettingsPage = ({ setCurrentPage, currentUserRole }) => {
   const [contractOptions, setContractOptions] = useState([]);

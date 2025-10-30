@@ -2169,7 +2169,8 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
   const handleSaveAll = async () => {
     setIsSaving(true);
     setMessage('');
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://rev-lumina.onrender.com/api';
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ;
+    // || 'https://rev-lumina.onrender.com/api';
     try {
         await Promise.all(Object.keys(editedData).map(async (id) => {
             const dataToSave = { ...editedData[id], userId, userRole }; 

@@ -3592,7 +3592,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'https://lumina-three-rho.vercel.app',
-  'https://rev-lum-em-tst.vercel.app/'
+  'https://rev-lum-em-tst.vercel.app/',
+  'https://rev-lum-em-tst.vercel.app'
 ];
 
 app.use(cors({

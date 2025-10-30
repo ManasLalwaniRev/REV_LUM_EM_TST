@@ -1959,7 +1959,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Modal from './Modal.jsx';
 
 // const API_BASE_URL = 'https://rev-lumina.onrender.com/api/entries'; 
-const API_BASE_URL = 'http://localhost:5000/api/entries'; 
+// const API_BASE_URL = 'http://localhost:5000/api/entries'; 
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
 
 // Helper to convert snake_case keys to camelCase
 const snakeToCamel = (obj) => {

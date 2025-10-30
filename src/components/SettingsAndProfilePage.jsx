@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import bcrypt from 'bcryptjs';
 import { Save, UserPlus, Users, PlusCircle, Trash2, ArrowLeft, Loader, LogOut } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const avatarOptions = [
     'https://avatar.iran.liara.run/public/boy?username=Scott',
