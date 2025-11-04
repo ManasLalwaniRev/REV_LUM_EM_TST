@@ -4143,7 +4143,7 @@ app.post('/api/generate-excel', async (req, res) => {
             extension: 'png',
         });
         // Place the logo, spanning cells A1 to C4
-        sheet.addImage(logoImage, 'A1:C4');
+        sheet.addImage(logoImage, 'A1:B5');
     } else {
         console.log('❌ Logo not found at path:', logoPath, '. Skipping image addition.');
     }
