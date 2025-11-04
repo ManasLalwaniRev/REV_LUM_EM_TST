@@ -972,7 +972,7 @@ const formatDateForDisplay = (isoString) => {
   if (!isoString) return '';
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return 'Invalid Date';
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' , timeZone: 'UTC'});
 };
 
 // const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal }) => {
