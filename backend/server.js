@@ -4149,7 +4149,7 @@ app.post('/api/generate-excel', async (req, res) => {
     }
 
     // 2. Add Title and Date (below the logo)
-    sheet.getCell('A5').value = "Lumina Data Export";
+    // sheet.getCell('A5').value = "Lumina Data Export";
     sheet.getCell('A5').font = { size: 16, bold: true };
     sheet.getCell('A6').value = `Generated on: ${new Date().toLocaleString()}`;
 
