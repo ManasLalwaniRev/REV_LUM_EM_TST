@@ -4101,37 +4101,82 @@ app.post('/api/generate-excel', async (req, res) => {
 //         sheet.addRows(dataForSheet);
 
 // Add a title and date
-        sheet.getCell('A1').value = "Lumina Data Export";
-        sheet.getCell('A1').font = { size: 16, bold: true };
-        sheet.getCell('A2').value = new Date().toLocaleString();
+        // sheet.getCell('A1').value = "Lumina Data Export";
+        // sheet.getCell('A1').font = { size: 16, bold: true };
+        // sheet.getCell('A2').value = new Date().toLocaleString();
 
-        // Get headers from the first data object
-        const headers = Object.keys(dataForSheet[0]);
+        // // Get headers from the first data object
+        // const headers = Object.keys(dataForSheet[0]);
 
-        // Insert headers into row 4 (giving space for the title)
-        const headerRow = sheet.getRow(4);
-        headers.forEach((header, index) => {
-            const cell = headerRow.getCell(index + 1); // ExcelJS is 1-indexed
-            cell.value = header;
-            cell.font = { bold: true };
-            cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: 'FFE0E0E0' } // Light gray
-            };
-            // Set column width
-            sheet.getColumn(index + 1).width = 25;
+        // // Insert headers into row 4 (giving space for the title)
+        // const headerRow = sheet.getRow(4);
+        // headers.forEach((header, index) => {
+        //     const cell = headerRow.getCell(index + 1); // ExcelJS is 1-indexed
+        //     cell.value = header;
+        //     cell.font = { bold: true };
+        //     cell.fill = {
+        //         type: 'pattern',
+        //         pattern: 'solid',
+        //         fgColor: { argb: 'FFE0E0E0' } // Light gray
+        //     };
+        //     // Set column width
+        //     sheet.getColumn(index + 1).width = 25;
+        // });
+        // headerRow.commit();
+
+        // // Add the data rows starting from row 5
+        // dataForSheet.forEach((dataRow, rowIndex) => {
+        //     const row = sheet.getRow(5 + rowIndex); // Start at row 5
+        //     headers.forEach((header, colIndex) => {
+        //         row.getCell(colIndex + 1).value = dataRow[header];
+        //     });
+        //     row.commit();
+        // });
+        // 1. Add the logo
+    const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
+
+    // Check if the logo file exists
+    if (fs.existsSync(logoPath)) {
+        console.log('✅ Logo found! Adding to Excel file.');
+        const logoImage = workbook.addImage({
+            buffer: fs.readFileSync(logoPath),
+            extension: 'png',
         });
-        headerRow.commit();
+        // Place the logo, spanning cells A1 to C4
+        sheet.addImage(logoImage, 'A1:C4');
+    } else {
+        console.log('❌ Logo not found at path:', logoPath, '. Skipping image addition.');
+    }
 
-        // Add the data rows starting from row 5
-        dataForSheet.forEach((dataRow, rowIndex) => {
-            const row = sheet.getRow(5 + rowIndex); // Start at row 5
-            headers.forEach((header, colIndex) => {
-                row.getCell(colIndex + 1).value = dataRow[header];
-            });
-            row.commit();
+    // 2. Add Title and Date (below the logo)
+    sheet.getCell('A5').value = "Lumina Data Export";
+    sheet.getCell('A5').font = { size: 16, bold: true };
+    sheet.getCell('A6').value = `Generated on: ${new Date().toLocaleString()}`;
+
+    // 3. Add Headers (at row 8, leaving a blank row)
+    const headers = Object.keys(dataForSheet[0]);
+    const headerRow = sheet.getRow(8);
+    headers.forEach((header, index) => {
+        const cell = headerRow.getCell(index + 1);
+        cell.value = header;
+        cell.font = { bold: true };
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFE0E0E0' } // Light gray
+        };
+        sheet.getColumn(index + 1).width = 25; // Set column width
+    });
+    headerRow.commit();
+
+    // 4. Add Data Rows (starting at row 9)
+    dataForSheet.forEach((dataRow, rowIndex) => {
+        const row = sheet.getRow(9 + rowIndex);
+        headers.forEach((header, colIndex) => {
+            row.getCell(colIndex + 1).value = dataRow[header];
         });
+        row.commit();
+    });
 
         // Set headers to trigger a file download on the frontend
         res.setHeader(
