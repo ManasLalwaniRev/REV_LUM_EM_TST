@@ -665,18 +665,31 @@ const SubcontractorAssignments = ({
                 <button onClick={openAddSubkModal} className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5">
                     <Plus size={20} /> Add Assignment
                 </button>
-                <button onClick={openEditDataModal} className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5">
+                {/* <button onClick={openEditDataModal} className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5">
                     <Pencil size={20} /> Edit 
-                </button>
+                </button> */}
+                <button 
+  onClick={() => {
+    const entryId = Array.from(selectedRows)[0];
+    const entry = dataEntries.find(e => e.id === entryId);
+    if (entry) openEditSubkModal(entry);
+    else alert("Please select a record to edit.");
+  }}
+  disabled={selectedRows.size !== 1} // Only allow editing one row at a time
+  className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 ..."
+>
+  <Pencil size={20} /> Edit 
+</button>
+
                 </>
               )}
-              <button onClick={handleExport}
+              {/* <button onClick={handleExport}
                 disabled={isExporting}
                 className="flex items-center gap-2 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5 disabled:opacity-50"
               >
                 <Download size={20} />
                 {isExporting ? 'Exporting...' : (selectedRows.size > 0 ? `Export ${selectedRows.size} Selected` : 'Advanced Search')}
-              </button>
+              </button> */}
             </div>
             
             <div className="overflow-x-auto rounded-lg shadow-lg border border-gray-200">

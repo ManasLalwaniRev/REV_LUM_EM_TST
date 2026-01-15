@@ -1402,8 +1402,12 @@ import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
 import TravelExpenses from '@/components/TravelExpenses.jsx';
 import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
 import AddSubcontractorModal from '@/components/AddSubcontractorModal.jsx';
+import EditSubcontractorModal from '@/components/EditSubcontractorModal.jsx';
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
+
+const [showEditSubkModal, setShowEditSubkModal] = useState(false);
+const [selectedEntryForEdit, setSelectedEntryForEdit] = useState(null);
 
 const App = () => {
   // --- States ---
@@ -1532,7 +1536,13 @@ const App = () => {
         return <TravelExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
       
       case 'subcontractor-assignments':
-        return <SubcontractorAssignments {...commonProps} openAddSubkModal={() => setShowAddSubkModal(true)} />;
+        return <SubcontractorAssignments {...commonProps} openAddSubkModal={() => setShowAddSubkModal(true)}
+          
+      openEditSubkModal={(entry) => {
+        setSelectedEntryForEdit(entry);
+        setShowEditSubkModal(true);
+      }
+        }  />;
 
       case 'accountant':
         return <AccountantPage {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} userRole={currentUserRole} />;
@@ -1621,6 +1631,16 @@ const App = () => {
           creditCardOptions={creditCardOptions}
         />
       )}
+
+      {showEditSubkModal && (
+  <EditSubcontractorModal
+    onClose={() => setShowEditSubkModal(false)}
+    userId={currentUserId}
+    userRole={currentUserRole}
+    entry={selectedEntryForEdit}
+    onDataEdited={fetchEntries}
+  />
+)}
     </div>
   );
 };
