@@ -736,7 +736,7 @@
 
 ////////////
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Pencil, Download, Search, LogOut, X, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -748,13 +748,22 @@ const SubcontractorAssignments = ({
   userAvatar, 
   handleLogout, 
   currentUserRole,
-  onDataChanged // Callback to refresh global data in App.jsx
+  onDataChanged 
 }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [isExporting, setIsExporting] = useState(false);
   
+  // --- DEMO CACHE LOGIC ---
+  // This local state acts as your "cache record" to show entries immediately
+  const [localEntries, setLocalEntries] = useState([]);
+
+  // Sync local cache whenever the main dataEntries prop changes
+  useEffect(() => {
+    setLocalEntries(dataEntries || []);
+  }, [dataEntries]);
+
   // Local state for Inline Add/Edit features
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -777,10 +786,9 @@ const SubcontractorAssignments = ({
     { key: 'plc', name: 'PLC' },
   ];
 
+  // Filter localEntries (the cache) instead of dataEntries
   const filteredEntries = useMemo(() => {
-    if (!dataEntries) return [];
-    
-    let filtered = dataEntries;
+    let filtered = localEntries;
 
     if (searchValue) {
       const lowercasedValue = searchValue.toLowerCase();
@@ -796,7 +804,7 @@ const SubcontractorAssignments = ({
     }
 
     return filtered;
-  }, [dataEntries, searchColumn, searchValue]);
+  }, [localEntries, searchColumn, searchValue]);
 
   const visibleEntryIds = useMemo(() => filteredEntries.map(entry => entry.id), [filteredEntries]);
 
@@ -831,6 +839,22 @@ const SubcontractorAssignments = ({
 
   const handleSave = async (e) => {
     e.preventDefault();
+    
+    // 1. Create the "Cache Record" for immediate display
+    const newRecord = {
+      ...formData,
+      id: editingEntry ? editingEntry.id : Date.now(), // Temporary ID for demo
+      submitter: userName,
+    };
+
+    // 2. Update the local cache state immediately
+    if (editingEntry) {
+      setLocalEntries(prev => prev.map(en => en.id === editingEntry.id ? newRecord : en));
+    } else {
+      setLocalEntries(prev => [newRecord, ...prev]);
+    }
+
+    // 3. (Optional) Proceed with actual API call
     const method = editingEntry ? 'PATCH' : 'POST';
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
     
@@ -845,18 +869,19 @@ const SubcontractorAssignments = ({
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to save subcontractor assignment');
-      
-      if (onDataChanged) onDataChanged(); 
-      resetForm();
+      if (response.ok && onDataChanged) {
+        onDataChanged(); // Keep parent in sync if API succeeds
+      }
     } catch (err) {
-      alert(err.message);
+      console.error("API failed, but record is kept in local cache for demo.", err);
     }
+
+    resetForm();
   };
 
   const startEdit = () => {
     const entryId = Array.from(selectedRows)[0];
-    const entry = dataEntries.find(e => e.id === entryId);
+    const entry = localEntries.find(e => e.id === entryId);
     if (entry) {
       setEditingEntry(entry);
       setFormData({
@@ -874,7 +899,7 @@ const SubcontractorAssignments = ({
     if (selectedRows.size > 0) {
       setIsExporting(true);
       try {
-        const dataToExport = dataEntries.filter(entry => selectedRows.has(entry.id));
+        const dataToExport = localEntries.filter(entry => selectedRows.has(entry.id));
         const dataForSheet = dataToExport.map(entry => ({
           "PO No.": entry.poNo,
           "SubK Name": entry.subkName,
@@ -942,7 +967,7 @@ const SubcontractorAssignments = ({
                 <div className="w-1/3 flex justify-end">
                     <img src="\Lumina_logo.png" alt="Lumina Logo" className="h-12 opacity-100 pr-12" />
                 </div>
-                <div className="w-1/3 flex justify-end items-center gap-4">
+                <div className="w-1/3 flex justify-end items-center gap-4 text-gray-800">
                     <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg translate-x-2">
                         <img 
                           src={userAvatar} 
