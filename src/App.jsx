@@ -1086,17 +1086,17 @@ import AboutPage from '@/components/AboutPage.jsx';
 
 
 const avatarOptions = [
-    'https://avatar.iran.liara.run/public/boy?username=Scott', // Avatar 1
-    'https://avatar.iran.liara.run/public/girl?username=Jessica',
-    'https://avatar.iran.liara.run/public/boy?username=Alex',
-    'https://avatar.iran.liara.run/public/girl?username=Jane',
-    'https://avatar.iran.liara.run/public/boy?username=Peter',
-    'https://avatar.iran.liara.run/public/girl?username=Laura',
-    'https://avatar.iran.liara.run/public/boy?username=Chris',
-    'https://avatar.iran.liara.run/public/girl?username=Maria',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Peter',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Laura',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Chris',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
 ];
 
-const DEFAULT_AVATAR = 'https://avatar.iran.liara.run/public/boy?username=Scott';
+const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
 const App = () => {
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
