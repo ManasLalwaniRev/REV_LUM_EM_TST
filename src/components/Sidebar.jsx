@@ -257,8 +257,8 @@ const SidebarItem = ({ icon, text, page, currentPage, setCurrentPage, isCollapse
     onClick={() => setCurrentPage(page)}
     className={`relative flex items-center w-full p-3 my-1 rounded-lg transition-colors duration-200 group cursor-pointer ${
       currentPage === page
-        ? "bg-yellow-600 text-white font-semibold shadow"
-        : "text-yellow-800 hover:bg-yellow-100"
+        ? "bg-white-100 text-white font-semibold shadow"
+        : "text-gray-100 hover:bg-gray-50"
     }`}
   >
     {icon}
