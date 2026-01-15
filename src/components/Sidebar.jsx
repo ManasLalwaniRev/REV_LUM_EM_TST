@@ -244,6 +244,9 @@ import {
   Briefcase,
   Settings,
   LogOut,
+  CreditCard,    // New
+  Plane,         // New
+  Users,
   Info, // 1. Import the 'Info' icon for the About page
 } from "lucide-react";
 
@@ -276,18 +279,15 @@ const SidebarItem = ({ icon, text, page, currentPage, setCurrentPage, isCollapse
 export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, handleLogout, sidebarOpen, setSidebarOpen }) {
   
   // 2. Update the navigation items
-  const navItems = [
-    { page: 'view', label: 'Vendor Expense', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-
-    { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-    { page: 'travel-expenses', label: 'Travel Expenses', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-    { page: 'subcontractor-assignments', label: 'Subcontractor Assignments', icon: <Briefcase className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-
-    { page: 'accountant', label: 'Voucher Entries', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
-    { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-    { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] }, // New "About" item
-  ];
-
+ const navItems = [
+  { page: 'view', label: 'Expense Entries', icon: <FileText className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <CreditCard className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'travel-expenses', label: 'Travel Expenses', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'subcontractor-assignments', label: 'Subcontractor Assignments', icon: <Users className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'accountant', label: 'Voucher Entries', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
+  { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+];
   return (
     <div
       className={`fixed inset-y-0 left-0 bg-yellow-100 text-gray-800 shadow-lg z-40 flex flex-col border-r border-yellow-200 transition-all duration-300 ${
