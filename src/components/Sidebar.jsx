@@ -246,8 +246,7 @@ import {
   LogOut,
   FileText,      // General Entries
   CreditCard,    // Credit Card
-  Plane,         // Travel
-  Users,         // New
+  Plane,         // Travel        // New
   Users,
   Info, // 1. Import the 'Info' icon for the About page
 } from "lucide-react";
