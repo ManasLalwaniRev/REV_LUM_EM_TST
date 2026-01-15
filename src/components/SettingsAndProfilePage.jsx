@@ -16,9 +16,10 @@ const avatarOptions = [
     'https://avatar.iran.liara.run/public/girl?username=Maria',
 ];
 
-const SettingsAndProfilePage = ({ setCurrentPage, currentUserId, currentUsername, currentUserRole, handleLogOut}) => {
+const SettingsAndProfilePage = ({ setCurrentPage, currentUserId, currentUsername, currentUserRole, handleLogOut,currentUserAvatar,onAvatarChange }) => {
   // --- All State from both pages combined ---
-  const [currentAvatar, setCurrentAvatar] = useState(avatarOptions[0]);
+  // const [currentAvatar, setCurrentAvatar] = useState(avatarOptions[0]);
+const [currentAvatar, setCurrentAvatar] = useState(currentUserAvatar || avatarOptions[0]);
   const [hasProfileChanged, setHasProfileChanged] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -113,6 +114,9 @@ const SettingsAndProfilePage = ({ setCurrentPage, currentUserId, currentUsername
       
       setHasProfileChanged(false);
       setMessage('Profile updated successfully!');
+      if (onAvatarChange) {
+        onAvatarChange(currentAvatar);
+      }
     } catch (err) {
         setMessage(`Error: ${err.message}`);
     } finally {

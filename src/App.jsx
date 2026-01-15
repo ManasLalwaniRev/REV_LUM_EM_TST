@@ -1084,6 +1084,20 @@ import ExportModal from '@/components/ExportModal.jsx';
 import SettingsAndProfilePage from '@/components/SettingsAndProfilePage.jsx';
 import AboutPage from '@/components/AboutPage.jsx';
 
+
+const avatarOptions = [
+    'https://avatar.iran.liara.run/public/boy?username=Scott', // Avatar 1
+    'https://avatar.iran.liara.run/public/girl?username=Jessica',
+    'https://avatar.iran.liara.run/public/boy?username=Alex',
+    'https://avatar.iran.liara.run/public/girl?username=Jane',
+    'https://avatar.iran.liara.run/public/boy?username=Peter',
+    'https://avatar.iran.liara.run/public/girl?username=Laura',
+    'https://avatar.iran.liara.run/public/boy?username=Chris',
+    'https://avatar.iran.liara.run/public/girl?username=Maria',
+];
+
+const DEFAULT_AVATAR = 'https://avatar.iran.liara.run/public/boy?username=Scott';
+
 const App = () => {
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('luminaUser'));
@@ -1101,7 +1115,7 @@ const App = () => {
   const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem('luminaUserId'));
   const [currentUsername, setCurrentUsername] = useState(() => localStorage.getItem('luminaUsername'));
   const [currentUserRole, setCurrentUserRole] = useState(() => localStorage.getItem('luminaUserRole'));
-  const [currentUserAvatar, setCurrentUserAvatar] = useState(() => localStorage.getItem('luminaUserAvatar'));
+  const [currentUserAvatar, setCurrentUserAvatar] = useState(() => localStorage.getItem('luminaUserAvatar') || DEFAULT_AVATAR);
 
   // Centralized Data State
   const [dataEntries, setDataEntries] = useState([]);
@@ -1165,6 +1179,8 @@ const App = () => {
 
   const handleLoginSuccess = (userId, username, role, avatar) => {
 
+    const selectedAvatar = avatar || avatarOptions[0];
+
     localStorage.setItem('luminaUser', 'true');
     localStorage.setItem('luminaUserId', userId);
     localStorage.setItem('luminaUsername', username);
@@ -1191,7 +1207,7 @@ const App = () => {
     setIsLoggedIn(false);
     setCurrentUserId(null);
     setCurrentUsername(null);
-    setCurrentUserRole(null);
+    setCurrentUserRole(avatarOptions[0]);
     setCurrentUserAvatar(null);
     setDataEntries([]);
   };
@@ -1235,6 +1251,12 @@ const App = () => {
             currentUserId={currentUserId}
             currentUsername={currentUsername}
             currentUserRole={currentUserRole}
+            currentUserAvatar={currentUserAvatar} // Pass the current avatar
+            onAvatarChange={(newAvatar) => {       // Add this callback
+            setCurrentUserAvatar(newAvatar);
+            localStorage.setItem('luminaUserAvatar', newAvatar);
+          }}
+            
           />
         );
         case 'about':

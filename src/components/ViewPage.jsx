@@ -963,7 +963,7 @@
 
 import React, { useState, useMemo } from 'react';
 // import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search } from 'lucide-react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search, UserCircle,LogOut } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search, LogOut } from 'lucide-react';
 
 
 import * as XLSX from 'xlsx';
@@ -976,7 +976,7 @@ const formatDateForDisplay = (isoString) => {
 };
 
 // const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal }) => {
-  const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole }) => {
+  const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole, }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
@@ -1229,13 +1229,19 @@ const formatDateForDisplay = (isoString) => {
 
         />
     </div>
-                      <div className="w-1/3 flex justify-end items-center gap-4">
-    <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg translate-x-2">
-        {userAvatar ? (
+                      {/* <div className="w-1/3 flex justify-end items-center gap-4">
+    <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg translate-x-2"> */}
+        {/* {userAvatar ? (
             <img src={userAvatar} alt="User Avatar" className="w-10 h-10 rounded-full object-cover" />
-        ) : (
+        ) :
+         (
             <UserCircle size={32} className="text-gray-500" />
-        )}
+        )} */}
+              {/* <img 
+          src={userAvatar} 
+          alt="User Avatar" 
+          className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm" 
+/>
         <span className="text-lg font-medium text-gray-700 hidden sm:block">
             Welcome, {userName}
         </span>
@@ -1247,6 +1253,25 @@ const formatDateForDisplay = (isoString) => {
     >
         <LogOut size={20} />
     </button>
+</div> */}
+<div className="w-1/3 flex justify-end items-center gap-4">
+  <div className="flex items-center gap-3 bg-gray-100 p-3 rounded-lg translate-x-2">
+    <img 
+      src={userAvatar} 
+      alt="User Avatar" 
+      className="w-10 h-10 rounded-full object-cover border border-gray-300 shadow-sm" 
+    />
+    <span className="text-lg font-medium text-gray-700 hidden sm:block">
+      Welcome, {userName}
+    </span>
+  </div>
+  <button 
+    onClick={handleLogout} 
+    className="p-3 bg-red-100 hover:bg-red-200 rounded-full text-red-600 transition-colors"
+    title="Logout"
+  >
+    <LogOut size={20} />
+  </button>
 </div>
             </div>
 
