@@ -281,7 +281,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
   
   // 2. Update the navigation items
  const navItems = [
-  { page: 'view', label: 'Expense Entries', icon: <FileText className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'view', label: 'Vendor Expense', icon: <FileText className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <CreditCard className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'travel-expenses', label: 'Travel Expenses', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'subcontractor-assignments', label: 'SubK Assignments', icon: <Users className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },

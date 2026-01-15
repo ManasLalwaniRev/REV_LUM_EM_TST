@@ -88,11 +88,11 @@ const AboutPage = ({ setCurrentPage, handleLogout }) => {
                 </div>
                 <div className="sm:text-center">
                     <p className="text-gray-500 font-medium">Release Date</p>
-                    <p className="text-gray-800 font-semibold">2025.10.30</p>
+                    <p className="text-gray-800 font-semibold">2026.01.15</p>
                 </div>
                 <div className="sm:text-left">
                     <p className="text-gray-500 font-medium">System</p>
-                    <p className="text-gray-800 font-semibold">Lumina Production</p>
+                    <p className="text-gray-800 font-semibold">Infotrend Sandbox</p>
                 </div>
             </div>
         </div>
