@@ -13,7 +13,7 @@ const formatDateForDisplay = (isoString) => {
 };
 
 // const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal }) => {
-  const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole, }) => {
+  const TravelExpenses = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole, }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
@@ -466,4 +466,4 @@ const formatDateForDisplay = (isoString) => {
   );
 };
 
-export default ViewPage;
+export default TravelExpenses;

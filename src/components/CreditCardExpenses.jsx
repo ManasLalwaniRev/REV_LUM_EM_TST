@@ -12,8 +12,8 @@ const formatDateForDisplay = (isoString) => {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' , timeZone: 'UTC'});
 };
 
-// const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal }) => {
-  const ViewPage = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole, }) => {
+// const CreditCardExpenses = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal }) => {
+  const CreditCardExpenses = ({ dataEntries, isLoading, error, openAddDataModal, openEditDataModal, openExportModal, userName = 'User',userAvatar,handleLogout, currentUserRole, }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
@@ -466,4 +466,4 @@ const formatDateForDisplay = (isoString) => {
   );
 };
 
-export default ViewPage;
+export default CreditCardExpenses;
