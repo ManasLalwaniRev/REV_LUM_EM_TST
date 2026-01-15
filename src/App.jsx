@@ -1100,6 +1100,8 @@ const avatarOptions = [
     'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
 ];
 
+const [showAddSubkModal, setShowAddSubkModal] = useState(false);
+
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
 const App = () => {
@@ -1232,7 +1234,21 @@ const App = () => {
             handleLogout={handleLogout}
             currentUserRole={currentUserRole}
           />
+          
         );
+        case 'subcontractor-assignments':
+  return (
+    <SubcontractorAssignments
+      dataEntries={dataEntries}
+      isLoading={isLoading}
+      error={error}
+      openAddSubkModal={() => setShowAddSubkModal(true)} // Prop name must match screen
+      userName={currentUsername}
+      userAvatar={currentUserAvatar}
+      handleLogout={handleLogout}
+      currentUserRole={currentUserRole}
+    />
+  );
         case 'credit-card-expenses':
         return (
           <CreditCardExpenses
