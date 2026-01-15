@@ -1406,8 +1406,7 @@ import EditSubcontractorModal from '@/components/EditSubcontractorModal.jsx';
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
-const [showEditSubkModal, setShowEditSubkModal] = useState(false);
-const [selectedEntryForEdit, setSelectedEntryForEdit] = useState(null);
+
 
 const App = () => {
   // --- States ---
@@ -1415,6 +1414,9 @@ const App = () => {
   const [currentPage, setCurrentPage] = useState('view');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+
+  const [showEditSubkModal, setShowEditSubkModal] = useState(false);
+  const [selectedEntryForEdit, setSelectedEntryForEdit] = useState(null);
   // Modal Visibility States
   const [showAddDataModal, setShowAddDataModal] = useState(false);
   const [showEditDataModal, setShowEditDataModal] = useState(false);
