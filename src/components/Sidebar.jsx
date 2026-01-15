@@ -129,8 +129,8 @@
 //     // }`}
 //     className={`flex items-center w-full p-3 my-1 rounded-lg transition-colors duration-200 group cursor-pointer ${
 //   currentPage === page
-//     ? "bg-yellow-600 text-white font-semibold shadow" // Active item style
-//     : "text-yellow-800 hover:bg-yellow-100" // Inactive item style
+//     ? "bg-gray-600 text-white font-semibold shadow" // Active item style
+//     : "text-gray-800 hover:bg-gray-100" // Inactive item style
 // }`}
 //   >
 //     {icon}
@@ -159,7 +159,7 @@
 //     //   }`}
 //     // >
 //     <div
-//   className={`fixed inset-y-0 left-0 bg-yellow-100 text-gray-800 shadow-lg z-40 flex flex-col border-r border-yellow-200 transition-all duration-300 ${
+//   className={`fixed inset-y-0 left-0 bg-gray-100 text-gray-800 shadow-lg z-40 flex flex-col border-r border-gray-200 transition-all duration-300 ${
 //     sidebarOpen ? "w-64" : "w-20"
 //   }`}
 // >
@@ -180,11 +180,11 @@
 //           >
 //            Powered by Revolve
 //           </span> */}
-//           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded-lg hover:bg-yellow-100">
-//   <Menu className="h-6 w-6 text-yellow-800" />
+//           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded-lg hover:bg-gray-100">
+//   <Menu className="h-6 w-6 text-gray-800" />
 // </button>
 // <span
-//   className={`ml-3 text-lg font-bold text-yellow-900 transition-all duration-200 ${
+//   className={`ml-3 text-lg font-bold text-gray-900 transition-all duration-200 ${
 //     sidebarOpen ? "opacity-100" : "opacity-0 hidden"
 //   }`}
 // >
@@ -210,7 +210,7 @@
 
 //         {/* Logout Button */}
 //         {/* <div className="pt-2 mt-auto border-t border-green-200"> */}
-//         {/* <div className="pt-2 mt-auto border-t border-yellow-200">
+//         {/* <div className="pt-2 mt-auto border-t border-gray-200">
 //           <button
 //             onClick={handleLogout}
 //             className={`flex items-center w-full p-3 my-1 rounded-lg transition-colors duration-200 group cursor-pointer text-red-700 hover:bg-red-100 ${
@@ -257,8 +257,8 @@ const SidebarItem = ({ icon, text, page, currentPage, setCurrentPage, isCollapse
     onClick={() => setCurrentPage(page)}
     className={`relative flex items-center w-full p-3 my-1 rounded-lg transition-colors duration-200 group cursor-pointer ${
       currentPage === page
-        ? "bg-white-100 text-white font-semibold shadow"
-        : "text-gray-100 hover:bg-gray-50"
+        ? "bg-gray-200 text-white font-semibold shadow"
+        : "text-gray-800 hover:bg-gray-300"
     }`}
   >
     {icon}
@@ -291,7 +291,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
 ];
   return (
     <div
-      className={`fixed inset-y-0 left-0 bg-yellow-100 text-gray-800 shadow-lg z-40 flex flex-col border-r border-yellow-200 transition-all duration-300 ${
+      className={`fixed inset-y-0 left-0 bg-gray-100 text-gray-800 shadow-lg z-40 flex flex-col border-r border-gray-200 transition-all duration-300 ${
         sidebarOpen ? "w-64" : "w-20"
       }`}
     >
@@ -302,11 +302,11 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
             sidebarOpen ? "justify-start" : "justify-center"
           }`}
         >
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded-lg hover:bg-yellow-100">
-            <Menu className="h-6 w-6 text-yellow-800" />
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded-lg hover:bg-gray-100">
+            <Menu className="h-6 w-6 text-gray-800" />
           </button>
           <span
-            className={`ml-3 text-lg font-bold text-yellow-900 transition-all duration-200 ${
+            className={`ml-3 text-lg font-bold text-gray-900 transition-all duration-200 ${
               sidebarOpen ? "opacity-100" : "opacity-0 hidden"
             }`}
           >
@@ -333,7 +333,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
         </nav>
 
         {/* --- DIVIDER & LOGOUT BUTTON (UNCOMMENTED) --- */}
-        <div className="pt-2 mt-auto border-t border-yellow-200">
+        <div className="pt-2 mt-auto border-t border-gray-200">
           {/* <button
             onClick={handleLogout}
             className={`relative flex items-center w-full p-3 my-1 rounded-lg transition-colors duration-200 group cursor-pointer text-red-700 hover:bg-red-100 ${
@@ -359,7 +359,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
 
         {/* --- 4. "POWERED BY" TEXT AT THE BOTTOM --- */}
         <div className="pt-2 text-center">
-            <span className={`text-xs text-yellow-800 transition-opacity duration-200 ${!sidebarOpen ? 'hidden' : 'opacity-100'}`}>
+            <span className={`text-xs text-gray-800 transition-opacity duration-200 ${!sidebarOpen ? 'hidden' : 'opacity-100'}`}>
                 Powered by Revolve
             </span>
         </div>
