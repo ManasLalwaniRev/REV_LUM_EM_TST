@@ -277,7 +277,12 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
   
   // 2. Update the navigation items
   const navItems = [
-    { page: 'view', label: 'Expense Entries', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    { page: 'view', label: 'Vendor Expense', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+
+    { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    { page: 'travel-expenses', label: 'Travel Expenses', icon: <Database className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    { page: 'subcontractor-assignments', label: 'Subcontractor Assignments', icon: <Briefcase className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+
     { page: 'accountant', label: 'Voucher Entries', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
     { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] }, // New "About" item

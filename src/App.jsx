@@ -1229,6 +1229,51 @@ const App = () => {
             currentUserRole={currentUserRole}
           />
         );
+        case 'credit-card-expenses':
+        return (
+          <CreditCardExpenses
+            dataEntries={dataEntries}
+            isLoading={isLoading}
+            error={error}
+            openAddDataModal={() => setShowAddDataModal(true)}
+            openEditDataModal={() => setShowEditDataModal(true)}
+            openExportModal={() => setShowExportModal(true)}
+            userName={currentUsername}
+            userAvatar={currentUserAvatar}
+            handleLogout={handleLogout}
+            currentUserRole={currentUserRole}
+          />
+        );
+      case 'travel-expenses':
+        return (
+          <TravelExpenses
+            dataEntries={dataEntries}
+            isLoading={isLoading}
+            error={error}
+            openAddDataModal={() => setShowAddDataModal(true)}
+            openEditDataModal={() => setShowEditDataModal(true)}
+            openExportModal={() => setShowExportModal(true)}
+            userName={currentUsername}
+            userAvatar={currentUserAvatar}
+            handleLogout={handleLogout}
+            currentUserRole={currentUserRole}
+          />
+        );
+      case 'subcontractor-assignments':
+        return (
+          <SubcontractorAssignments
+            dataEntries={dataEntries}
+            isLoading={isLoading}
+            error={error}
+            openAddDataModal={() => setShowAddDataModal(true)}
+            openEditDataModal={() => setShowEditDataModal(true)}
+            openExportModal={() => setShowExportModal(true)}
+            userName={currentUsername}
+            userAvatar={currentUserAvatar}
+            handleLogout={handleLogout}
+            currentUserRole={currentUserRole}
+          />
+        );
       case 'accountant':
         return (
           <AccountantPage
