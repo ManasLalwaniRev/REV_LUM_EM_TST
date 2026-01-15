@@ -2512,7 +2512,7 @@ const HistoryRow = ({ entry }) => {
             <td className="px-6 py-3 whitespace-nowrap text-sm font-medium pl-12">{entry.primeKey}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.contractShortName}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.vendorName}</td>
-            <td className="px-6 py-3 whitespace-nowrap text-sm">$${entry.chargeAmount ? parseFloat(entry.chargeAmount).toFixed(2) : '0.00'}</td>
+            <td className="px-6 py-3 whitespace-nowrap text-sm">${entry.chargeAmount ? parseFloat(entry.chargeAmount).toFixed(2) : '0.00'}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(entry.chargeDate)}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.submitter}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">
@@ -2547,6 +2547,62 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
+  // --- Dummy Values for Demo ---
+  const dummyEntries = [
+    {
+      id: 'dummy-1',
+      primeKey: '901',
+      contractShortName: 'Project Alpha',
+      vendorName: 'Office Supplies Inc',
+      chargeAmount: 250.00,
+      chargeDate: '2026-01-05',
+      submitter: 'John Doe',
+      pdfFilePath: '#',
+      accountingProcessed: 'T',
+      infoReceivedDate: '2026-01-10',
+      dateProcessed: '2026-01-11', // diff = 1 (Before Deadline)
+      apvNumber: 'APV-001',
+      accountingNotes: 'Processed early',
+      paidDt: '2026-01-12'
+    },
+    {
+      id: 'dummy-2',
+      primeKey: '902',
+      contractShortName: 'Project Beta',
+      vendorName: 'Global Tech',
+      chargeAmount: 1200.50,
+      chargeDate: '2026-01-06',
+      submitter: 'Jane Smith',
+      pdfFilePath: '#',
+      accountingProcessed: 'T',
+      infoReceivedDate: '2026-01-10',
+      dateProcessed: '2026-01-12', // diff = 2 (On Deadline)
+      apvNumber: 'APV-002',
+      accountingNotes: 'On time',
+      paidDt: '2026-01-13'
+    },
+    {
+      id: 'dummy-3',
+      primeKey: '903',
+      contractShortName: 'Project Gamma',
+      vendorName: 'Express Logistics',
+      chargeAmount: 85.20,
+      chargeDate: '2026-01-07',
+      submitter: 'Mike Wilson',
+      pdfFilePath: '#',
+      accountingProcessed: 'T',
+      infoReceivedDate: '2026-01-10',
+      dateProcessed: '2026-01-14', // diff = 4 (Deadline Crossed)
+      apvNumber: 'APV-003',
+      accountingNotes: 'Late receipt',
+      paidDt: '2026-01-15'
+    }
+  ];
+
+  const combinedEntries = useMemo(() => {
+    return [...dummyEntries, ...(dataEntries || [])];
+  }, [dataEntries]);
+
   const searchableColumns = [
       { key: 'all', name: 'All Fields' },
       { key: 'primeKey', name: 'Prime Key' },
@@ -2563,9 +2619,9 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
   }, [message]);
 
   useEffect(() => {
-    if (dataEntries.length > 0) {
+    if (combinedEntries.length > 0) {
       const latestVersionsMap = {};
-      dataEntries.forEach(entry => {
+      combinedEntries.forEach(entry => {
         const primeKeyFloat = parseFloat(entry.primeKey);
         if (isNaN(primeKeyFloat)) return;
         const baseKey = Math.floor(primeKeyFloat);
@@ -2575,11 +2631,11 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
       });
       setLatestPrimeKeys(new Set(Object.values(latestVersionsMap).map(e => e.primeKey)));
     }
-  }, [dataEntries]);
+  }, [combinedEntries]);
 
   const groupedAndFilteredEntries = useMemo(() => {
     if (isLoading || error) return [];
-    const groups = dataEntries.reduce((acc, entry) => {
+    const groups = combinedEntries.reduce((acc, entry) => {
       const baseKey = String(entry.primeKey).split('.')[0];
       if (!acc[baseKey]) acc[baseKey] = [];
       acc[baseKey].push(entry);
@@ -2607,7 +2663,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
       );
     }
     return filteredGroups;
-  }, [dataEntries, isLoading, error, searchColumn, searchValue]);
+  }, [combinedEntries, isLoading, error, searchColumn, searchValue]);
 
   const toggleRowExpansion = (baseKey) => {
     setExpandedRows(prev => {
@@ -2658,7 +2714,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
   };
 
   const entriesToRender = showOnlyLatest
-    ? dataEntries.filter(entry => latestPrimeKeys.has(entry.primeKey)).map(e => [e])
+    ? combinedEntries.filter(entry => latestPrimeKeys.has(entry.primeKey)).map(e => [e])
     : groupedAndFilteredEntries;
 
   return (
@@ -2817,7 +2873,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">{latestEntry.contractShortName}</td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">{latestEntry.vendorName}</td>
-                                <td className="px-6 py-3 whitespace-nowrap text-sm">$${latestEntry.chargeAmount ? parseFloat(latestEntry.chargeAmount).toFixed(2) : '0.00'}</td>
+                                <td className="px-6 py-3 whitespace-nowrap text-sm">${latestEntry.chargeAmount ? parseFloat(latestEntry.chargeAmount).toFixed(2) : '0.00'}</td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(latestEntry.chargeDate)}</td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">{latestEntry.submitter}</td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">
