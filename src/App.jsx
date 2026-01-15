@@ -1084,10 +1084,10 @@ import ExportModal from '@/components/ExportModal.jsx';
 import SettingsAndProfilePage from '@/components/SettingsAndProfilePage.jsx';
 import AboutPage from '@/components/AboutPage.jsx';
 
+// src/App.jsx - ADD THESE IMPORTS
 import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
 import TravelExpenses from '@/components/TravelExpenses.jsx';
 import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
-
 
 const avatarOptions = [
     'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott',
