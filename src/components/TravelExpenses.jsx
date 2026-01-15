@@ -365,6 +365,7 @@ const TravelExpenses = ({
   userAvatar, 
   handleLogout, 
   currentUserRole,
+  currentUserId,
   onDataChanged 
 }) => {
   const [searchColumn, setSearchColumn] = useState('all');
@@ -373,10 +374,8 @@ const TravelExpenses = ({
   const [isExporting, setIsExporting] = useState(false);
   
   // --- DEMO CACHE LOGIC ---
-  // This local state acts as your "cache record" to show entries immediately for the demo
   const [localEntries, setLocalEntries] = useState([]);
 
-  // Sync local cache whenever the main dataEntries prop changes
   useEffect(() => {
     setLocalEntries(dataEntries || []);
   }, [dataEntries]);
@@ -399,7 +398,6 @@ const TravelExpenses = ({
     { key: 'submitter', name: 'Submitter' },
   ];
 
-  // Filter localEntries (the cache) instead of dataEntries
   const filteredEntries = useMemo(() => {
     let filtered = localEntries;
 
@@ -453,21 +451,20 @@ const TravelExpenses = ({
   const handleSave = async (e) => {
     e.preventDefault();
     
-    // 1. Create the "Cache Record" for immediate display
+    // Create the "Cache Record" for immediate display in demo
     const newRecord = {
       ...formData,
-      id: editingEntry ? editingEntry.id : Date.now(), // Temporary ID for demo
+      id: editingEntry ? editingEntry.id : Date.now(),
       submitter: userName,
     };
 
-    // 2. Update the local cache state immediately
+    // Update local cache state immediately
     if (editingEntry) {
       setLocalEntries(prev => prev.map(en => en.id === editingEntry.id ? newRecord : en));
     } else {
       setLocalEntries(prev => [newRecord, ...prev]);
     }
 
-    // 3. Proceed with actual API call
     const method = editingEntry ? 'PATCH' : 'POST';
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
     
@@ -477,16 +474,17 @@ const TravelExpenses = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           ...formData, 
+          userId: currentUserId,
           submitter: userName,
           category: 'travel' 
         }),
       });
 
       if (response.ok && onDataChanged) {
-        onDataChanged(); // Keep parent in sync if API succeeds
+        onDataChanged(); 
       }
     } catch (err) {
-      console.error("API failed, but record is kept in local cache for demo.", err);
+      console.warn("Backend save failed, but demo record is cached locally.");
     }
 
     resetForm();
@@ -494,7 +492,7 @@ const TravelExpenses = ({
 
   const startEdit = () => {
     const entryId = Array.from(selectedRows)[0];
-    const entry = localEntries.find(e => e.id === entryId); // Use local cache
+    const entry = localEntries.find(e => e.id === entryId);
     if (entry) {
       setEditingEntry(entry);
       setFormData({
@@ -510,10 +508,10 @@ const TravelExpenses = ({
     if (selectedRows.size > 0) {
       setIsExporting(true);
       try {
-        const dataToExport = localEntries.filter(entry => selectedRows.has(entry.id)); // Use local cache
+        const dataToExport = localEntries.filter(entry => selectedRows.has(entry.id));
         const dataForSheet = dataToExport.map(entry => ({
           "Project for Travel": entry.contractShortName,
-          "Travel Form Path": entry.pdfFilePath,
+          "Travel Form Link": entry.pdfFilePath,
           "Notes": entry.notes,
           "Submitter": entry.submitter,
         }));
@@ -545,7 +543,7 @@ const TravelExpenses = ({
 
   const Row = ({ entry }) => (
     <React.Fragment>
-        <td className="p-0 text-center">
+        <td className="p-0">
             <label className="flex items-center justify-center p-4 cursor-pointer">
                 <input
                     type="checkbox"
@@ -597,7 +595,6 @@ const TravelExpenses = ({
                 </div>
             </div>
 
-            {/* Inline Add/Edit Form Section */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-lime-200 rounded-xl bg-lime-50 animate-in fade-in slide-in-from-top-4 text-gray-800">
                 <div className="flex justify-between items-center mb-4">
@@ -692,7 +689,7 @@ const TravelExpenses = ({
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-100">
                         <tr>
-                            <th scope="col" className="p-0 w-12">
+                            <th scope="col" className="p-0 w-12 text-center">
                                 <label className="flex items-center justify-center p-4 cursor-pointer">
                                     <input type="checkbox" onChange={handleSelectAll} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
                                 </label>
