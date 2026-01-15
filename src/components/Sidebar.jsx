@@ -285,7 +285,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
   { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <CreditCard className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'travel-expenses', label: 'Travel Expenses', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'subcontractor-assignments', label: 'SubK Assignments', icon: <Users className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'accountant', label: 'Voucher Entries', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
+  { page: 'accountant', label: 'SLA', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
   { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
 ];
