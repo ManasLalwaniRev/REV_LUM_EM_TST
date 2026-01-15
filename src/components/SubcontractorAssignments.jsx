@@ -669,17 +669,17 @@ const SubcontractorAssignments = ({
                     <Pencil size={20} /> Edit 
                 </button> */}
                 <button 
-  onClick={() => {
-    const entryId = Array.from(selectedRows)[0];
-    const entry = dataEntries.find(e => e.id === entryId);
-    if (entry) openEditSubkModal(entry);
-    else alert("Please select a record to edit.");
-  }}
-  disabled={selectedRows.size !== 1} // Only allow editing one row at a time
-  className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 ..."
->
-  <Pencil size={20} /> Edit 
-</button>
+                        onClick={() => {
+                          const entryId = Array.from(selectedRows)[0];
+                          const entry = dataEntries.find(e => e.id === entryId);
+                          if (entry) openEditSubkModal(entry);
+                          else alert("Please select a record to edit.");
+                        }}
+                        disabled={selectedRows.size !== 1} // Only allow editing one row at a time
+                        className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:-translate-y-0.5"
+                      >
+                        <Pencil size={20} /> Edit 
+                      </button>
 
                 </>
               )}
