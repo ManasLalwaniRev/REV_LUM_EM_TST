@@ -6,14 +6,14 @@ import { Save, UserPlus, Users, PlusCircle, Trash2, ArrowLeft, Loader, LogOut } 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const avatarOptions = [
-    'https://avatar.iran.liara.run/public/boy?username=Scott',
-    'https://avatar.iran.liara.run/public/girl?username=Jessica',
-    'https://avatar.iran.liara.run/public/boy?username=Alex',
-    'https://avatar.iran.liara.run/public/girl?username=Jane',
-    'https://avatar.iran.liara.run/public/boy?username=Peter',
-    'https://avatar.iran.liara.run/public/girl?username=Laura',
-    'https://avatar.iran.liara.run/public/boy?username=Chris',
-    'https://avatar.iran.liara.run/public/girl?username=Maria',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jessica',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Jane',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Peter',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Laura',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Chris',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
 ];
 
 const SettingsAndProfilePage = ({ setCurrentPage, currentUserId, currentUsername, currentUserRole, handleLogOut,currentUserAvatar,onAvatarChange }) => {
