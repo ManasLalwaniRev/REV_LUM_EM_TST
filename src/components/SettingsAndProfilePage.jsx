@@ -244,7 +244,7 @@ const [currentAvatar, setCurrentAvatar] = useState(currentUserAvatar || avatarOp
   };
 
   return (
-    <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full">
+    <div className="bg-gray-800 p-8 shadow-lg w-full">
       <h1 className="text-3xl font-bold text-gray-800 mb-8">
         <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
           Settings & Management
