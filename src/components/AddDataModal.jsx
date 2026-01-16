@@ -1433,6 +1433,7 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
     submitter: '',
     pmEmail: '', // New field
     chargeCode: '',
+    isApproved: false,
     notes: '',
     pdfFilePath: '',
   });
@@ -1462,7 +1463,8 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
     const { id, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [id]: value,
+      // [id]: value,
+      [id]: type === 'checkbox' ? checked : value,
     }));
   };
 
