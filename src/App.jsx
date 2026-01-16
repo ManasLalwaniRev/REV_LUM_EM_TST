@@ -1403,6 +1403,7 @@ import TravelExpenses from '@/components/TravelExpenses.jsx';
 import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
 import AddSubcontractorModal from '@/components/AddSubcontractorModal.jsx';
 import EditSubcontractorModal from '@/components/EditSubcontractorModal.jsx';
+import BillingPage from '@/components/BillingPage.jsx';
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
