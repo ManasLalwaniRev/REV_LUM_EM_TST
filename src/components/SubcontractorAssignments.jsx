@@ -960,7 +960,7 @@ const SubcontractorAssignments = ({
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h1 className="text-3xl font-extrabold">
-                    <span className="block text-transparent bg-clip-text text-lime-800">
+                    <span className="block text-transparent bg-clip-text text-black-800">
                         Subcontractor Assignments
                     </span>
                 </h1>
