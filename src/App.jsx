@@ -1396,6 +1396,7 @@ import AccountantPage from '@/components/AccountantPage.jsx';
 import ExportModal from '@/components/ExportModal.jsx';
 import SettingsAndProfilePage from '@/components/SettingsAndProfilePage.jsx';
 import AboutPage from '@/components/AboutPage.jsx';
+import FinancialDashboard from '@/components/FinancialDashboard';
 
 // Page Imports
 import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
@@ -1553,6 +1554,14 @@ const App = () => {
       {...commonProps} 
       currentUserId={currentUserId} 
       onDataChanged={fetchEntries} 
+    />
+  );  
+  case 'dashboard':
+  return (
+    <FinancialDashboard 
+      userName={currentUsername} 
+      userAvatar={currentUserAvatar} 
+      handleLogout={handleLogout} 
     />
   );
 
