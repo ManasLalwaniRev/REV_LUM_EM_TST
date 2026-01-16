@@ -2527,9 +2527,9 @@ const HistoryRow = ({ entry }) => {
             <td className="px-6 py-3 whitespace-nowrap text-sm text-center">
                 {entry.accountingProcessed === 'T' ? 'Yes' : 'No'}
             </td>
-            <td className={`px-6 py-3 whitespace-nowrap text-sm text-center ${status.color}`}>{status.text}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(entry.infoReceivedDate)}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(entry.dateProcessed)}</td>
+            <td className={`px-6 py-3 whitespace-nowrap text-sm text-center ${status.color}`}>{status.text}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.apvNumber || ''}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.accountingNotes || ''}</td>
             <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(entry.paidDt)}</td>
@@ -2825,9 +2825,9 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">Submitter</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">PDF</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider text-center">Processed</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider text-center">Auto Status</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">Info Received Date</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">Date Processed</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider text-center">Auto Status</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">APV Number</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">Accountant Notes</th>
                             <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 tracking-wider">Paid Date</th>
@@ -2894,9 +2894,6 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
                                     disabled={!isEditable} 
                                   />
                                 </td>
-                                <td className={`px-6 py-3 whitespace-nowrap text-sm text-center ${status.color}`}>
-                                    {status.text}
-                                </td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">
                                   <input 
                                     type="date" 
@@ -2914,6 +2911,9 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
                                     className="w-full p-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:bg-gray-200" 
                                     disabled={!isEditable} 
                                   />
+                                </td>
+                                <td className={`px-6 py-3 whitespace-nowrap text-sm text-center ${status.color}`}>
+                                    {status.text}
                                 </td>
                                 <td className="px-6 py-3 whitespace-nowrap text-sm">
                                   <input 
