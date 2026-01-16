@@ -288,8 +288,9 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
   { page: 'subcontractor-assignments', label: 'SubK Assignments', icon: <Users className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'accountant', label: 'SLA', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
   { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  { page: 'bill', label: 'Billing', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'bill', label: 'Bill', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+
 ];
   return (
     <div
