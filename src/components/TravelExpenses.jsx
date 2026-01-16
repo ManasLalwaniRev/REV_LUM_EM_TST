@@ -567,8 +567,8 @@ const TravelExpenses = ({
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                  <h1 className="text-3xl font-extrabold">
-                        <span className="block text-transparent bg-clip-text bg-gradient-to-r text-lime-800">
-                            SLA
+                        <span className="block text-transparent bg-clip-text bg-gradient-to-r text-black-800">
+                            Travel Expenses
                         </span>
                     </h1>
                 <div className="w-1/3 flex justify-end">
