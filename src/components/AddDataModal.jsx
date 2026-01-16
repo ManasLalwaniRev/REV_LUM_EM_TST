@@ -1527,7 +1527,7 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
 
         <h2 className="text-3xl font-extrabold text-gray-800 mb-8 text-center">
           <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-            Enter New Charge Details
+            Enter Vendor Details
           </span>
         </h2>
 
