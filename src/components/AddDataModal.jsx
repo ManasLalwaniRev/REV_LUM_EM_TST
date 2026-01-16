@@ -1693,6 +1693,18 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
               required
             ></textarea>
           </div>
+          <div className="col-span-full flex items-center gap-3 bg-blue-50 p-4 rounded-lg border border-blue-100 mt-2">
+            <input
+              type="checkbox"
+              id="isApproved"
+              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+              checked={formData.isApproved}
+              onChange={handleInputChange}
+            />
+            <label htmlFor="isApproved" className="text-sm font-bold text-blue-800 uppercase cursor-pointer">
+              Approver
+            </label>
+          </div>
 
           <div className="col-span-full">
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
