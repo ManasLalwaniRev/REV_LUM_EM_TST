@@ -2724,7 +2724,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
                 <div className="w-1/3">
                     <h1 className="text-3xl font-extrabold">
                         <span className="block text-transparent bg-clip-text bg-gradient-to-r text-lime-800">
-                            Voucher Entries
+                            SLA
                         </span>
                     </h1>
                 </div>

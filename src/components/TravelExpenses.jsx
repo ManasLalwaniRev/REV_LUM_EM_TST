@@ -566,11 +566,11 @@ const TravelExpenses = ({
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <h1 className="text-3xl font-extrabold">
-                    <span className="block text-transparent bg-clip-text text-lime-800">
-                        Travel Expenses
-                    </span>
-                </h1>
+                 <h1 className="text-3xl font-extrabold">
+                        <span className="block text-transparent bg-clip-text bg-gradient-to-r text-lime-800">
+                            SLA
+                        </span>
+                    </h1>
                 <div className="w-1/3 flex justify-end">
                     <img src="\Lumina_logo.png" alt="Lumina Logo" className="h-12 opacity-100 pr-12" />
                 </div>
