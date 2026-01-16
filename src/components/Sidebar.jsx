@@ -249,7 +249,8 @@ import {
   Plane,         // Travel        // New
   Users,
   Info,
-  Book // 1. Import the 'Info' icon for the About page
+  Book,
+  LayoutDashboard // 1. Import the 'Info' icon for the About page
 } from "lucide-react";
 
 // Individual Sidebar Item Component (no changes needed here)
