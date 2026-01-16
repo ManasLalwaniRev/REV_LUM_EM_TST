@@ -651,7 +651,7 @@ const CreditCardExpenses = ({
         const dataToExport = localEntries.filter(entry => selectedRows.has(entry.id));
         const dataForSheet = dataToExport.map(entry => ({
           "Record No": entry.primeKey,
-          "Vendor ID": entry.creditCard,
+          "Credit Card": entry.creditCard,
           "Contract": entry.contractShortName,
           "Vendor Name": entry.vendorName,
           "Amount": entry.chargeAmount,
@@ -850,7 +850,7 @@ const CreditCardExpenses = ({
                               <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Record No</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Credit Card</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Contract</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Charge Date</th>
