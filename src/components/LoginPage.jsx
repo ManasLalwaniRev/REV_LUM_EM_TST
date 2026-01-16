@@ -245,7 +245,7 @@ const LoginPage = ({ onLoginSuccess }) => {
         
         {/* --- Title --- */}
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 mb-8">
-          Expense Management
+          Financial Management
         </h1>
 
         {/* --- Form (Functionality is unchanged) --- */}
