@@ -750,6 +750,8 @@ const CreditCardExpenses = ({
                     <label className="block text-xs font-bold mb-1">CREDIT CARD *</label>
                     <select id="creditCard" className="w-full p-2 border border-gray-300 rounded" value={formData.creditCard} onChange={handleInputChange} required>
                       <option value="">Select Credit Card</option>
+                      <option value="">Chase</option>
+                      <option value="">Amex</option>
                       {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
@@ -757,6 +759,7 @@ const CreditCardExpenses = ({
                     <label className="block text-xs font-bold mb-1">CONTRACT *</label>
                     <select id="contractShortName" className="w-full p-2 border border-gray-300 rounded" value={formData.contractShortName} onChange={handleInputChange} required>
                       <option value="">Select Contract</option>
+                      
                       {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
@@ -780,6 +783,10 @@ const CreditCardExpenses = ({
                     <label className="block text-xs font-bold mb-1">PM EMAIL *</label>
                     <select id="pmEmail" className="w-full p-2 border border-gray-300 rounded" value={formData.pmEmail} onChange={handleInputChange} required>
                       <option value="">Select PM Email</option>
+                      <option value="pm.manager1@infotrend.com">pm.manager1@infotrend.com</option>
+                      <option value="pm.manager2@infotrend.com">pm.manager2@infotrend.com</option>
+                      <option value="admin.finance@infotrend.com">admin.finance@infotrend.com</option>
+                      <option value="operations.lead@infotrend.com">operations.lead@infotrend.com</option>
                       {pmEmailOptions.map(email => <option key={email} value={email}>{email}</option>)}
                     </select>
                   </div>
