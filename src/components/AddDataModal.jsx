@@ -1416,29 +1416,29 @@
 // export default AddDataModal;
 
 
-
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal.jsx';
 
 const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
 
-const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOptions, onDataAdded }) => {
+const AddDataModal = ({ onClose, userId, username, contractOptions = [], creditCardOptions = [], onDataAdded }) => {
+  // 1. Initial State - Ensure all keys exist to prevent "undefined" crashes
   const [formData, setFormData] = useState({
-    vendorId: '', // Changed from creditCard
+    vendorId: '',
     contractShortName: '',
     vendorName: '',
     chargeDate: '',
     chargeAmount: '',
     submittedDate: '',
-    submitter: '',
-    pmEmail: '', // New field
+    submitter: username || '',
+    pmEmail: '',
     chargeCode: '',
-    isApproved: false,
+    isApproved: false, // Checkbox state
     notes: '',
     pdfFilePath: '',
   });
 
-  // Dummy PM Emails
+  // 2. Local variables for dropdowns
   const pmEmailOptions = [
     'pm.manager1@lumina.com',
     'pm.manager2@lumina.com',
@@ -1450,20 +1450,18 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Sync username if it changes
   useEffect(() => {
     if (username) {
-      setFormData((prevData) => ({
-        ...prevData,
-        submitter: username,
-      }));
+      setFormData(prev => ({ ...prev, submitter: username }));
     }
   }, [username]);
 
+  // 3. Robust Input Handler (Handles Text, Select, and Checkboxes)
   const handleInputChange = (e) => {
-    const { id, value } = e.target;
+    const { id, value, type, checked } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      // [id]: value,
       [id]: type === 'checkbox' ? checked : value,
     }));
   };
@@ -1477,16 +1475,11 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
     try {
       const response = await fetch(`${API_BASE_URL}/new`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, userId }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add entry');
-      }
+      if (!response.ok) throw new Error('Failed to add entry');
 
       setShowSuccessMessage(true);
       onDataAdded(); 
@@ -1494,20 +1487,10 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
       setTimeout(() => {
         setShowSuccessMessage(false);
         onClose(); 
-      }, 3000);
-      
-      setFormData((prevData) => ({
-        vendorId: '', contractShortName: '', vendorName: '', chargeDate: '',
-        chargeAmount: '', submittedDate: '', submitter: prevData.submitter, 
-        pmEmail: '', chargeCode: '', notes: '', pdfFilePath: '',
-      }));
-
+      }, 2000);
     } catch (error) {
-      console.error('Error adding new entry:', error);
       setShowErrorMessage(true);
-      setTimeout(() => {
-        setShowErrorMessage(false);
-      }, 5000);
+      setTimeout(() => setShowErrorMessage(false), 5000);
     } finally {
       setIsLoading(false);
     }
@@ -1515,148 +1498,61 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
 
   return (
     <Modal title="Add New Entry" onClose={onClose}>
-      <div className="p-6 sm:p-8 bg-white rounded-xl shadow-lg max-h-[90vh] overflow-y-auto relative">
-        {showSuccessMessage && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 animate-fade-in-down">
-            Entry Added Successfully!
-          </div>
-        )}
-        {showErrorMessage && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-xl z-50 animate-fade-in-down">
-            Failed to add entry. Please try again.
-          </div>
-        )}
+      <div className="p-6 sm:p-8 bg-white rounded-xl shadow-lg max-h-[90vh] overflow-y-auto relative text-gray-800">
+        
+        {/* Alerts */}
+        {showSuccessMessage && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-lg z-50">Entry Added Successfully!</div>}
+        {showErrorMessage && <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg z-50">Failed to add entry.</div>}
 
-        <h2 className="text-3xl font-extrabold text-gray-800 mb-8 text-center">
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-            Enter Vendor Details
-          </span>
-        </h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-blue-600">Enter New Charge Details</h2>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-          {/* Replaced Credit Card with Vendor ID */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          {/* Vendor ID (Replica of Credit Card) */}
           <div className="col-span-1">
-            <label htmlFor="vendorId" className="block text-sm font-medium text-gray-700 mb-1">
-              VENDOR ID <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="vendorId"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.vendorId}
-              onChange={handleInputChange}
-              required
-            >
+            <label className="block text-sm font-medium mb-1">VENDOR ID *</label>
+            <select id="vendorId" className="w-full p-2 border border-gray-300 rounded" value={formData.vendorId} onChange={handleInputChange} required>
               <option value="">Select Vendor ID</option>
-              {creditCardOptions.map(option => (
-                <option key={option.id} value={option.name}>{option.name}</option>
+              {creditCardOptions?.map((option, idx) => (
+                <option key={idx} value={option.name || option}>{option.name || option}</option>
               ))}
             </select>
           </div>
 
           <div className="col-span-1">
-            <label htmlFor="contractShortName" className="block text-sm font-medium text-gray-700 mb-1">
-              CONTRACT SHORT NAME <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="contractShortName"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.contractShortName}
-              onChange={handleInputChange}
-              required
-            >
+            <label className="block text-sm font-medium mb-1">CONTRACT SHORT NAME *</label>
+            <select id="contractShortName" className="w-full p-2 border border-gray-300 rounded" value={formData.contractShortName} onChange={handleInputChange} required>
               <option value="">Select a Contract</option>
-              {contractOptions.map(option => (
-                <option key={option.id} value={option.name}>{option.name}</option>
+              {contractOptions?.map((option, idx) => (
+                <option key={idx} value={option.name || option}>{option.name || option}</option>
               ))}
             </select>
           </div>
 
           <div className="col-span-1">
-            <label htmlFor="vendorName" className="block text-sm font-medium text-gray-700 mb-1">
-              VENDOR NAME <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="vendorName"
-              placeholder="e.g., Supplier Inc."
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.vendorName}
-              onChange={handleInputChange}
-              required
-            />
+            <label className="block text-sm font-medium mb-1">VENDOR NAME *</label>
+            <input id="vendorName" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.vendorName} onChange={handleInputChange} required />
           </div>
 
           <div className="col-span-1">
-            <label htmlFor="chargeDate" className="block text-sm font-medium text-gray-700 mb-1">
-              CHARGE DATE <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="chargeDate"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.chargeDate}
-              onChange={handleInputChange}
-              required
-            />
+            <label className="block text-sm font-medium mb-1">CHARGE DATE *</label>
+            <input id="chargeDate" type="date" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeDate} onChange={handleInputChange} required />
           </div>
 
           <div className="col-span-1">
-            <label htmlFor="chargeAmount" className="block text-sm font-medium text-gray-700 mb-1">
-              CHARGE AMOUNT <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              id="chargeAmount"
-              placeholder="e.g., 123.45"
-              step="0.01"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.chargeAmount}
-              onChange={handleInputChange}
-              required
-            />
+            <label className="block text-sm font-medium mb-1">CHARGE AMOUNT *</label>
+            <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
           </div>
 
           <div className="col-span-1">
-            <label htmlFor="submittedDate" className="block text-sm font-medium text-gray-700 mb-1">
-              SUBMITTED DATE <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              id="submittedDate"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.submittedDate}
-              onChange={handleInputChange}
-              required
-            />
+            <label className="block text-sm font-medium mb-1">SUBMITTED DATE *</label>
+            <input id="submittedDate" type="date" className="w-full p-2 border border-gray-300 rounded" value={formData.submittedDate} onChange={handleInputChange} required />
           </div>
 
+          {/* PM Email Dropdown */}
           <div className="col-span-1">
-            <label htmlFor="submitter" className="block text-sm font-medium text-gray-700 mb-1">
-              SUBMITTER
-            </label>
-            <input
-              type="text"
-              id="submitter"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm bg-gray-200 text-gray-500 cursor-not-allowed"
-              value={formData.submitter}
-              readOnly
-              disabled
-              required
-            />
-          </div>
-
-          {/* New PM Email Field */}
-          <div className="col-span-1">
-            <label htmlFor="pmEmail" className="block text-sm font-medium text-gray-700 mb-1">
-              PM EMAIL <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="pmEmail"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.pmEmail}
-              onChange={handleInputChange}
-              required
-            >
+            <label className="block text-sm font-medium mb-1">PM EMAIL *</label>
+            <select id="pmEmail" className="w-full p-2 border border-gray-300 rounded" value={formData.pmEmail} onChange={handleInputChange} required>
               <option value="">Select PM Email</option>
               {pmEmailOptions.map((email, idx) => (
                 <option key={idx} value={email}>{email}</option>
@@ -1665,67 +1561,36 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
           </div>
 
           <div className="col-span-1">
-            <label htmlFor="pdfFilePath" className="block text-sm font-medium text-gray-700 mb-1">
-              PDF FILE PATH <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="pdfFilePath"
-              placeholder="e.g., /docs/report.pdf"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.pdfFilePath}
-              onChange={handleInputChange}
-              required
-            />
+            <label className="block text-sm font-medium mb-1">PDF FILE PATH *</label>
+            <input id="pdfFilePath" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
           </div>
 
           <div className="col-span-full">
-            <label htmlFor="chargeCode" className="block text-sm font-medium text-gray-700 mb-1">
-              CHARGE CODE <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              id="chargeCode"
-              placeholder="Enter charge codes..."
-              rows="3"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.chargeCode}
-              onChange={handleInputChange}
-              required
-            ></textarea>
+            <label className="block text-sm font-medium mb-1">CHARGE CODE *</label>
+            <textarea id="chargeCode" rows="2" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeCode} onChange={handleInputChange} required />
           </div>
-          <div className="col-span-full flex items-center gap-3 bg-blue-50 p-4 rounded-lg border border-blue-100 mt-2">
+
+          {/* Approver Checkbox */}
+          <div className="col-span-full flex items-center gap-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
             <input
               type="checkbox"
               id="isApproved"
-              className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+              className="w-5 h-5 cursor-pointer"
               checked={formData.isApproved}
               onChange={handleInputChange}
             />
             <label htmlFor="isApproved" className="text-sm font-bold text-blue-800 uppercase cursor-pointer">
-              Approver
+              Program Manager Approver
             </label>
           </div>
 
           <div className="col-span-full">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-              NOTES
-            </label>
-            <textarea
-              id="notes"
-              placeholder="Add any additional notes here..."
-              rows="3"
-              className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={formData.notes}
-              onChange={handleInputChange}
-            ></textarea>
+            <label className="block text-sm font-medium mb-1">NOTES</label>
+            <textarea id="notes" rows="2" className="w-full p-2 border border-gray-300 rounded" value={formData.notes} onChange={handleInputChange} />
           </div>
 
           <div className="col-span-full flex justify-end mt-4">
-            <button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105"
-              disabled={isLoading}
-            >
+            <button type="submit" className="bg-blue-600 text-white font-bold py-2 px-8 rounded-full" disabled={isLoading}>
               {isLoading ? 'Adding...' : 'Add Entry'}
             </button>
           </div>
@@ -1735,4 +1600,4 @@ const AddDataModal = ({ onClose, userId, username, contractOptions, creditCardOp
   );
 };
 
-export default AddDataModal;  
+export default AddDataModal;
