@@ -535,7 +535,7 @@ const CreditCardExpenses = ({
 
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
-    { key: 'creditCard', name: 'Vendor ID' },
+    { key: 'creditCard', name: 'Credit Card' },
     { key: 'contractShortName', name: 'Contract' },
     { key: 'vendorName', name: 'Vendor' },
     { key: 'submitter', name: 'Submitter' },
@@ -747,9 +747,9 @@ const CreditCardExpenses = ({
                 </div>
                 <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
+                    <label className="block text-xs font-bold mb-1">CREDIT CARD *</label>
                     <select id="creditCard" className="w-full p-2 border border-gray-300 rounded" value={formData.creditCard} onChange={handleInputChange} required>
-                      <option value="">Select Vendor ID</option>
+                      <option value="">Select Credit Card</option>
                       {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
