@@ -2551,7 +2551,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
   const dummyEntries = [
     {
       id: 'dummy-1',
-      primeKey: '901',
+      primeKey: '3',
       contractShortName: 'Project Alpha',
       vendorName: 'Office Supplies Inc',
       chargeAmount: 250.00,
@@ -2567,7 +2567,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
     },
     {
       id: 'dummy-2',
-      primeKey: '902',
+      primeKey: '4',
       contractShortName: 'Project Beta',
       vendorName: 'Global Tech',
       chargeAmount: 1200.50,
@@ -2583,7 +2583,7 @@ const AccountantPage = ({ dataEntries, isLoading, error, fetchEntries, userId, u
     },
     {
       id: 'dummy-3',
-      primeKey: '903',
+      primeKey: '5',
       contractShortName: 'Project Gamma',
       vendorName: 'Express Logistics',
       chargeAmount: 85.20,
