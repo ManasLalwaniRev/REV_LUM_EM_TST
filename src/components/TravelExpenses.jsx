@@ -553,12 +553,12 @@ const TravelExpenses = ({
                 />
             </label>
         </td>
-        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">{entry.contractShortName || 'N/A'}</td>
+        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">{entry.contractShortName || 'Contract 2'}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">
-            {entry.pdfFilePath ? <a href={entry.pdfFilePath} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Form</a> : 'N/A'}
+            {entry.pdfFilePath ? <a href={entry.pdfFilePath} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Form</a> : 'Form Link'}
         </td>
         <td className="px-6 py-3 whitespace-pre-wrap text-sm text-gray-700">{entry.notes || '—'}</td>
-        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.submitter || 'N/A'}</td>
+        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.submitter || 'Revolve'}</td>
     </React.Fragment>
   );
 
