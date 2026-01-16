@@ -1494,10 +1494,10 @@ const ViewPage = ({
   });
 
   const pmEmailOptions = [
-    'pm.manager1@lumina.com',
-    'pm.manager2@lumina.com',
-    'admin.finance@lumina.com',
-    'operations.lead@lumina.com'
+    'pm.manager1@infotrend.com',
+    'pm.manager2@infotrend.com',
+    'admin.finance@infotrend.com',
+    'operations.lead@infotrend.com'
   ];
 
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
