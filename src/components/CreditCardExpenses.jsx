@@ -728,12 +728,12 @@ const CreditCardExpenses = ({
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 {/* <h2 className="text-3xl font-extrabold text-black-800">Credit Card Expenses</h2> */}
-                  {/* <h1 className="text-3xl font-extrabold">
+                  <h1 className="text-3xl font-extrabold">
                         <span className="block text-transparent bg-clip-text bg-gradient-to-r text-black-800">
                             Credit Card Expenses
                         </span>
-                    </h1> */}
-                <div className="flex items-center gap-4">
+                    </h1>
+                <div className="flex items-center gap-2">
                     <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
                     <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-lg">
                         <img src={userAvatar} alt="Avatar" className="w-10 h-10 rounded-full border" />
