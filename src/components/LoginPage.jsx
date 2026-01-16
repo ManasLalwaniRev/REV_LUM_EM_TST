@@ -229,7 +229,7 @@ const LoginPage = ({ onLoginSuccess }) => {
 
   return (
     // --- New Dark Gradient Background ---
-    <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-200 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-r from-gray-800 via-gray-400 to-blue-200 p-4">
     {/* // <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-br from-blue-400 via-pink-300 to-blue-600 p-4"> */}
       {/* --- New "Glass" Login Card --- */}
       <div className="bg-white/10 backdrop-blur-lg p-8 sm:p-10 rounded-2xl shadow-2xl text-center max-w-md w-full border border-white/20">
