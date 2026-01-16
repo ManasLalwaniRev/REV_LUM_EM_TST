@@ -1546,6 +1546,15 @@ const App = () => {
       }
         }  />;
 
+        case 'bill':
+  return (
+    <BillingPage 
+      {...commonProps} 
+      currentUserId={currentUserId} 
+      onDataChanged={fetchEntries} 
+    />
+  );
+
       case 'accountant':
         return <AccountantPage {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} userRole={currentUserRole} />;
 
