@@ -775,8 +775,9 @@ const SubcontractorAssignments = ({
     plc: ''
   });
 
-  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
+  // const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
 
+  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/subcontractor-assignments`;
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
     { key: 'poNo', name: 'PO No.' },

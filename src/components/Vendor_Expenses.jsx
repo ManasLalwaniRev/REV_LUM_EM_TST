@@ -1,4 +1,3 @@
-
 // import React, { useState, useMemo, useEffect } from 'react';
 // import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search, LogOut, X, Save } from 'lucide-react';
 // import * as XLSX from 'xlsx';
@@ -10,7 +9,7 @@
 //   return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
 // };
 
-// const CreditCardExpenses = ({ 
+// const ViewPage = ({ 
 //   dataEntries, 
 //   isLoading, 
 //   error, 
@@ -21,7 +20,7 @@
 //   currentUserId,
 //   onDataChanged,
 //   contractOptions = [],
-//   creditCardOptions = [] // Used for Vendor ID dropdown
+//   creditCardOptions = []
 // }) => {
 //   const [searchColumn, setSearchColumn] = useState('all');
 //   const [searchValue, setSearchValue] = useState('');
@@ -41,7 +40,7 @@
 //   const [isAdding, setIsAdding] = useState(false);
 //   const [editingEntry, setEditingEntry] = useState(null);
 //   const [formData, setFormData] = useState({
-//     creditCard: '', // Displayed as Vendor ID in UI
+//     creditCard: '', // Displayed as Vendor ID
 //     contractShortName: '',
 //     vendorName: '',
 //     chargeDate: '',
@@ -65,7 +64,7 @@
 
 //   const searchableColumns = [
 //     { key: 'all', name: 'All Fields' },
-//     { key: 'creditCard', name: 'Credit Card' },
+//     { key: 'creditCard', name: 'Vendor ID' },
 //     { key: 'contractShortName', name: 'Contract' },
 //     { key: 'vendorName', name: 'Vendor' },
 //     { key: 'submitter', name: 'Submitter' },
@@ -126,10 +125,10 @@
 //       ...formData,
 //       id: editingEntry ? editingEntry.id : Date.now(),
 //       submitter: userName,
-//       primeKey: editingEntry ? editingEntry.primeKey : (localEntries.length + 501).toString()
+//       primeKey: editingEntry ? editingEntry.primeKey : (localEntries.length + 101).toString()
 //     };
 
-//     // Update Cache Immediately for Demo
+//     // Update Cache
 //     if (editingEntry) {
 //       setLocalEntries(prev => prev.map(en => en.id === editingEntry.id ? newRecord : en));
 //     } else {
@@ -171,46 +170,6 @@
 //         pdfFilePath: entry.pdfFilePath || '',
 //       });
 //       setIsAdding(false);
-//     }
-//   };
-
-//   const handleExport = async () => {
-//     if (selectedRows.size > 0) {
-//       setIsExporting(true);
-//       try {
-//         const dataToExport = localEntries.filter(entry => selectedRows.has(entry.id));
-//         const dataForSheet = dataToExport.map(entry => ({
-//           "Record No": entry.primeKey,
-//           "Credit Card": entry.creditCard,
-//           "Contract": entry.contractShortName,
-//           "Vendor Name": entry.vendorName,
-//           "Amount": entry.chargeAmount,
-//           "Charge Date": formatDateForDisplay(entry.chargeDate),
-//           "Submitter": entry.submitter,
-//           "PM Email": entry.pmEmail,
-//           "Notes": entry.notes
-//         }));
-        
-//         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/generate-excel`, {
-//           method: 'POST',
-//           headers: { 'Content-Type': 'application/json' },
-//           body: JSON.stringify({ data: dataForSheet }),
-//         });
-//         if (!response.ok) throw new Error('Export failed');
-//         const blob = await response.blob();
-//         const url = window.URL.createObjectURL(blob);
-//         const a = document.createElement('a');
-//         a.href = url;
-//         a.download = 'CreditCardExpensesExport.xlsx';
-//         document.body.appendChild(a);
-//         a.click();
-//         window.URL.revokeObjectURL(url);
-//         a.remove();
-//       } catch (err) {
-//         console.error("Export error:", err);
-//       } finally {
-//         setIsExporting(false);
-//       }
 //     }
 //   };
 
@@ -257,13 +216,8 @@
 //         <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full text-gray-800">
 //             {/* Header */}
 //             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-//                 {/* <h2 className="text-3xl font-extrabold text-black-800">Credit Card Expenses</h2> */}
-//                   <h1 className="text-3xl font-extrabold">
-//                         <span className="block text-transparent bg-clip-text bg-gradient-to-r text-black-800">
-//                             Credit Card Expenses
-//                         </span>
-//                     </h1>
-//                 <div className="flex items-center gap-2">
+//                 <h1 className="text-3xl font-extrabold text-black-800">Voucher Expense Entries</h1>
+//                 <div className="flex items-center gap-4">
 //                     <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
 //                     <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-lg">
 //                         <img src={userAvatar} alt="Avatar" className="w-10 h-10 rounded-full border" />
@@ -275,70 +229,63 @@
 
 //             {/* Inline Form */}
 //             {(isAdding || editingEntry) && (
-//               <div className="mb-8 p-6 border-2 border-yellow-200 rounded-xl bg-yellow-50 animate-in fade-in slide-in-from-top-4">
-//                 <div className="flex justify-between items-center mb-4 text-yellow-900">
-//                   <h2 className="text-xl font-bold">{editingEntry ? 'Edit Card Expense' : 'Add New Card Expense'}</h2>
+//               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 animate-in fade-in slide-in-from-top-4">
+//                 <div className="flex justify-between items-center mb-4 text-blue-900">
+//                   <h2 className="text-xl font-bold">{editingEntry ? 'Edit Entry' : 'Add New Entry'}</h2>
 //                   <button onClick={resetForm} className="text-gray-500 hover:text-red-500"><X /></button>
 //                 </div>
 //                 <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 //                   <div>
-//                     <label className="block text-xs font-bold mb-1">CREDIT CARD *</label>
-//                     <select id="creditCard" className="w-full p-2 border border-gray-300 rounded" value={formData.creditCard} onChange={handleInputChange} required>
-//                       <option value="">Select Credit Card</option>
-//                       <option value="">Chase</option>
-//                       <option value="">Amex</option>
+//                     <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
+//                     <select id="creditCard" className="w-full p-2 border rounded" value={formData.creditCard} onChange={handleInputChange} required>
+//                       <option value="">Select Vendor ID</option>
 //                       {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
 //                     </select>
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">CONTRACT *</label>
-//                     <select id="contractShortName" className="w-full p-2 border border-gray-300 rounded" value={formData.contractShortName} onChange={handleInputChange} required>
+//                     <select id="contractShortName" className="w-full p-2 border rounded" value={formData.contractShortName} onChange={handleInputChange} required>
 //                       <option value="">Select Contract</option>
-                      
 //                       {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
 //                     </select>
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">VENDOR NAME *</label>
-//                     <input id="vendorName" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.vendorName} onChange={handleInputChange} required />
+//                     <input id="vendorName" type="text" className="w-full p-2 border rounded" value={formData.vendorName} onChange={handleInputChange} required />
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">AMOUNT *</label>
-//                     <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
+//                     <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">CHARGE DATE *</label>
-//                     <input id="chargeDate" type="date" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeDate} onChange={handleInputChange} required />
+//                     <input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required />
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">SUBMITTED DATE *</label>
-//                     <input id="submittedDate" type="date" className="w-full p-2 border border-gray-300 rounded" value={formData.submittedDate} onChange={handleInputChange} required />
+//                     <input id="submittedDate" type="date" className="w-full p-2 border rounded" value={formData.submittedDate} onChange={handleInputChange} required />
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">PM EMAIL *</label>
-//                     <select id="pmEmail" className="w-full p-2 border border-gray-300 rounded" value={formData.pmEmail} onChange={handleInputChange} required>
+//                     <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
 //                       <option value="">Select PM Email</option>
-//                       <option value="pm.manager1@infotrend.com">pm.manager1@infotrend.com</option>
-//                       <option value="pm.manager2@infotrend.com">pm.manager2@infotrend.com</option>
-//                       <option value="admin.finance@infotrend.com">admin.finance@infotrend.com</option>
-//                       <option value="operations.lead@infotrend.com">operations.lead@infotrend.com</option>
 //                       {pmEmailOptions.map(email => <option key={email} value={email}>{email}</option>)}
 //                     </select>
 //                   </div>
 //                   <div>
 //                     <label className="block text-xs font-bold mb-1">PDF PATH *</label>
-//                     <input id="pdfFilePath" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
+//                     <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
 //                   </div>
 //                   <div className="lg:col-span-2">
 //                     <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
-//                     <textarea id="chargeCode" rows="1" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeCode} onChange={handleInputChange} required />
+//                     <textarea id="chargeCode" rows="1" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
 //                   </div>
 //                   <div className="lg:col-span-2 flex items-center gap-3 bg-white p-2 rounded border border-blue-200">
 //                     <input type="checkbox" id="isApproved" checked={formData.isApproved} onChange={handleInputChange} className="w-5 h-5 cursor-pointer" />
 //                     <label htmlFor="isApproved" className="text-xs font-bold text-blue-800 uppercase cursor-pointer">Program Manager Approver</label>
 //                   </div>
 //                   <div className="lg:col-span-4 flex justify-end">
-//                     <button type="submit" className="bg-yellow-600 text-white px-8 py-2 rounded-lg hover:bg-yellow-700 transition flex items-center gap-2">
+//                     <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
 //                       <Save size={18}/> {editingEntry ? 'Update' : 'Save'}
 //                     </button>
 //                   </div>
@@ -352,7 +299,7 @@
 //                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
 //                         {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
 //                     </select>
-//                     <input type="text" placeholder="Search card expenses..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+//                     <input type="text" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
 //                     <Search size={18} className="text-gray-400 mr-3" />
 //                 </div>
 //                 <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
@@ -366,9 +313,7 @@
 //                   <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 bg-yellow-500 text-white px-5 py-2.5 rounded-lg hover:bg-yellow-600 transition"><Plus size={20}/> Add</button>
 //                 )}
 //                 <button onClick={startEdit} disabled={selectedRows.size !== 1} className="flex items-center gap-2 bg-gray-600 text-white px-5 py-2.5 rounded-lg disabled:opacity-50"><Pencil size={20}/> Edit</button>
-//                 <button onClick={handleExport} disabled={selectedRows.size === 0 && !isExporting} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg disabled:opacity-50">
-//                    <Download size={20}/> {isExporting ? 'Exporting...' : 'Export'}
-//                 </button>
+//                 <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg"><Download size={20}/> Export</button>
 //             </div>
             
 //             {/* Table */}
@@ -380,7 +325,7 @@
 //                               <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
 //                             </th>
 //                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Record No</th>
-//                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Credit Card</th>
+//                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor ID</th>
 //                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Contract</th>
 //                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor</th>
 //                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Charge Date</th>
@@ -392,22 +337,18 @@
 //                         </tr>
 //                     </thead>
 //                     <tbody className="bg-white divide-y">
-//                         {groupedEntries.length > 0 ? (
-//                             groupedEntries.map((group) => (
-//                                 <React.Fragment key={group[0].id}>
-//                                     <tr className="hover:bg-blue-50 transition-colors">
-//                                         <Row entry={group[0]} />
+//                         {groupedEntries.map((group, gIdx) => (
+//                             <React.Fragment key={group[0].id}>
+//                                 <tr className="hover:bg-blue-50 transition-colors">
+//                                     <Row entry={group[0]} />
+//                                 </tr>
+//                                 {expandedRows.has(String(group[0].primeKey).split('.')[0]) && group.slice(1).map(hEntry => (
+//                                     <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-blue-400">
+//                                         <Row entry={hEntry} isHistory={true} />
 //                                     </tr>
-//                                     {expandedRows.has(String(group[0].primeKey).split('.')[0]) && group.slice(1).map(hEntry => (
-//                                         <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-yellow-400">
-//                                             <Row entry={hEntry} isHistory={true} />
-//                                         </tr>
-//                                     ))}
-//                                 </React.Fragment>
-//                             ))
-//                         ) : (
-//                             <tr><td colSpan="11" className="text-center p-6 text-gray-500 italic">No credit card expenses found.</td></tr>
-//                         )}
+//                                 ))}
+//                             </React.Fragment>
+//                         ))}
 //                     </tbody>
 //                 </table>
 //             </div>
@@ -416,7 +357,7 @@
 //   );
 // };
 
-// export default CreditCardExpenses;
+// export default ViewPage;
 
 
 
@@ -431,7 +372,7 @@ const formatDateForDisplay = (isoString) => {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
 };
 
-const CreditCardExpenses = ({ 
+const Vendor_Expenses = ({ 
   dataEntries, 
   isLoading, 
   error, 
@@ -442,7 +383,7 @@ const CreditCardExpenses = ({
   currentUserId,
   onDataChanged,
   contractOptions = [],
-  creditCardOptions = [] // Used for Vendor ID dropdown
+  creditCardOptions = []
 }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
@@ -462,7 +403,7 @@ const CreditCardExpenses = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [formData, setFormData] = useState({
-    creditCard: '', // Displayed as Vendor ID in UI
+    creditCard: '', // Displayed as Vendor ID
     contractShortName: '',
     vendorName: '',
     chargeDate: '',
@@ -482,11 +423,12 @@ const CreditCardExpenses = ({
     'operations.lead@infotrend.com'
   ];
 
-  // const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`;
+  // Updated API endpoint to match the new screen purpose
+  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses`;
+
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
-    { key: 'creditCard', name: 'Credit Card' },
+    { key: 'creditCard', name: 'Vendor ID' },
     { key: 'contractShortName', name: 'Contract' },
     { key: 'vendorName', name: 'Vendor' },
     { key: 'submitter', name: 'Submitter' },
@@ -547,17 +489,15 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
       ...formData,
       id: editingEntry ? editingEntry.id : Date.now(),
       submitter: userName,
-      primeKey: editingEntry ? editingEntry.primeKey : (localEntries.length + 501).toString()
+      primeKey: editingEntry ? editingEntry.primeKey : (localEntries.length + 101).toString()
     };
 
-    // Update Cache Immediately for Demo
     if (editingEntry) {
       setLocalEntries(prev => prev.map(en => en.id === editingEntry.id ? newRecord : en));
     } else {
       setLocalEntries(prev => [newRecord, ...prev]);
     }
 
-    // API Call
     const method = editingEntry ? 'PATCH' : 'POST';
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
     try {
@@ -592,46 +532,6 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
         pdfFilePath: entry.pdfFilePath || '',
       });
       setIsAdding(false);
-    }
-  };
-
-  const handleExport = async () => {
-    if (selectedRows.size > 0) {
-      setIsExporting(true);
-      try {
-        const dataToExport = localEntries.filter(entry => selectedRows.has(entry.id));
-        const dataForSheet = dataToExport.map(entry => ({
-          "Record No": entry.primeKey,
-          "Credit Card": entry.creditCard,
-          "Contract": entry.contractShortName,
-          "Vendor Name": entry.vendorName,
-          "Amount": entry.chargeAmount,
-          "Charge Date": formatDateForDisplay(entry.chargeDate),
-          "Submitter": entry.submitter,
-          "PM Email": entry.pmEmail,
-          "Notes": entry.notes
-        }));
-        
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/generate-excel`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: dataForSheet }),
-        });
-        if (!response.ok) throw new Error('Export failed');
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'CreditCardExpensesExport.xlsx';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        a.remove();
-      } catch (err) {
-        console.error("Export error:", err);
-      } finally {
-        setIsExporting(false);
-      }
     }
   };
 
@@ -676,15 +576,9 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full text-gray-800">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                {/* <h2 className="text-3xl font-extrabold text-black-800">Credit Card Expenses</h2> */}
-                  <h1 className="text-3xl font-extrabold">
-                        <span className="block text-transparent bg-clip-text bg-gradient-to-r text-black-800">
-                            Credit Card Expenses
-                        </span>
-                    </h1>
-                <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-extrabold text-black-800">Vendor Expense Entries</h1>
+                <div className="flex items-center gap-4">
                     <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
                     <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-lg">
                         <img src={userAvatar} alt="Avatar" className="w-10 h-10 rounded-full border" />
@@ -694,72 +588,68 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
                 </div>
             </div>
 
-            {/* Inline Form */}
             {(isAdding || editingEntry) && (
-              <div className="mb-8 p-6 border-2 border-yellow-200 rounded-xl bg-yellow-50 animate-in fade-in slide-in-from-top-4">
-                <div className="flex justify-between items-center mb-4 text-yellow-900">
-                  <h2 className="text-xl font-bold">{editingEntry ? 'Edit Card Expense' : 'Add New Card Expense'}</h2>
+              <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 animate-in fade-in slide-in-from-top-4">
+                <div className="flex justify-between items-center mb-4 text-blue-900">
+                  <h2 className="text-xl font-bold">{editingEntry ? 'Edit Vendor Entry' : 'Add New Vendor Entry'}</h2>
                   <button onClick={resetForm} className="text-gray-500 hover:text-red-500"><X /></button>
                 </div>
                 <form onSubmit={handleSave} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-bold mb-1">CREDIT CARD *</label>
-                    <select id="creditCard" className="w-full p-2 border border-gray-300 rounded" value={formData.creditCard} onChange={handleInputChange} required>
-                      <option value="">Select Credit Card</option>
-                      <option value="">Chase</option>
-                      <option value="">Amex</option>
+                    <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
+                    <select id="creditCard" className="w-full p-2 border rounded" value={formData.creditCard} onChange={handleInputChange} required>
+                      <option value="">Select Vendor ID</option>
                       {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">CONTRACT *</label>
-                    <select id="contractShortName" className="w-full p-2 border border-gray-300 rounded" value={formData.contractShortName} onChange={handleInputChange} required>
+                    <select id="contractShortName" className="w-full p-2 border rounded" value={formData.contractShortName} onChange={handleInputChange} required>
                       <option value="">Select Contract</option>
-                      
                       {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">VENDOR NAME *</label>
-                    <input id="vendorName" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.vendorName} onChange={handleInputChange} required />
+                    <input id="vendorName" type="text" className="w-full p-2 border rounded" value={formData.vendorName} onChange={handleInputChange} required />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">AMOUNT *</label>
-                    <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
+                    <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">CHARGE DATE *</label>
-                    <input id="chargeDate" type="date" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeDate} onChange={handleInputChange} required />
+                    <input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">SUBMITTED DATE *</label>
-                    <input id="submittedDate" type="date" className="w-full p-2 border border-gray-300 rounded" value={formData.submittedDate} onChange={handleInputChange} required />
+                    <input id="submittedDate" type="date" className="w-full p-2 border rounded" value={formData.submittedDate} onChange={handleInputChange} required />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">PM EMAIL *</label>
-                    <select id="pmEmail" className="w-full p-2 border border-gray-300 rounded" value={formData.pmEmail} onChange={handleInputChange} required>
+                    <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
                       <option value="">Select PM Email</option>
-                      <option value="pm.manager1@infotrend.com">pm.manager1@infotrend.com</option>
-                      <option value="pm.manager2@infotrend.com">pm.manager2@infotrend.com</option>
-                      <option value="admin.finance@infotrend.com">admin.finance@infotrend.com</option>
-                      <option value="operations.lead@infotrend.com">operations.lead@infotrend.com</option>
                       {pmEmailOptions.map(email => <option key={email} value={email}>{email}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">PDF PATH *</label>
-                    <input id="pdfFilePath" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
+                    <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
                   </div>
                   <div className="lg:col-span-2">
                     <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
-                    <textarea id="chargeCode" rows="1" className="w-full p-2 border border-gray-300 rounded" value={formData.chargeCode} onChange={handleInputChange} required />
+                    <textarea id="chargeCode" rows="1" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
                   </div>
-                  <div className="lg:col-span-2 flex items-center gap-3 bg-white p-2 rounded border border-blue-200">
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold mb-1">NOTES</label>
+                    <textarea id="notes" rows="1" className="w-full p-2 border rounded" value={formData.notes} onChange={handleInputChange} placeholder="Add any additional notes here..." />
+                  </div>
+                  <div className="lg:col-span-4 flex items-center gap-3 bg-white p-2 rounded border border-blue-200">
                     <input type="checkbox" id="isApproved" checked={formData.isApproved} onChange={handleInputChange} className="w-5 h-5 cursor-pointer" />
                     <label htmlFor="isApproved" className="text-xs font-bold text-blue-800 uppercase cursor-pointer">Program Manager Approver</label>
                   </div>
                   <div className="lg:col-span-4 flex justify-end">
-                    <button type="submit" className="bg-yellow-600 text-white px-8 py-2 rounded-lg hover:bg-yellow-700 transition flex items-center gap-2">
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
                       <Save size={18}/> {editingEntry ? 'Update' : 'Save'}
                     </button>
                   </div>
@@ -767,13 +657,12 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
               </div>
             )}
 
-            {/* Controls */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
                         {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
                     </select>
-                    <input type="text" placeholder="Search card expenses..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+                    <input type="text" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
                     <Search size={18} className="text-gray-400 mr-3" />
                 </div>
                 <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
@@ -787,12 +676,9 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
                   <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 bg-yellow-500 text-white px-5 py-2.5 rounded-lg hover:bg-yellow-600 transition"><Plus size={20}/> Add</button>
                 )}
                 <button onClick={startEdit} disabled={selectedRows.size !== 1} className="flex items-center gap-2 bg-gray-600 text-white px-5 py-2.5 rounded-lg disabled:opacity-50"><Pencil size={20}/> Edit</button>
-                <button onClick={handleExport} disabled={selectedRows.size === 0 && !isExporting} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg disabled:opacity-50">
-                   <Download size={20}/> {isExporting ? 'Exporting...' : 'Export'}
-                </button>
+                <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg"><Download size={20}/> Export</button>
             </div>
             
-            {/* Table */}
             <div className="overflow-x-auto rounded-lg border">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -801,7 +687,7 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
                               <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Record No</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Credit Card</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor ID</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Contract</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor</th>
                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Charge Date</th>
@@ -813,22 +699,18 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y">
-                        {groupedEntries.length > 0 ? (
-                            groupedEntries.map((group) => (
-                                <React.Fragment key={group[0].id}>
-                                    <tr className="hover:bg-blue-50 transition-colors">
-                                        <Row entry={group[0]} />
+                        {groupedEntries.map((group, gIdx) => (
+                            <React.Fragment key={group[0].id}>
+                                <tr className="hover:bg-blue-50 transition-colors">
+                                    <Row entry={group[0]} />
+                                </tr>
+                                {expandedRows.has(String(group[0].primeKey).split('.')[0]) && group.slice(1).map(hEntry => (
+                                    <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-blue-400">
+                                        <Row entry={hEntry} isHistory={true} />
                                     </tr>
-                                    {expandedRows.has(String(group[0].primeKey).split('.')[0]) && group.slice(1).map(hEntry => (
-                                        <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-yellow-400">
-                                            <Row entry={hEntry} isHistory={true} />
-                                        </tr>
-                                    ))}
-                                </React.Fragment>
-                            ))
-                        ) : (
-                            <tr><td colSpan="11" className="text-center p-6 text-gray-500 italic">No credit card expenses found.</td></tr>
-                        )}
+                                ))}
+                            </React.Fragment>
+                        ))}
                     </tbody>
                 </table>
             </div>
@@ -837,4 +719,4 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
   );
 };
 
-export default CreditCardExpenses;
+export default Vendor_Expenses;

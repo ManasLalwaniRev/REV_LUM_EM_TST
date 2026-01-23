@@ -389,8 +389,9 @@ const TravelExpenses = ({
     notes: ''
   });
 
-  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
+  // const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/entries`;
 
+  const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/travel-expenses`;
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
     { key: 'contractShortName', name: 'Project' },
