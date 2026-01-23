@@ -706,8 +706,8 @@ const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`
                     <label className="block text-xs font-bold mb-1">CREDIT CARD *</label>
                     <select id="creditCard" className="w-full p-2 border border-gray-300 rounded" value={formData.creditCard} onChange={handleInputChange} required>
                       <option value="">Select Credit Card</option>
-                      <option value="">Chase</option>
-                      <option value="">Amex</option>
+                      <option value="Chase">Chase</option>
+                      <option value="Amex">Amex</option>
                       {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
