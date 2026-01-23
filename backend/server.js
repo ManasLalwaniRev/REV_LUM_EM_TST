@@ -812,186 +812,177 @@
 // });
 
 
+///////////////////
 
-// 1. Core Imports & App Initialization (Top of file)
+
+require('dotenv').config();
+const ExcelJS = require('exceljs');
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
-const cors = require('cors');
 const { Pool } = require('pg');
-// ... other imports
+const cors = require('cors');
+const bcrypt = require('bcrypt');
 
-const app = express(); // DEFINED HERE
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-// 2. Middleware
-app.use(cors());
+// --- Middleware ---
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://lumina-three-rho.vercel.app',
+  'https://rev-lum-em-tst.vercel.app/',
+  'https://rev-lum-em-tst.vercel.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  }
+}));
 app.use(express.json());
 
-// ... Keep existing Login and Passport logic here ...
+// --- PostgreSQL Connection Pool ---
+const dbConfig = {};
+if (process.env.NODE_ENV === 'production') {
+  dbConfig.connectionString = process.env.DATABASE_URL;
+  dbConfig.ssl = { rejectUnauthorized: false };
+} else {
+  dbConfig.user = process.env.DB_USER;
+  dbConfig.password = process.env.DB_PASSWORD;
+  dbConfig.host = process.env.DB_HOST;
+  dbConfig.port = process.env.DB_PORT;
+  dbConfig.database = process.env.DB_NAME;
+  dbConfig.ssl = false;
+}
 
-// 3. YOUR NEW ROUTES (Integrated into the main scope)
+const pool = new Pool(dbConfig);
+pool.connect((err, client, done) => {
+  if (err) {
+    console.error('Database connection error:', err.stack);
+    return;
+  }
+  console.log('Successfully connected to PostgreSQL database!');
+  client.release();
+});
 
-// --- Vendor Expenses Endpoints ---
+// --- Authentication (PRESERVED FROM OLD CODE) ---
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const clientIp = req.headers['x-forwarded-for'] || req.ip;
+  try {
+    const userResult = await pool.query('SELECT id, username, password_hash, role, avtr FROM users WHERE username = $1', [username]);
+    const user = userResult.rows[0];
+
+    if (user && (await bcrypt.compare(password, user.password_hash))) {
+      await pool.query('UPDATE users SET last_login_ip = $1 WHERE id = $2', [clientIp, user.id]);
+      res.status(200).json({ userId: user.id, username: user.username, role: user.role, avatar: user.avtr });
+    } else {
+      res.status(401).json({ message: 'Invalid credentials' });
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- Excel Generation (PRESERVED FROM OLD CODE) ---
+app.post('/api/generate-excel', async (req, res) => {
+    try {
+        const dataForSheet = req.body.data;
+        if (!dataForSheet || dataForSheet.length === 0) return res.status(400).json({ error: 'No data provided' });
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('DataEntries');
+        const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
+
+        if (fs.existsSync(logoPath)) {
+            const logoImage = workbook.addImage({ buffer: fs.readFileSync(logoPath), extension: 'png' });
+            sheet.addImage(logoImage, 'A1:B5');
+        }
+
+        sheet.getCell('A6').value = `Generated on: ${new Date().toLocaleString()}`;
+        const headers = Object.keys(dataForSheet[0]);
+        const headerRow = sheet.getRow(8);
+        headers.forEach((header, index) => {
+            const cell = headerRow.getCell(index + 1);
+            cell.value = header;
+            cell.font = { bold: true };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+            sheet.getColumn(index + 1).width = 25;
+        });
+        headerRow.commit();
+
+        dataForSheet.forEach((dataRow, rowIndex) => {
+            const row = sheet.getRow(9 + rowIndex);
+            headers.forEach((header, colIndex) => {
+                row.getCell(colIndex + 1).value = dataRow[header];
+            });
+            row.commit();
+        });
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename=LuminaDataExport.xlsx');
+        await workbook.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error("Excel generation error:", err);
+        res.status(500).json({ error: 'Failed to generate Excel file.' });
+    }
+});
+
+// --- NEW REDESIGNED SCREEN ROUTES ---
+
+// 1. Billing
+app.get('/api/billing', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT b.*, u.username as submitter_name FROM billing_records b JOIN users u ON b.submitter_id = u.id ORDER BY b.created_at DESC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 2. Vendor Expenses
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT ve.*, u.username as submitter_name 
-      FROM vendor_expenses ve 
-      JOIN users u ON ve.submitter_id = u.id 
-      ORDER BY ve.created_at DESC
-    `);
+    const result = await pool.query('SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC');
     res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch vendor expenses' });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/vendor-expenses/new', async (req, res) => {
-  const { 
-    creditCard, contractShortName, vendorName, chargeDate, 
-    chargeAmount, submittedDate, pmEmail, chargeCode, 
-    isApproved, notes, pdfFilePath, userId 
-  } = req.body;
-  
-  try {
-    const result = await pool.query(
-      `INSERT INTO vendor_expenses (
-        vendor_id, contract_short_name, vendor_name, charge_date, 
-        charge_amount, submitted_date, pm_email, charge_code, 
-        is_approved, notes, pdf_file_path, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [creditCard, contractShortName, vendorName, chargeDate, 
-       chargeAmount, submittedDate, pmEmail, chargeCode, 
-       isApproved, notes, pdfFilePath, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to create vendor expense' });
-  }
-});
-
-// --- Credit Card Expenses Endpoints ---
+// 3. Credit Card Expenses
 app.get('/api/credit-card-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT cc.*, u.username as submitter_name 
-      FROM credit_card_expenses cc 
-      JOIN users u ON cc.submitter_id = u.id 
-      ORDER BY cc.created_at DESC
-    `);
+    const result = await pool.query('SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC');
     res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching credit card expenses:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/credit-card-expenses/new', async (req, res) => {
-  const { 
-    creditCard, contractShortName, vendorName, chargeDate, 
-    chargeAmount, submittedDate, pmEmail, chargeCode, 
-    isApproved, notes, pdfFilePath, userId 
-  } = req.body;
-
-  try {
-    const result = await pool.query(
-      `INSERT INTO credit_card_expenses (
-        credit_card, contract_short_name, vendor_name, charge_date, 
-        charge_amount, submitted_date, pm_email, charge_code, 
-        is_approved, notes, pdf_file_path, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [creditCard, contractShortName, vendorName, chargeDate, 
-       chargeAmount, submittedDate, pmEmail, chargeCode, 
-       isApproved, notes, pdfFilePath, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating credit card expense:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// --- Travel Expenses Endpoints ---
+// 4. Travel Expenses
 app.get('/api/travel-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT te.*, u.username as submitter_name 
-      FROM travel_expenses te 
-      JOIN users u ON te.submitter_id = u.id 
-      ORDER BY te.created_at DESC
-    `);
-    const formattedRows = result.rows.map(row => ({
-      id: row.id,
-      contractShortName: row.contract_short_name,
-      pdfFilePath: row.pdf_file_path,
-      notes: row.notes,
-      submitter: row.submitter_name
-    }));
-    res.json(formattedRows);
-  } catch (err) {
-    console.error('Error fetching travel expenses:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    const result = await pool.query('SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC');
+    res.json(result.rows.map(row => ({
+      id: row.id, contractShortName: row.contract_short_name, pdfFilePath: row.pdf_file_path, notes: row.notes, submitter: row.submitter_name
+    })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/travel-expenses/new', async (req, res) => {
-  const { contractShortName, pdfFilePath, notes, userId } = req.body;
-  try {
-    const result = await pool.query(
-      `INSERT INTO travel_expenses (contract_short_name, pdf_file_path, notes, submitter_id)
-       VALUES ($1, $2, $3, $4) RETURNING *`,
-      [contractShortName, pdfFilePath, notes, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating travel expense:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// --- Subcontractor Assignments Endpoints ---
+// 5. Subcontractor Assignments
 app.get('/api/subcontractor-assignments', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT sa.*, u.username as submitter_name 
-      FROM subcontractor_assignments sa 
-      JOIN users u ON sa.submitter_id = u.id 
-      ORDER BY sa.created_at DESC
-    `);
-    const formattedRows = result.rows.map(row => ({
-      id: row.id,
-      poNo: row.po_no,
-      subkName: row.subk_name,
-      employeeName: row.employee_name,
-      projectCode: row.project_code,
-      plc: row.plc,
-      notes: row.notes,
-      submitter: row.submitter_name
-    }));
-    res.json(formattedRows);
-  } catch (err) {
-    console.error('Error fetching subcontractor assignments:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    const result = await pool.query('SELECT sa.*, u.username as submitter_name FROM subcontractor_assignments sa JOIN users u ON sa.submitter_id = u.id ORDER BY sa.created_at DESC');
+    res.json(result.rows.map(row => ({
+      id: row.id, poNo: row.po_no, subkName: row.subk_name, employeeName: row.employee_name, projectCode: row.project_code, plc: row.plc, notes: row.notes, submitter: row.submitter_name
+    })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/subcontractor-assignments/new', async (req, res) => {
-  const { poNo, subkName, employeeName, projectCode, plc, notes, userId } = req.body;
-  try {
-    const result = await pool.query(
-      `INSERT INTO subcontractor_assignments (po_no, subk_name, employee_name, project_code, plc, notes, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [poNo, subkName, employeeName, projectCode, plc, notes, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error creating subcontractor assignment:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// 4. Server Start (Bottom of file)
-const PORT = process.env.PORT || 5000;
+// Start the server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
