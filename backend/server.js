@@ -982,6 +982,49 @@ app.get('/api/subcontractor-assignments', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- Credit Card Options Endpoint (For Dropdown) ---
+app.get('/api/credit-card-options', async (req, res) => {
+  try {
+    // Selects the existing 'id' and 'name' columns from your table
+    const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching credit card options:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// --- Credit Card Expenses Endpoint (Saving the Selection) ---
+app.post('/api/credit-card-expenses/new', async (req, res) => {
+  const { 
+    creditCard, // This will be the 'name' selected from the dropdown
+    contractShortName, vendorName, chargeDate, 
+    chargeAmount, submittedDate, pmEmail, chargeCode, 
+    isApproved, notes, pdfFilePath, userId 
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO credit_card_expenses (
+        credit_card, contract_short_name, vendor_name, charge_date, 
+        charge_amount, submitted_date, pm_email, charge_code, 
+        is_approved, notes, pdf_file_path, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [
+        creditCard, // Maps the frontend 'creditCard' value to the 'credit_card' column
+        contractShortName, vendorName, chargeDate || null, 
+        chargeAmount || null, submittedDate || null, pmEmail, chargeCode, 
+        isApproved, notes, pdfFilePath, userId
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error saving credit card expense:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
