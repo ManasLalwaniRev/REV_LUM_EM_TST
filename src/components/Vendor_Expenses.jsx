@@ -360,6 +360,7 @@
 // export default ViewPage;
 
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search, LogOut, X, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -372,7 +373,7 @@ const formatDateForDisplay = (isoString) => {
 };
 
 const Vendor_Expenses = ({ 
-  dataEntries, 
+  dataEntries = [], 
   isLoading, 
   error, 
   userName = 'User', 
@@ -382,7 +383,7 @@ const Vendor_Expenses = ({
   currentUserId,
   onDataChanged,
   contractOptions = [],
-  creditCardOptions = [] // Used for Vendor ID dropdown
+  creditCardOptions = [] // Used for the Vendor ID dropdown from the options table
 }) => {
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
@@ -390,6 +391,7 @@ const Vendor_Expenses = ({
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [selectedRows, setSelectedRows] = useState(new Set());
 
+  // --- LOCAL STATE CACHE ---
   const [localEntries, setLocalEntries] = useState([]);
 
   useEffect(() => {
@@ -400,7 +402,7 @@ const Vendor_Expenses = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [formData, setFormData] = useState({
-    vendorId: '', // CHANGED: mapped to 'vendor_id' in DB
+    vendorId: '', // Mapped to vendor_id in DB
     contractShortName: '',
     vendorName: '',
     chargeDate: '',
@@ -453,9 +455,7 @@ const Vendor_Expenses = ({
               (String(value) || '').toLowerCase().includes(lowercasedValue)
             );
           } else {
-            // Map search keys correctly
-            const searchKey = searchColumn === 'vendorId' ? 'vendorId' : searchColumn;
-            return String(entry[searchKey] || '').toLowerCase().includes(lowercasedValue);
+            return String(entry[searchColumn] || '').toLowerCase().includes(lowercasedValue);
           }
         })
       );
@@ -563,6 +563,7 @@ const Vendor_Expenses = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full text-gray-800">
+            {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <h1 className="text-3xl font-extrabold text-black-800">Vendor Expense Entries</h1>
                 <div className="flex items-center gap-4">
@@ -575,6 +576,7 @@ const Vendor_Expenses = ({
                 </div>
             </div>
 
+            {/* Inline Form (Visible when Adding or Editing) */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 animate-in fade-in slide-in-from-top-4">
                 <div className="flex justify-between items-center mb-4 text-blue-900">
@@ -586,7 +588,6 @@ const Vendor_Expenses = ({
                     <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
                     <select id="vendorId" className="w-full p-2 border rounded" value={formData.vendorId} onChange={handleInputChange} required>
                       <option value="">Select Vendor ID</option>
-                      {/* Mapping from existing creditCardOptions as per previous logic */}
                       {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
@@ -597,7 +598,6 @@ const Vendor_Expenses = ({
                       {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                     </select>
                   </div>
-                  {/* ... other form fields ... */}
                   <div>
                     <label className="block text-xs font-bold mb-1">VENDOR NAME *</label>
                     <input id="vendorName" type="text" className="w-full p-2 border rounded" value={formData.vendorName} onChange={handleInputChange} required />
@@ -645,7 +645,32 @@ const Vendor_Expenses = ({
                 </form>
               </div>
             )}
-            {/* ... table rendering ... */}
+
+            {/* Controls Section */}
+            <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
+                <div className="flex items-center border rounded-lg bg-white flex-grow">
+                    <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
+                        {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
+                    </select>
+                    <input type="text" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+                    <Search size={18} className="text-gray-400 mr-3" />
+                </div>
+                <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
+                    Show Latest Only
+                    <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="w-4 h-4" />
+                </label>
+            </div>
+
+            {/* Action Buttons Section */}
+            <div className="flex gap-3 mb-6">
+                {!isAdding && !editingEntry && (
+                  <button onClick={() => setIsAdding(true)} className="flex items-center gap-2 bg-yellow-500 text-white px-5 py-2.5 rounded-lg hover:bg-yellow-600 transition"><Plus size={20}/> Add</button>
+                )}
+                <button onClick={startEdit} disabled={selectedRows.size !== 1} className="flex items-center gap-2 bg-gray-600 text-white px-5 py-2.5 rounded-lg disabled:opacity-50"><Pencil size={20}/> Edit</button>
+                <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg"><Download size={20}/> Export</button>
+            </div>
+            
+            {/* Table Section */}
             <div className="overflow-x-auto rounded-lg border">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
