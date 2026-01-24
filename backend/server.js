@@ -814,7 +814,6 @@
 
 ///////////////////
 
-
 require('dotenv').config();
 const ExcelJS = require('exceljs');
 const fs = require('fs');
@@ -832,7 +831,6 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'https://lumina-three-rho.vercel.app',
-  'https://rev-lum-em-tst.vercel.app/',
   'https://rev-lum-em-tst.vercel.app'
 ];
 
@@ -871,7 +869,7 @@ pool.connect((err, client, done) => {
   client.release();
 });
 
-// --- Authentication (PRESERVED FROM OLD CODE) ---
+// --- Authentication ---
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const clientIp = req.headers['x-forwarded-for'] || req.ip;
@@ -891,62 +889,44 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// --- Excel Generation (PRESERVED FROM OLD CODE) ---
-app.post('/api/generate-excel', async (req, res) => {
-    try {
-        const dataForSheet = req.body.data;
-        if (!dataForSheet || dataForSheet.length === 0) return res.status(400).json({ error: 'No data provided' });
-
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet('DataEntries');
-        const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
-
-        if (fs.existsSync(logoPath)) {
-            const logoImage = workbook.addImage({ buffer: fs.readFileSync(logoPath), extension: 'png' });
-            sheet.addImage(logoImage, 'A1:B5');
-        }
-
-        sheet.getCell('A6').value = `Generated on: ${new Date().toLocaleString()}`;
-        const headers = Object.keys(dataForSheet[0]);
-        const headerRow = sheet.getRow(8);
-        headers.forEach((header, index) => {
-            const cell = headerRow.getCell(index + 1);
-            cell.value = header;
-            cell.font = { bold: true };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
-            sheet.getColumn(index + 1).width = 25;
-        });
-        headerRow.commit();
-
-        dataForSheet.forEach((dataRow, rowIndex) => {
-            const row = sheet.getRow(9 + rowIndex);
-            headers.forEach((header, colIndex) => {
-                row.getCell(colIndex + 1).value = dataRow[header];
-            });
-            row.commit();
-        });
-
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=LuminaDataExport.xlsx');
-        await workbook.xlsx.write(res);
-        res.end();
-    } catch (err) {
-        console.error("Excel generation error:", err);
-        res.status(500).json({ error: 'Failed to generate Excel file.' });
-    }
+// --- Admin Options (For Dropdowns) ---
+app.get('/api/credit-card-options', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch options' });
+  }
 });
 
-// --- NEW REDESIGNED SCREEN ROUTES ---
-
-// 1. Billing
-app.get('/api/billing', async (req, res) => {
+app.post('/api/credit-card-options', async (req, res) => {
+  const { name, userRole } = req.body;
+  if (userRole !== 'admin') return res.status(403).json({ message: 'Admin only' });
   try {
-    const result = await pool.query('SELECT b.*, u.username as submitter_name FROM billing_records b JOIN users u ON b.submitter_id = u.id ORDER BY b.created_at DESC');
-    res.json(result.rows);
+    const result = await pool.query('INSERT INTO credit_card_options (name) VALUES ($1) RETURNING *', [name]);
+    res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. Vendor Expenses
+app.get('/api/contract-options', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, name FROM contract_options ORDER BY name ASC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: 'Failed to fetch options' }); }
+});
+
+app.post('/api/contract-options', async (req, res) => {
+  const { name, userRole } = req.body;
+  if (userRole !== 'admin') return res.status(403).json({ message: 'Admin only' });
+  try {
+    const result = await pool.query('INSERT INTO contract_options (name) VALUES ($1) RETURNING *', [name]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- Screen Specific Routes ---
+
+// Vendor Expenses
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
     const result = await pool.query('SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC');
@@ -954,7 +934,7 @@ app.get('/api/vendor-expenses', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 3. Credit Card Expenses
+// Credit Card Expenses
 app.get('/api/credit-card-expenses', async (req, res) => {
   try {
     const result = await pool.query('SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC');
@@ -962,7 +942,7 @@ app.get('/api/credit-card-expenses', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 4. Travel Expenses
+// Travel Expenses
 app.get('/api/travel-expenses', async (req, res) => {
   try {
     const result = await pool.query('SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC');
@@ -972,7 +952,7 @@ app.get('/api/travel-expenses', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 5. Subcontractor Assignments
+// Subcontractor Assignments
 app.get('/api/subcontractor-assignments', async (req, res) => {
   try {
     const result = await pool.query('SELECT sa.*, u.username as submitter_name FROM subcontractor_assignments sa JOIN users u ON sa.submitter_id = u.id ORDER BY sa.created_at DESC');
@@ -982,50 +962,54 @@ app.get('/api/subcontractor-assignments', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- Credit Card Options Endpoint (For Dropdown) ---
-app.get('/api/credit-card-options', async (req, res) => {
+// Billing
+app.get('/api/billing', async (req, res) => {
   try {
-    // Selects the existing 'id' and 'name' columns from your table
-    const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
+    const result = await pool.query('SELECT b.*, u.username as submitter_name FROM billing_records b JOIN users u ON b.submitter_id = u.id ORDER BY b.created_at DESC');
     res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching credit card options:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- Credit Card Expenses Endpoint (Saving the Selection) ---
-app.post('/api/credit-card-expenses/new', async (req, res) => {
-  const { 
-    creditCard, // This will be the 'name' selected from the dropdown
-    contractShortName, vendorName, chargeDate, 
-    chargeAmount, submittedDate, pmEmail, chargeCode, 
-    isApproved, notes, pdfFilePath, userId 
-  } = req.body;
-
+// --- Excel Generation ---
+app.post('/api/generate-excel', async (req, res) => {
   try {
-    const result = await pool.query(
-      `INSERT INTO credit_card_expenses (
-        credit_card, contract_short_name, vendor_name, charge_date, 
-        charge_amount, submitted_date, pm_email, charge_code, 
-        is_approved, notes, pdf_file_path, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [
-        creditCard, // Maps the frontend 'creditCard' value to the 'credit_card' column
-        contractShortName, vendorName, chargeDate || null, 
-        chargeAmount || null, submittedDate || null, pmEmail, chargeCode, 
-        isApproved, notes, pdfFilePath, userId
-      ]
-    );
-    res.status(201).json(result.rows[0]);
+    const dataForSheet = req.body.data;
+    if (!dataForSheet || dataForSheet.length === 0) return res.status(400).json({ error: 'No data provided' });
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('DataEntries');
+    const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
+    if (fs.existsSync(logoPath)) {
+      const logoImage = workbook.addImage({ buffer: fs.readFileSync(logoPath), extension: 'png' });
+      sheet.addImage(logoImage, 'A1:B5');
+    }
+    sheet.getCell('A6').value = `Generated on: ${new Date().toLocaleString()}`;
+    const headers = Object.keys(dataForSheet[0]);
+    const headerRow = sheet.getRow(8);
+    headers.forEach((header, index) => {
+      const cell = headerRow.getCell(index + 1);
+      cell.value = header;
+      cell.font = { bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+      sheet.getColumn(index + 1).width = 25;
+    });
+    headerRow.commit();
+    dataForSheet.forEach((dataRow, rowIndex) => {
+      const row = sheet.getRow(9 + rowIndex);
+      headers.forEach((header, colIndex) => {
+        row.getCell(colIndex + 1).value = dataRow[header];
+      });
+      row.commit();
+    });
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=LuminaDataExport.xlsx');
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
-    console.error('Error saving credit card expense:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error(err);
+    res.status(500).json({ error: 'Failed to generate Excel file.' });
   }
 });
 
-
-// Start the server
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

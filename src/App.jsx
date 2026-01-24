@@ -1679,12 +1679,8 @@ import ExportModal from '@/components/ExportModal.jsx';
 import SettingsAndProfilePage from '@/components/SettingsAndProfilePage.jsx';
 import AboutPage from '@/components/AboutPage.jsx';
 import FinancialDashboard from '@/components/FinancialDashboard';
-
-// UPDATED IMPORTS: Renamed components
 import Vendor_Expenses from '@/components/Vendor_Expenses.jsx'; 
 import SLA from '@/components/SLA.jsx';
-
-// Page Imports
 import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
 import TravelExpenses from '@/components/TravelExpenses.jsx';
 import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
@@ -1695,44 +1691,36 @@ import BillingPage from '@/components/BillingPage.jsx';
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
 const App = () => {
-  // --- States ---
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('luminaUser'));
   const [currentPage, setCurrentPage] = useState('view');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-
   const [showEditSubkModal, setShowEditSubkModal] = useState(false);
   const [selectedEntryForEdit, setSelectedEntryForEdit] = useState(null);
-  
-  // Modal Visibility States
   const [showAddDataModal, setShowAddDataModal] = useState(false);
   const [showEditDataModal, setShowEditDataModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showAddSubkModal, setShowAddSubkModal] = useState(false);
 
-  // User State
   const [currentUserId, setCurrentUserId] = useState(() => localStorage.getItem('luminaUserId'));
   const [currentUsername, setCurrentUsername] = useState(() => localStorage.getItem('luminaUsername'));
   const [currentUserRole, setCurrentUserRole] = useState(() => localStorage.getItem('luminaUserRole'));
   const [currentUserAvatar, setCurrentUserAvatar] = useState(() => localStorage.getItem('luminaUserAvatar') || DEFAULT_AVATAR);
 
-  // Data State
   const [dataEntries, setDataEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [contractOptions, setContractOptions] = useState([]);
   const [creditCardOptions, setCreditCardOptions] = useState([]);
 
-  // --- Actions ---
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
   const fetchEntries = async () => {
     if (!isLoggedIn) return;
     setIsLoading(true);
-    setError(null);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://rev-lumina.onrender.com/api';
       const response = await fetch(`${API_BASE_URL}/entries?userId=${currentUserId}&userRole=${currentUserRole}`);
-      if (!response.ok) throw new Error('Failed to fetch data entries');
+      if (!response.ok) throw new Error('Failed to fetch data');
       const data = await response.json();
-      
       const snakeToCamel = (obj) => {
         if (Array.isArray(obj)) return obj.map(v => snakeToCamel(v));
         if (obj !== null && typeof obj === 'object') {
@@ -1745,205 +1733,81 @@ const App = () => {
         return obj;
       };
       setDataEntries(snakeToCamel(data));
-    } catch (err) {
-      setError('Failed to load data. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError('Failed to load data.'); } finally { setIsLoading(false); }
   };
 
   useEffect(() => {
-    if (isLoggedIn && currentUserId && currentUserRole) {
+    if (isLoggedIn && currentUserId) {
       fetchEntries();
       const fetchOptions = async () => {
         try {
-          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://rev-lumina.onrender.com/api';
-          const [contractsRes, cardsRes] = await Promise.all([
+          const [contractsRes, cardsRes] = await Promise.allSettled([
             fetch(`${API_BASE_URL}/contract-options`),
             fetch(`${API_BASE_URL}/credit-card-options`),
           ]);
-          setContractOptions(await contractsRes.json());
-          setCreditCardOptions(await cardsRes.json());
-        } catch (error) {
-          console.error("Failed to fetch dropdown options:", error);
-        }
+          if (contractsRes.status === 'fulfilled' && contractsRes.value.ok) setContractOptions(await contractsRes.value.json());
+          if (cardsRes.status === 'fulfilled' && cardsRes.value.ok) setCreditCardOptions(await cardsRes.value.json());
+        } catch (error) { console.error("Option fetch failed", error); }
       };
       fetchOptions();
     }
-  }, [isLoggedIn, currentUserId, currentUserRole]);
+  }, [isLoggedIn, currentUserId]);
 
   const handleLoginSuccess = (userId, username, role, avatar) => {
-    const selectedAvatar = avatar || DEFAULT_AVATAR;
     localStorage.setItem('luminaUser', 'true');
     localStorage.setItem('luminaUserId', userId);
     localStorage.setItem('luminaUsername', username);
     localStorage.setItem('luminaUserRole', role);
-    localStorage.setItem('luminaUserAvatar', selectedAvatar);
-
+    localStorage.setItem('luminaUserAvatar', avatar || DEFAULT_AVATAR);
     setIsLoggedIn(true);
     setCurrentUserId(userId);
     setCurrentUsername(username);
     setCurrentUserRole(role);
-    setCurrentUserAvatar(selectedAvatar);
+    setCurrentUserAvatar(avatar || DEFAULT_AVATAR);
     setCurrentPage('view');
   };
 
   const handleLogout = () => {
     localStorage.clear();
     setIsLoggedIn(false);
-    setCurrentUserId(null);
-    setCurrentUsername(null);
-    setCurrentUserRole(null);
-    setCurrentUserAvatar(DEFAULT_AVATAR);
-    setDataEntries([]);
+    setCurrentPage('login');
   };
 
-  // --- Routing ---
+  const commonProps = {
+    dataEntries, isLoading, error, handleLogout, currentUserRole, contractOptions, creditCardOptions,
+    userName: currentUsername, userAvatar: currentUserAvatar, onDataChanged: fetchEntries,
+    openEditDataModal: () => setShowEditDataModal(true), openExportModal: () => setShowExportModal(true)
+  };
+
   const renderContent = () => {
-    const commonProps = {
-      dataEntries,
-      isLoading,
-      error,
-      handleLogout,
-      userName: currentUsername,
-      userAvatar: currentUserAvatar,
-      currentUserRole,
-      openEditDataModal: () => setShowEditDataModal(true),
-      openExportModal: () => setShowExportModal(true),
-      contractOptions,     // Passed for form dropdowns
-      creditCardOptions,   // Passed for form dropdowns
-      currentUserId,
-      onDataChanged: fetchEntries
-    };
-
     switch (currentPage) {
-      case 'view':
-        // UPDATED: Used Vendor_Expenses component
-        return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
-      
-      case 'credit-card-expenses':
-        return <CreditCardExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
-      
-      case 'travel-expenses':
-        return <TravelExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
-      
-      case 'subcontractor-assignments':
-        return (
-          <SubcontractorAssignments 
-            {...commonProps} 
-            openAddSubkModal={() => setShowAddSubkModal(true)}
-            openEditSubkModal={(entry) => {
-              setSelectedEntryForEdit(entry);
-              setShowEditSubkModal(true);
-            }}  
-          />
-        );
-
-      case 'bill':
-        return <BillingPage {...commonProps} />;  
-
-      case 'dashboard':
-        return <FinancialDashboard {...commonProps} />;
-
-      case 'accountant':
-        // UPDATED: Used SLA component
-        return <SLA {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} userRole={currentUserRole} />;
-
+      case 'view': return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'credit-card-expenses': return <CreditCardExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'travel-expenses': return <TravelExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'subcontractor-assignments': return <SubcontractorAssignments {...commonProps} openAddSubkModal={() => setShowAddSubkModal(true)} openEditSubkModal={(e) => { setSelectedEntryForEdit(e); setShowEditSubkModal(true); }} />;
+      case 'bill': return <BillingPage {...commonProps} currentUserId={currentUserId} />;
+      case 'dashboard': return <FinancialDashboard {...commonProps} />;
+      case 'accountant': return <SLA {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} />;
       case 'settings':
-      case 'user-profile':
-        return (
-          <SettingsAndProfilePage
-            setCurrentPage={setCurrentPage}
-            currentUserId={currentUserId}
-            currentUsername={currentUsername}
-            currentUserRole={currentUserRole}
-            currentUserAvatar={currentUserAvatar}
-            onAvatarChange={(newAvatar) => {
-              setCurrentUserAvatar(newAvatar);
-              localStorage.setItem('luminaUserAvatar', newAvatar);
-            }}
-          />
-        );
-
-      case 'about':
-        return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
-
-      default:
-        // UPDATED: Fallback to Vendor_Expenses
-        return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'user-profile': return <SettingsAndProfilePage {...commonProps} currentUserId={currentUserId} onAvatarChange={setCurrentUserAvatar} />;
+      case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
+      default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
 
-  if (!isLoggedIn) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
-  }
+  if (!isLoggedIn) return <LoginPage onLoginSuccess={handleLoginSuccess} />;
 
   return (
-    <div className="relative min-h-screen w-full bg-gray-100">
-      <Sidebar
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        currentUserRole={currentUserRole}
-        handleLogout={handleLogout}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
-      
-      <main className={`transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
+    <div className="relative min-h-screen w-full bg-gray-100 flex">
+      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} currentUserRole={currentUserRole} handleLogout={handleLogout} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <main className={`transition-all duration-300 flex-grow ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
         {renderContent()}
       </main>
-
-      {/* --- Modals --- */}
-      {showAddDataModal && (
-        <AddDataModal
-          onClose={() => setShowAddDataModal(false)}
-          userId={currentUserId}
-          username={currentUsername}
-          contractOptions={contractOptions}
-          creditCardOptions={creditCardOptions}
-          onDataAdded={fetchEntries}
-        />
-      )}
-
-      {showAddSubkModal && (
-        <AddSubcontractorModal
-          onClose={() => setShowAddSubkModal(false)}
-          userId={currentUserId}
-          username={currentUsername}
-          onDataAdded={fetchEntries}
-        />
-      )}
-
-      {showEditDataModal && (
-        <EditDataModal
-          onClose={() => setShowEditDataModal(false)}
-          userId={currentUserId}
-          userRole={currentUserRole}
-          username={currentUsername}
-          contractOptions={contractOptions}
-          creditCardOptions={creditCardOptions}
-          onDataEdited={fetchEntries}
-        />
-      )}
-
-      {showExportModal && (
-        <ExportModal
-          onClose={() => setShowExportModal(false)}
-          dataEntries={dataEntries}
-          contractOptions={contractOptions}
-          creditCardOptions={creditCardOptions}
-        />
-      )}
-
-      {showEditSubkModal && (
-        <EditSubcontractorModal
-          onClose={() => setShowEditSubkModal(false)}
-          userId={currentUserId}
-          userRole={currentUserRole}
-          entry={selectedEntryForEdit}
-          onDataEdited={fetchEntries}
-        />
-      )}
+      {showAddDataModal && <AddDataModal onClose={() => setShowAddDataModal(false)} userId={currentUserId} username={currentUsername} contractOptions={contractOptions} creditCardOptions={creditCardOptions} onDataAdded={fetchEntries} />}
+      {showAddSubkModal && <AddSubcontractorModal onClose={() => setShowAddSubkModal(false)} userId={currentUserId} username={currentUsername} onDataAdded={fetchEntries} />}
+      {showEditDataModal && <EditDataModal onClose={() => setShowEditDataModal(false)} userId={currentUserId} userRole={currentUserRole} username={currentUsername} contractOptions={contractOptions} creditCardOptions={creditCardOptions} onDataEdited={fetchEntries} />}
+      {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} dataEntries={dataEntries} contractOptions={contractOptions} creditCardOptions={creditCardOptions} />}
+      {showEditSubkModal && <EditSubcontractorModal onClose={() => setShowEditSubkModal(false)} userId={currentUserId} userRole={currentUserRole} entry={selectedEntryForEdit} onDataEdited={fetchEntries} />}
     </div>
   );
 };
