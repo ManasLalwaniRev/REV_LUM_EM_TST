@@ -1034,7 +1034,8 @@ app.post('/api/generate-excel', async (req, res) => {
   } catch (err) { res.status(500).send('Excel Error'); }
 });
 
-// --- Email Records Endpoints (with Versioning Logic) ---
+
+// --- Email Records Endpoints ---
 
 app.get('/api/email-records', async (req, res) => {
   try {
@@ -1046,7 +1047,6 @@ app.get('/api/email-records', async (req, res) => {
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error("GET Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1058,26 +1058,19 @@ app.post('/api/email-records/new', async (req, res) => {
   } = req.body;
 
   try {
-    // Check if the helper function is actually being reached
     const nextKey = await getNextVersionedKey('email_records');
-
     const result = await pool.query(
       `INSERT INTO email_records (
         prime_key, subject, recipient, task, body_type, 
         body_content, sender, contract_short_name, 
         pdf_file_path, email_date, submitter_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [
-        nextKey, subject, recipient, task, bodyType, 
-        bodyContent, sender, contractShortName, 
-        pdfFilePath, emailDate || null, userId
-      ]
+      [nextKey, subject, recipient, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    // IMPORTANT: Log the actual error to Render's logs so you can see it
-    console.error("FULL DATABASE ERROR:", err); 
-    res.status(500).json({ error: "Database failure: " + err.message });
+    console.error("POST Error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -1089,28 +1082,18 @@ app.patch('/api/email-records/:id', async (req, res) => {
   } = req.body;
 
   try {
-    // 1. Get the current prime_key to create a new version (e.g., 6 -> 6.1)
     const original = await pool.query('SELECT prime_key FROM email_records WHERE id = $1', [id]);
-    if (original.rows.length === 0) return res.status(404).json({ error: "Record not found" });
-
     const nextKey = await getNextVersionedKey('email_records', original.rows[0].prime_key);
-
-    // 2. Insert as a NEW row (this is how your version history works)
     const result = await pool.query(
       `INSERT INTO email_records (
         prime_key, subject, recipient, task, body_type, 
         body_content, sender, contract_short_name, 
         pdf_file_path, email_date, submitter_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [
-        nextKey, subject, recipient, task, bodyType, 
-        bodyContent, sender, contractShortName, 
-        pdfFilePath, emailDate || null, userId
-      ]
+      [nextKey, subject, recipient, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("PATCH Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });

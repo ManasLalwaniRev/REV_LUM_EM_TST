@@ -109,3 +109,21 @@
 --     submitter_id INTEGER REFERENCES users(id),
 --     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 -- );
+
+
+-- DROP  TABLE email_records
+-- CREATE TABLE IF NOT EXISTS email_records (
+--     id SERIAL PRIMARY KEY,
+--     prime_key VARCHAR(20) NOT NULL,
+--     subject TEXT,
+--     recipient VARCHAR(255),
+--     task VARCHAR(255),
+--     body_type VARCHAR(50),
+--     body_content TEXT,
+--     sender VARCHAR(255),
+--     contract_short_name VARCHAR(255),
+--     pdf_file_path TEXT,
+--     email_date DATE DEFAULT CURRENT_DATE,
+--     submitter_id INTEGER REFERENCES users(id),
+--     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+-- );
