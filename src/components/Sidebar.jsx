@@ -251,7 +251,8 @@ import {
   Info,
   Book,
   LayoutDashboard,
-  Mail // 1. Import the 'Info' icon for the About page
+  Mail,
+   // 1. Import the 'Info' icon for the About page
 } from "lucide-react";
 
 // Individual Sidebar Item Component (no changes needed here)
@@ -290,7 +291,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
   { page: 'subcontractor-assignments', label: 'SubK Assignments', icon: <Users className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
   { page: 'accountant', label: 'SLA', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
     { page: 'bill', label: 'Billing', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-    // { id: 'emails', label: 'Email Records', icon: <Mail size={20} /> },
+    { id: 'emails', label: 'Email Records', icon: <Mail size={20} /> },
     { 
     page: 'dashboard', 
     label: 'Financial Dashboard', 
