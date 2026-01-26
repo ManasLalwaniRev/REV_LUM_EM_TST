@@ -1694,6 +1694,7 @@ import EditSubcontractorModal from '@/components/EditSubcontractorModal.jsx';
 import BillingPage from '@/components/BillingPage.jsx';
 import EmailRecords from '@/components/EmailRecords.jsx';
 
+
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
 const App = () => {
@@ -1821,7 +1822,8 @@ const App = () => {
       case 'settings':
       case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
       case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
-      case 'emails':  return <EmailRecords {...commonProps} />;
+      case 'emails': 
+  return <EmailRecords {...commonProps} dataEntries={dataEntries || []} />;
       default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
