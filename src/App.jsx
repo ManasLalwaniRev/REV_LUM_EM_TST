@@ -1696,12 +1696,11 @@ import BillingPage from '@/components/BillingPage.jsx';
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
 const App = () => {
-  // --- States ---
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('luminaUser'));
   const [currentPage, setCurrentPage] = useState('view');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Modal & Selection States
+  // Modal States
   const [showEditSubkModal, setShowEditSubkModal] = useState(false);
   const [selectedEntryForEdit, setSelectedEntryForEdit] = useState(null);
   const [showAddDataModal, setShowAddDataModal] = useState(false);
@@ -1715,23 +1714,20 @@ const App = () => {
   const [currentUserRole, setCurrentUserRole] = useState(() => localStorage.getItem('luminaUserRole'));
   const [currentUserAvatar, setCurrentUserAvatar] = useState(() => localStorage.getItem('luminaUserAvatar') || DEFAULT_AVATAR);
 
-  // Data & Options State
+  // Data State
   const [dataEntries, setDataEntries] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [contractOptions, setContractOptions] = useState([]);
   const [creditCardOptions, setCreditCardOptions] = useState([]);
 
-  // Use correct API fallback for local testing
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-  // --- Dynamic Data Fetching ---
+  // --- Dynamic Fetching logic for Screen-Specific Tables ---
   const fetchEntries = async () => {
     if (!isLoggedIn) return;
     setIsLoading(true);
-    setError(null);
 
-    // Map current page to its specific backend table
     const endpointMap = {
       'view': 'vendor-expenses',
       'credit-card-expenses': 'credit-card-expenses',
@@ -1744,16 +1740,15 @@ const App = () => {
 
     try {
       const response = await fetch(`${API_BASE_URL}/${currentEndpoint}?userId=${currentUserId}&userRole=${currentUserRole}`);
-      if (!response.ok) throw new Error('Failed to fetch data entries');
+      if (!response.ok) throw new Error('Failed to fetch data');
       const data = await response.json();
       
-      // Transform snake_case from DB to camelCase for React components
       const snakeToCamel = (obj) => {
         if (Array.isArray(obj)) return obj.map(v => snakeToCamel(v));
         if (obj !== null && typeof obj === 'object') {
           return Object.keys(obj).reduce((acc, key) => {
             let camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
-            // Explicit mapping for vendor_id to vendorId as requested
+            // Map DB vendor_id to state vendorId for the Vendor screen
             if (key === 'vendor_id') camelKey = 'vendorId'; 
             acc[camelKey] = snakeToCamel(obj[key]);
             return acc;
@@ -1762,32 +1757,19 @@ const App = () => {
         return obj;
       };
       setDataEntries(snakeToCamel(data));
-    } catch (err) {
-      console.error(err);
-      setError('Failed to load data. Please try again later.');
-    } finally {
-      setIsLoading(false);
-    }
+    } catch (err) { setError('Failed to load data.'); } finally { setIsLoading(false); }
   };
 
-  // --- Resilient Dropdown Option Fetching ---
+  // --- Independent Option Fetching ---
   const fetchOptions = async () => {
     try {
-      // Use allSettled so one failure doesn't block the other
       const [contractsRes, cardsRes] = await Promise.allSettled([
         fetch(`${API_BASE_URL}/contract-options`),
         fetch(`${API_BASE_URL}/credit-card-options`),
       ]);
-
-      if (contractsRes.status === 'fulfilled' && contractsRes.value.ok) {
-        setContractOptions(await contractsRes.value.json());
-      }
-      if (cardsRes.status === 'fulfilled' && cardsRes.value.ok) {
-        setCreditCardOptions(await cardsRes.value.json());
-      }
-    } catch (error) {
-      console.error("Critical failure fetching dropdown options:", error);
-    }
+      if (contractsRes.status === 'fulfilled' && contractsRes.value.ok) setContractOptions(await contractsRes.value.json());
+      if (cardsRes.status === 'fulfilled' && cardsRes.value.ok) setCreditCardOptions(await cardsRes.value.json());
+    } catch (error) { console.error("Options failed", error); }
   };
 
   useEffect(() => {
@@ -1795,7 +1777,7 @@ const App = () => {
       fetchEntries();
       fetchOptions();
     }
-  }, [isLoggedIn, currentUserId, currentPage]); // Re-fetch when page changes
+  }, [isLoggedIn, currentUserId, currentPage]);
 
   const handleLoginSuccess = (userId, username, role, avatar) => {
     const selectedAvatar = avatar || DEFAULT_AVATAR;
@@ -1804,7 +1786,6 @@ const App = () => {
     localStorage.setItem('luminaUsername', username);
     localStorage.setItem('luminaUserRole', role);
     localStorage.setItem('luminaUserAvatar', selectedAvatar);
-
     setIsLoggedIn(true);
     setCurrentUserId(userId);
     setCurrentUsername(username);
@@ -1816,154 +1797,46 @@ const App = () => {
   const handleLogout = () => {
     localStorage.clear();
     setIsLoggedIn(false);
-    setCurrentUserId(null);
-    setCurrentUsername(null);
-    setCurrentUserRole(null);
-    setCurrentUserAvatar(DEFAULT_AVATAR);
-    setDataEntries([]);
     setCurrentPage('login');
   };
 
-  // --- Routing Logic ---
+  const commonProps = {
+    dataEntries, isLoading, error, handleLogout, currentUserRole, currentUserId, 
+    contractOptions, creditCardOptions, userName: currentUsername, userAvatar: currentUserAvatar,
+    onDataChanged: fetchEntries, openEditDataModal: () => setShowEditDataModal(true), openExportModal: () => setShowExportModal(true),
+  };
+
   const renderContent = () => {
-    const commonProps = {
-      dataEntries,
-      isLoading,
-      error,
-      handleLogout,
-      userName: currentUsername,
-      userAvatar: currentUserAvatar,
-      currentUserRole,
-      currentUserId,
-      contractOptions,
-      creditCardOptions,
-      onDataChanged: fetchEntries,
-      openEditDataModal: () => setShowEditDataModal(true),
-      openExportModal: () => setShowExportModal(true),
-    };
-
     switch (currentPage) {
-      case 'view':
-        return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
-      
-      case 'credit-card-expenses':
-        return <CreditCardExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
-      
-      case 'travel-expenses':
-        return <TravelExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
-      
+      case 'view': return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'credit-card-expenses': return <CreditCardExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'travel-expenses': return <TravelExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
       case 'subcontractor-assignments':
-        return (
-          <SubcontractorAssignments 
-            {...commonProps} 
-            openAddSubkModal={() => setShowAddSubkModal(true)}
-            openEditSubkModal={(entry) => {
-              setSelectedEntryForEdit(entry);
-              setShowEditSubkModal(true);
-            }}  
-          />
-        );
-
-      case 'bill':
-        return <BillingPage {...commonProps} />;  
-
-      case 'dashboard':
-        return <FinancialDashboard {...commonProps} />;
-
-      case 'accountant':
-        return <SLA {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} />;
-
+        return <SubcontractorAssignments {...commonProps} openAddSubkModal={() => setShowAddSubkModal(true)} openEditSubkModal={(e) => { setSelectedEntryForEdit(e); setShowEditSubkModal(true); }} />;
+      case 'bill': return <BillingPage {...commonProps} />;  
+      case 'dashboard': return <FinancialDashboard {...commonProps} />;
+      case 'accountant': return <SLA {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} />;
       case 'settings':
-      case 'user-profile':
-        return (
-          <SettingsAndProfilePage
-            {...commonProps}
-            setCurrentPage={setCurrentPage}
-            onAvatarChange={(newAvatar) => {
-              setCurrentUserAvatar(newAvatar);
-              localStorage.setItem('luminaUserAvatar', newAvatar);
-            }}
-          />
-        );
-
-      case 'about':
-        return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
-
-      default:
-        return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
+      case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
+      case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
+      default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
 
-  if (!isLoggedIn) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
-  }
+  if (!isLoggedIn) return <LoginPage onLoginSuccess={handleLoginSuccess} />;
 
   return (
     <div className="relative min-h-screen w-full bg-gray-100 flex">
-      <Sidebar
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        currentUserRole={currentUserRole}
-        handleLogout={handleLogout}
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-      />
-      
+      <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} currentUserRole={currentUserRole} handleLogout={handleLogout} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       <main className={`transition-all duration-300 flex-grow ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
         {renderContent()}
       </main>
-
-      {/* --- Modals --- */}
-      {showAddDataModal && (
-        <AddDataModal
-          onClose={() => setShowAddDataModal(false)}
-          userId={currentUserId}
-          username={currentUsername}
-          contractOptions={contractOptions}
-          creditCardOptions={creditCardOptions}
-          onDataAdded={fetchEntries}
-        />
-      )}
-
-      {showAddSubkModal && (
-        <AddSubcontractorModal
-          onClose={() => setShowAddSubkModal(false)}
-          userId={currentUserId}
-          username={currentUsername}
-          onDataAdded={fetchEntries}
-        />
-      )}
-
-      {showEditDataModal && (
-        <EditDataModal
-          onClose={() => setShowEditDataModal(false)}
-          userId={currentUserId}
-          userRole={currentUserRole}
-          username={currentUsername}
-          contractOptions={contractOptions}
-          creditCardOptions={creditCardOptions}
-          onDataEdited={fetchEntries}
-        />
-      )}
-
-      {showExportModal && (
-        <ExportModal
-          onClose={() => setShowExportModal(false)}
-          dataEntries={dataEntries}
-          contractOptions={contractOptions}
-          creditCardOptions={creditCardOptions}
-        />
-      )}
-
-      {showEditSubkModal && (
-        <EditSubcontractorModal
-          onClose={() => setShowEditSubkModal(false)}
-          userId={currentUserId}
-          userRole={currentUserRole}
-          entry={selectedEntryForEdit}
-          onDataEdited={fetchEntries}
-        />
-      )}
+      {/* ... (Modals remain identical to previous versions) ... */}
+      {showAddDataModal && <AddDataModal onClose={() => setShowAddDataModal(false)} userId={currentUserId} username={currentUsername} contractOptions={contractOptions} creditCardOptions={creditCardOptions} onDataAdded={fetchEntries} />}
+      {showAddSubkModal && <AddSubcontractorModal onClose={() => setShowAddSubkModal(false)} userId={currentUserId} username={currentUsername} onDataAdded={fetchEntries} />}
+      {showEditDataModal && <EditDataModal onClose={() => setShowEditDataModal(false)} userId={currentUserId} userRole={currentUserRole} username={currentUsername} contractOptions={contractOptions} creditCardOptions={creditCardOptions} onDataEdited={fetchEntries} />}
+      {showExportModal && <ExportModal onClose={() => setShowExportModal(false)} dataEntries={dataEntries} contractOptions={contractOptions} creditCardOptions={creditCardOptions} />}
+      {showEditSubkModal && <EditSubcontractorModal onClose={() => setShowEditSubkModal(false)} userId={currentUserId} userRole={currentUserRole} entry={selectedEntryForEdit} onDataEdited={fetchEntries} />}
     </div>
   );
 };
