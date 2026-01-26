@@ -1058,7 +1058,7 @@ app.post('/api/email-records/new', async (req, res) => {
   } = req.body;
 
   try {
-    // Generate the next prime_key (e.g., if last was 5, this becomes 6)
+    // Check if the helper function is actually being reached
     const nextKey = await getNextVersionedKey('email_records');
 
     const result = await pool.query(
@@ -1075,8 +1075,9 @@ app.post('/api/email-records/new', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("POST Error:", err.message);
-    res.status(500).json({ error: err.message });
+    // IMPORTANT: Log the actual error to Render's logs so you can see it
+    console.error("FULL DATABASE ERROR:", err); 
+    res.status(500).json({ error: "Database failure: " + err.message });
   }
 });
 
