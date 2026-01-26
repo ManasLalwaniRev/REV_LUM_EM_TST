@@ -1034,4 +1034,46 @@ app.post('/api/generate-excel', async (req, res) => {
   } catch (err) { res.status(500).send('Excel Error'); }
 });
 
+// --- Email Records Endpoints ---
+app.get('/api/email-records', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT er.*, u.username as submitter_name 
+      FROM email_records er 
+      JOIN users u ON er.submitter_id = u.id 
+      ORDER BY er.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/email-records/new', async (req, res) => {
+  const { contractShortName, vendorName, subject, emailDate, sender, recipient, notes, pdfFilePath, userId } = req.body;
+  try {
+    const nextKey = await getNextVersionedKey('email_records');
+    const result = await pool.query(
+      `INSERT INTO email_records (prime_key, contract_short_name, vendor_name, subject, email_date, sender, recipient, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [nextKey, contractShortName, vendorName, subject, emailDate || null, sender, recipient, notes, pdfFilePath, userId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/email-records/:id', async (req, res) => {
+  const { id } = req.params;
+  const { contractShortName, vendorName, subject, emailDate, sender, recipient, notes, pdfFilePath, userId } = req.body;
+  try {
+    const original = await pool.query('SELECT prime_key FROM email_records WHERE id = $1', [id]);
+    const nextKey = await getNextVersionedKey('email_records', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO email_records (prime_key, contract_short_name, vendor_name, subject, email_date, sender, recipient, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      [nextKey, contractShortName, vendorName, subject, emailDate || null, sender, recipient, notes, pdfFilePath, userId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

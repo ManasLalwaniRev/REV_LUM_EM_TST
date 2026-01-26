@@ -1692,6 +1692,7 @@ import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx'
 import AddSubcontractorModal from '@/components/AddSubcontractorModal.jsx';
 import EditSubcontractorModal from '@/components/EditSubcontractorModal.jsx';
 import BillingPage from '@/components/BillingPage.jsx';
+import EmailRecords from '@/components/EmailRecords.jsx';
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
@@ -1733,7 +1734,8 @@ const App = () => {
       'credit-card-expenses': 'credit-card-expenses',
       'travel-expenses': 'travel-expenses',
       'subcontractor-assignments': 'subcontractor-assignments',
-      'bill': 'billing'
+      'bill': 'billing',
+      'emails': 'email-records'
     };
     
     const currentEndpoint = endpointMap[currentPage] || 'vendor-expenses';
@@ -1819,6 +1821,7 @@ const App = () => {
       case 'settings':
       case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
       case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
+      case 'emails':  return <EmailRecords {...commonProps} />;
       default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
