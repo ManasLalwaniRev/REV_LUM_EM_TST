@@ -250,7 +250,8 @@ import {
   Users,
   Info,
   Book,
-  LayoutDashboard // 1. Import the 'Info' icon for the About page
+  LayoutDashboard,
+  Mail // 1. Import the 'Info' icon for the About page
 } from "lucide-react";
 
 // Individual Sidebar Item Component (no changes needed here)
