@@ -419,6 +419,7 @@ const Vendor_Expenses = ({
 
   // FIXED: Point to the dedicated vendor-expenses endpoint
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses`;
+  
 
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },

@@ -866,8 +866,49 @@ pool.connect((err, client, done) => {
     return;
   }
   console.log('Successfully connected to PostgreSQL database!');
-  client.release();
+  if (client) client.release();
 });
+
+// --- Versioning Helper Function ---
+/**
+ * tableName: The DB table to check (e.g., vendor_expenses)
+ * baseKey: if provided, generates a version (1.1). If null, generates a new base key (2).
+ */
+async function getNextVersionedKey(tableName, baseKey = null) {
+  const client = await pool.connect();
+  try {
+    if (baseKey) {
+      // SCENARIO: VERSIONING (e.g., 1.1, 1.2)
+      const originalBase = String(baseKey).split('.')[0];
+      const result = await client.query(
+        `SELECT prime_key FROM ${tableName} 
+         WHERE prime_key ~ $1 
+         ORDER BY CAST(SPLIT_PART(prime_key, '.', 2) AS INTEGER) DESC LIMIT 1`,
+        [`^${originalBase}\\.\\d+$`]
+      );
+
+      if (result.rows.length > 0) {
+        const lastVersion = parseInt(result.rows[0].prime_key.split('.')[1], 10);
+        return `${originalBase}.${lastVersion + 1}`;
+      }
+      return `${originalBase}.1`;
+    } else {
+      // SCENARIO: NEW BASE RECORD (e.g., 1, 2, 3)
+      const result = await client.query(
+        `SELECT prime_key FROM ${tableName} 
+         WHERE prime_key NOT LIKE '%.%' 
+         ORDER BY CAST(NULLIF(prime_key, '') AS INTEGER) DESC LIMIT 1`
+      );
+      const maxKey = result.rows.length > 0 ? parseInt(result.rows[0].prime_key, 10) : 0;
+      return (maxKey + 1).toString();
+    }
+  } catch (err) {
+    console.error("Key Generation Error:", err);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 // --- Authentication ---
 app.post('/api/login', async (req, res) => {
@@ -876,8 +917,6 @@ app.post('/api/login', async (req, res) => {
   try {
     const userResult = await pool.query('SELECT id, username, password_hash, role, avtr FROM users WHERE username = $1', [username]);
     const user = userResult.rows[0];
-
-    // Preserved login logic: Supports both bcrypt and plain text (for local test seeds)
     if (user) {
       const isMatch = await bcrypt.compare(password, user.password_hash).catch(() => password === user.password_hash);
       if (isMatch) {
@@ -886,38 +925,24 @@ app.post('/api/login', async (req, res) => {
       }
     }
     res.status(401).json({ message: 'Invalid credentials' });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// --- Admin Options (Dropdown Data) ---
+// --- Admin Options ---
 app.get('/api/credit-card-options', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
-    res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: 'Failed to fetch card options' }); }
+  const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
+  res.json(result.rows);
 });
 
 app.get('/api/contract-options', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, name FROM contract_options ORDER BY name ASC');
-    res.json(result.rows);
-  } catch (err) { res.status(500).json({ error: 'Failed to fetch contract options' }); }
+  const result = await pool.query('SELECT id, name FROM contract_options ORDER BY name ASC');
+  res.json(result.rows);
 });
 
-// --- Screen Specific Routes ---
-
-// 1. Vendor Expenses (FIXED: Mapped to vendor_id)
+// --- Vendor Expenses (VERSIONED) ---
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT ve.*, u.username as submitter_name 
-      FROM vendor_expenses ve 
-      JOIN users u ON ve.submitter_id = u.id 
-      ORDER BY ve.created_at DESC
-    `);
+    const result = await pool.query(`SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC`);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -925,88 +950,88 @@ app.get('/api/vendor-expenses', async (req, res) => {
 app.post('/api/vendor-expenses/new', async (req, res) => {
   const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
   try {
+    const nextKey = await getNextVersionedKey('vendor_expenses');
     const result = await pool.query(
-      `INSERT INTO vendor_expenses (vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 2. Credit Card Expenses
-app.get('/api/credit-card-expenses', async (req, res) => {
+app.patch('/api/vendor-expenses/:id', async (req, res) => {
+  const { id } = req.params;
+  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
   try {
-    const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
-    res.json(result.rows);
+    const original = await pool.query('SELECT prime_key FROM vendor_expenses WHERE id = $1', [id]);
+    const nextKey = await getNextVersionedKey('vendor_expenses', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+    );
+    res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- Credit Card Expenses (VERSIONED) ---
+app.get('/api/credit-card-expenses', async (req, res) => {
+  const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
+  res.json(result.rows);
 });
 
 app.post('/api/credit-card-expenses/new', async (req, res) => {
   const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
   try {
+    const nextKey = await getNextVersionedKey('credit_card_expenses');
     const result = await pool.query(
-      `INSERT INTO credit_card_expenses (credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// 3. Travel Expenses
+app.patch('/api/credit-card-expenses/:id', async (req, res) => {
+  const { id } = req.params;
+  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  try {
+    const original = await pool.query('SELECT prime_key FROM credit_card_expenses WHERE id = $1', [id]);
+    const nextKey = await getNextVersionedKey('credit_card_expenses', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- Travel Expenses ---
 app.get('/api/travel-expenses', async (req, res) => {
-  try {
-    const result = await pool.query(`SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC`);
-    res.json(result.rows.map(row => ({
-      id: row.id, contractShortName: row.contract_short_name, pdfFilePath: row.pdf_file_path, notes: row.notes, submitter: row.submitter_name
-    })));
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  const result = await pool.query(`SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC`);
+  res.json(result.rows.map(row => ({ id: row.id, contractShortName: row.contract_short_name, pdfFilePath: row.pdf_file_path, notes: row.notes, submitter: row.submitter_name })));
 });
 
-// 4. Subcontractor Assignments
-app.get('/api/subcontractor-assignments', async (req, res) => {
-  try {
-    const result = await pool.query(`SELECT sa.*, u.username as submitter_name FROM subcontractor_assignments sa JOIN users u ON sa.submitter_id = u.id ORDER BY sa.created_at DESC`);
-    res.json(result.rows.map(row => ({
-      id: row.id, poNo: row.po_no, subkName: row.subk_name, employeeName: row.employee_name, projectCode: row.project_code, plc: row.plc, notes: row.notes, submitter: row.submitter_name
-    })));
-  } catch (err) { res.status(500).json({ error: err.message }); }
+app.post('/api/travel-expenses/new', async (req, res) => {
+  const { contractShortName, pdfFilePath, notes, userId } = req.body;
+  const result = await pool.query(`INSERT INTO travel_expenses (contract_short_name, pdf_file_path, notes, submitter_id) VALUES ($1, $2, $3, $4) RETURNING *`, [contractShortName, pdfFilePath, notes, userId]);
+  res.status(201).json(result.rows[0]);
 });
 
-// --- Excel Generation ---
+// --- Excel & Server Start ---
 app.post('/api/generate-excel', async (req, res) => {
   try {
     const dataForSheet = req.body.data;
-    if (!dataForSheet || dataForSheet.length === 0) return res.status(400).json({ error: 'No data' });
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('DataEntries');
-    const logoPath = path.join(__dirname, 'assets', 'Lumina_logo.png'); 
-    if (fs.existsSync(logoPath)) {
-      const logoImage = workbook.addImage({ buffer: fs.readFileSync(logoPath), extension: 'png' });
-      sheet.addImage(logoImage, 'A1:B5');
-    }
-    sheet.getCell('A6').value = `Generated on: ${new Date().toLocaleString()}`;
-    const headers = Object.keys(dataForSheet[0]);
-    const headerRow = sheet.getRow(8);
-    headers.forEach((header, index) => {
-      const cell = headerRow.getCell(index + 1);
-      cell.value = header;
-      cell.font = { bold: true };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
-      sheet.getColumn(index + 1).width = 25;
-    });
-    headerRow.commit();
-    dataForSheet.forEach((dataRow, rowIndex) => {
-      const row = sheet.getRow(9 + rowIndex);
-      headers.forEach((header, colIndex) => { row.getCell(colIndex + 1).value = dataRow[header]; });
-      row.commit();
-    });
+    const sheet = workbook.addWorksheet('Data');
+    sheet.addRows(dataForSheet);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=LuminaExport.xlsx');
     await workbook.xlsx.write(res);
     res.end();
-  } catch (err) { res.status(500).json({ error: 'Excel generation failed' }); }
+  } catch (err) { res.status(500).send('Excel Error'); }
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
