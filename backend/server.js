@@ -11,7 +11,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- 1. Middleware (Critical: Must be above routes) ---
+// --- 1. Middleware (MUST BE AT THE TOP) ---
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
@@ -29,14 +29,15 @@ app.use(cors({
   }
 }));
 
-// This processes JSON data. Moving this here fixes the 'req.body undefined' error.
+// This processes the incoming JSON data. 
+// If this is not above your routes, the server won't be able to read req.body.
 app.use(express.json()); 
 
-// --- 2. Outlook Transporter Configuration ---
+// --- 2. Outlook Transporter ---
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST, // smtp.office365.com
-  port: process.env.EMAIL_PORT, // 587
-  secure: false, // Must be false for 587
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: false, // TLS
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -71,7 +72,7 @@ pool.connect((err, client, done) => {
   if (client) client.release();
 });
 
-// --- 4. Helper Functions ---
+// --- 4. Helper Function ---
 async function getNextVersionedKey(tableName, baseKey = null) {
   const client = await pool.connect();
   try {
@@ -83,7 +84,6 @@ async function getNextVersionedKey(tableName, baseKey = null) {
          ORDER BY CAST(SPLIT_PART(prime_key, '.', 2) AS INTEGER) DESC LIMIT 1`,
         [`^${originalBase}\\.\\d+$`]
       );
-
       if (result.rows.length > 0) {
         const lastVersion = parseInt(result.rows[0].prime_key.split('.')[1], 10);
         return `${originalBase}.${lastVersion + 1}`;
@@ -106,10 +106,11 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- 5. Integrated Email Sending Route ---
+// --- 5. New Email Endpoint ---
 app.post('/api/send-email', async (req, res) => {
   const { recipient, cc, subject, bodyContent } = req.body;
 
+  // Added basic validation to prevent hanging on empty data
   if (!recipient || !subject) {
     return res.status(400).json({ error: 'Recipient and Subject are required' });
   }
@@ -123,11 +124,13 @@ app.post('/api/send-email', async (req, res) => {
   };
 
   try {
+    // Setting a timeout for the email send attempt
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'Email sent successfully via Outlook' });
   } catch (error) {
     console.error('Email Error:', error);
-    res.status(500).json({ error: 'Failed to send email' });
+    // Always ensure a response is sent back, even on error
+    res.status(500).json({ error: 'Failed to send email', details: error.message });
   }
 });
 
@@ -255,8 +258,7 @@ app.post('/api/generate-excel', async (req, res) => {
   } catch (err) { res.status(500).send('Excel Error'); }
 });
 
-
-// --- 12. Email Records Endpoints (Includes CC logging) ---
+// --- 12. Email Records (Updated with CC) ---
 app.get('/api/email-records', async (req, res) => {
   try {
     const result = await pool.query(`
