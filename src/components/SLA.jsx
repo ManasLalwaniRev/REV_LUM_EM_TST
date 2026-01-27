@@ -3565,8 +3565,19 @@ const SLA = ({ dataEntries, isLoading, error, fetchEntries, userId, userRole, us
   // --- Filtered Data based on Tab ---
   // Note: In production, ensure dataEntries has a 'type' field or separate arrays
   const filteredData = useMemo(() => {
-    if (!dataEntries) return [];
-    return dataEntries.filter(entry => entry.moduleType === activeTab);
+    if (!dataEntries || !Array.isArray(dataEntries)) return [];
+
+    return dataEntries.filter(entry => {
+      // 1. Explicit check
+      if (entry.moduleType === activeTab) return true;
+
+      // 2. Fallback check (in case moduleType didn't attach)
+      if (activeTab === 'vendor' && (entry.vendorName || entry.vendor_name)) return true;
+      if (activeTab === 'email' && (entry.subject || entry.recipient)) return true;
+      if (activeTab === 'bill' && (entry.invoiceNo || entry.invoice_no)) return true;
+
+      return false;
+    });
   }, [dataEntries, activeTab]);
 
   const groupedEntries = useMemo(() => {
