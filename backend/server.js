@@ -1,5 +1,3 @@
-///////////////////
-
 require('dotenv').config();
 const ExcelJS = require('exceljs');
 const fs = require('fs');
@@ -8,55 +6,18 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- Middleware ---
+// --- 1. Middleware (Critical: Must be above routes) ---
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'https://lumina-three-rho.vercel.app',
   'https://rev-lum-em-tst.vercel.app'
 ];
-
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false, // Must be false for port 587
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    ciphers: 'SSLv3',
-    rejectUnauthorized: false
-  }
-});
-
-app.post('/api/send-email', async (req, res) => {
-  const { recipient, cc, subject, bodyContent } = req.body;
-
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: recipient,
-    cc: cc, // Nodemailer handles comma-separated strings automatically
-    subject: subject,
-    text: bodyContent,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Email sent successfully' });
-  } catch (error) {
-    console.error('Email Error:', error);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
-});
-
-
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -67,9 +28,26 @@ app.use(cors({
     }
   }
 }));
-app.use(express.json());
 
-// --- PostgreSQL Connection Pool ---
+// This processes JSON data. Moving this here fixes the 'req.body undefined' error.
+app.use(express.json()); 
+
+// --- 2. Outlook Transporter Configuration ---
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST, // smtp.office365.com
+  port: process.env.EMAIL_PORT, // 587
+  secure: false, // Must be false for 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    ciphers: 'SSLv3',
+    rejectUnauthorized: false
+  }
+});
+
+// --- 3. PostgreSQL Connection Pool ---
 const dbConfig = {};
 if (process.env.NODE_ENV === 'production') {
   dbConfig.connectionString = process.env.DATABASE_URL;
@@ -93,16 +71,11 @@ pool.connect((err, client, done) => {
   if (client) client.release();
 });
 
-// --- Versioning Helper Function ---
-/**
- * tableName: The DB table to check (e.g., vendor_expenses)
- * baseKey: if provided, generates a version (1.1). If null, generates a new base key (2).
- */
+// --- 4. Helper Functions ---
 async function getNextVersionedKey(tableName, baseKey = null) {
   const client = await pool.connect();
   try {
     if (baseKey) {
-      // SCENARIO: VERSIONING (e.g., 1.1, 1.2)
       const originalBase = String(baseKey).split('.')[0];
       const result = await client.query(
         `SELECT prime_key FROM ${tableName} 
@@ -117,7 +90,6 @@ async function getNextVersionedKey(tableName, baseKey = null) {
       }
       return `${originalBase}.1`;
     } else {
-      // SCENARIO: NEW BASE RECORD (e.g., 1, 2, 3)
       const result = await client.query(
         `SELECT prime_key FROM ${tableName} 
          WHERE prime_key NOT LIKE '%.%' 
@@ -134,7 +106,32 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- Authentication ---
+// --- 5. Integrated Email Sending Route ---
+app.post('/api/send-email', async (req, res) => {
+  const { recipient, cc, subject, bodyContent } = req.body;
+
+  if (!recipient || !subject) {
+    return res.status(400).json({ error: 'Recipient and Subject are required' });
+  }
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: recipient,
+    cc: cc || '', 
+    subject: subject,
+    text: bodyContent,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Email sent successfully via Outlook' });
+  } catch (error) {
+    console.error('Email Error:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+// --- 6. Authentication ---
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const clientIp = req.headers['x-forwarded-for'] || req.ip;
@@ -152,7 +149,7 @@ app.post('/api/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// --- Admin Options ---
+// --- 7. Admin Options ---
 app.get('/api/credit-card-options', async (req, res) => {
   const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
   res.json(result.rows);
@@ -163,7 +160,7 @@ app.get('/api/contract-options', async (req, res) => {
   res.json(result.rows);
 });
 
-// --- Vendor Expenses (VERSIONED) ---
+// --- 8. Vendor Expenses ---
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
     const result = await pool.query(`SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC`);
@@ -199,7 +196,7 @@ app.patch('/api/vendor-expenses/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- Credit Card Expenses (VERSIONED) ---
+// --- 9. Credit Card Expenses ---
 app.get('/api/credit-card-expenses', async (req, res) => {
   const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
   res.json(result.rows);
@@ -233,7 +230,7 @@ app.patch('/api/credit-card-expenses/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- Travel Expenses ---
+// --- 10. Travel Expenses ---
 app.get('/api/travel-expenses', async (req, res) => {
   const result = await pool.query(`SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC`);
   res.json(result.rows.map(row => ({ id: row.id, contractShortName: row.contract_short_name, pdfFilePath: row.pdf_file_path, notes: row.notes, submitter: row.submitter_name })));
@@ -245,7 +242,7 @@ app.post('/api/travel-expenses/new', async (req, res) => {
   res.status(201).json(result.rows[0]);
 });
 
-// --- Excel & Server Start ---
+// --- 11. Excel Generation ---
 app.post('/api/generate-excel', async (req, res) => {
   try {
     const dataForSheet = req.body.data;
@@ -259,8 +256,7 @@ app.post('/api/generate-excel', async (req, res) => {
 });
 
 
-// --- Email Records Endpoints ---
-
+// --- 12. Email Records Endpoints (Includes CC logging) ---
 app.get('/api/email-records', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -277,7 +273,7 @@ app.get('/api/email-records', async (req, res) => {
 
 app.post('/api/email-records/new', async (req, res) => {
   const { 
-    subject, recipient, task, bodyType, bodyContent, 
+    subject, recipient, cc, task, bodyType, bodyContent, 
     contractShortName, sender, pdfFilePath, emailDate, userId 
   } = req.body;
 
@@ -285,11 +281,11 @@ app.post('/api/email-records/new', async (req, res) => {
     const nextKey = await getNextVersionedKey('email_records');
     const result = await pool.query(
       `INSERT INTO email_records (
-        prime_key, subject, recipient, task, body_type, 
+        prime_key, subject, recipient, cc_recipients, task, body_type, 
         body_content, sender, contract_short_name, 
         pdf_file_path, email_date, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [nextKey, subject, recipient, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [nextKey, subject, recipient, cc || null, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -301,7 +297,7 @@ app.post('/api/email-records/new', async (req, res) => {
 app.patch('/api/email-records/:id', async (req, res) => {
   const { id } = req.params;
   const { 
-    subject, recipient, task, bodyType, bodyContent, 
+    subject, recipient, cc, task, bodyType, bodyContent, 
     contractShortName, sender, pdfFilePath, emailDate, userId 
   } = req.body;
 
@@ -310,11 +306,11 @@ app.patch('/api/email-records/:id', async (req, res) => {
     const nextKey = await getNextVersionedKey('email_records', original.rows[0].prime_key);
     const result = await pool.query(
       `INSERT INTO email_records (
-        prime_key, subject, recipient, task, body_type, 
+        prime_key, subject, recipient, cc_recipients, task, body_type, 
         body_content, sender, contract_short_name, 
         pdf_file_path, email_date, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [nextKey, subject, recipient, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [nextKey, subject, recipient, cc || null, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
