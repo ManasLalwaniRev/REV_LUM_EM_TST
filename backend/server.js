@@ -11,7 +11,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- 1. Middleware (MUST BE AT THE TOP) ---
+// --- 1. Middleware (Critical: MUST be at the top to avoid req.body errors) ---
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
@@ -29,23 +29,24 @@ app.use(cors({
   }
 }));
 
-// This processes the incoming JSON data. 
-// If this is not above your routes, the server won't be able to read req.body.
+// This processes JSON data. Having this above routes fixes the 'req.body undefined' error.
 app.use(express.json()); 
 
-// --- 2. Outlook Transporter ---
+// --- 2. Outlook Transporter Configuration (Fixed for Timeout) ---
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: false, // TLS
+  host: "smtp.office365.com",
+  port: 587,
+  secure: false, // TLS requires secure: false for port 587
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS, // Your 16-character App Password
   },
   tls: {
-    ciphers: 'SSLv3',
+    ciphers: 'SSLv1.2', 
     rejectUnauthorized: false
-  }
+  },
+  connectionTimeout: 15000, // 15 seconds timeout to prevent hanging
+  greetingTimeout: 15000
 });
 
 // --- 3. PostgreSQL Connection Pool ---
@@ -72,7 +73,7 @@ pool.connect((err, client, done) => {
   if (client) client.release();
 });
 
-// --- 4. Helper Function ---
+// --- 4. Helper Function: Versioning ---
 async function getNextVersionedKey(tableName, baseKey = null) {
   const client = await pool.connect();
   try {
@@ -106,11 +107,10 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- 5. New Email Endpoint ---
+// --- 5. New Send Email Route ---
 app.post('/api/send-email', async (req, res) => {
   const { recipient, cc, subject, bodyContent } = req.body;
 
-  // Added basic validation to prevent hanging on empty data
   if (!recipient || !subject) {
     return res.status(400).json({ error: 'Recipient and Subject are required' });
   }
@@ -124,12 +124,11 @@ app.post('/api/send-email', async (req, res) => {
   };
 
   try {
-    // Setting a timeout for the email send attempt
+    console.log(`Attempting to send email to ${recipient}...`);
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'Email sent successfully via Outlook' });
   } catch (error) {
-    console.error('Email Error:', error);
-    // Always ensure a response is sent back, even on error
+    console.error('Detailed Email Error:', error);
     res.status(500).json({ error: 'Failed to send email', details: error.message });
   }
 });
@@ -258,7 +257,7 @@ app.post('/api/generate-excel', async (req, res) => {
   } catch (err) { res.status(500).send('Excel Error'); }
 });
 
-// --- 12. Email Records (Updated with CC) ---
+// --- 12. Email Records History Endpoints (Updated with CC History) ---
 app.get('/api/email-records', async (req, res) => {
   try {
     const result = await pool.query(`
