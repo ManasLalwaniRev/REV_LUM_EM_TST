@@ -20,6 +20,44 @@ const allowedOrigins = [
   'https://rev-lum-em-tst.vercel.app'
 ];
 
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: process.env.EMAIL_PORT,
+  secure: false, // Must be false for port 587
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    ciphers: 'SSLv3',
+    rejectUnauthorized: false
+  }
+});
+
+app.post('/api/send-email', async (req, res) => {
+  const { recipient, cc, subject, bodyContent } = req.body;
+
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: recipient,
+    cc: cc, // Nodemailer handles comma-separated strings automatically
+    subject: subject,
+    text: bodyContent,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Email Error:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+
+
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {

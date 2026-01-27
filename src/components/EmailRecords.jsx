@@ -18,9 +18,33 @@ const EmailRecords = ({ dataEntries = [], isLoading, userName, userAvatar, handl
   const [copied, setCopied] = useState(false);
 
   const [formData, setFormData] = useState({
-    subject: '', recipient: '', task: '', bodyType: '', bodyContent: '', contractShortName: '', sender: userName, pdfFilePath: '', emailDate: new Date().toISOString().split('T')[0]
+    subject: '', recipient: '', task: '', bodyType: '', bodyContent: '', contractShortName: '', sender: userName, pdfFilePath: '', cc: '', emailDate: new Date().toISOString().split('T')[0]
   });
 
+
+
+  const handleSendEmail = async (e) => {
+  e.preventDefault();
+  
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipient: formData.recipient,
+      cc: formData.cc,
+      subject: formData.subject,
+      bodyContent: formData.bodyContent
+    }),
+  });
+
+  if (res.ok) {
+    // Automatically trigger the save logic after a successful send
+    handleSave(e); 
+    alert("Email sent and record saved!");
+  } else {
+    alert("Error sending email via Outlook.");
+  }
+};
   const bodyTemplates = {
     'Report': `Dear Team,\n\nPlease find the attached report for your review.\n\nBest regards,\n${userName}`,
     'Approver': `Hi,\n\nThis record is awaiting your approval.\n\nRegards,\n${userName}`,
@@ -133,6 +157,17 @@ const EmailRecords = ({ dataEntries = [], isLoading, userName, userAvatar, handl
               <input id="recipient" type="text" className="w-full p-2 border rounded" value={formData.recipient} onChange={handleInputChange} required />
             </div>
             <div>
+          <label className="text-xs font-bold uppercase text-gray-400">CC (comma separated)</label>
+          <input 
+            id="cc" 
+            type="text" 
+            className="w-full p-2 border rounded" 
+            value={formData.cc} 
+            onChange={handleInputChange} 
+            placeholder="example@mail.com, test@mail.com"
+          />
+        </div>
+            <div>
               <label className="text-xs font-bold uppercase text-gray-400">Task *</label>
               <input id="task" type="text" className="w-full p-2 border rounded" value={formData.task} onChange={handleInputChange} required />
             </div>
@@ -173,6 +208,21 @@ const EmailRecords = ({ dataEntries = [], isLoading, userName, userAvatar, handl
             <div className="md:col-span-4 flex justify-end gap-3">
               <button type="submit" className="bg-blue-600 text-white px-10 py-2 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2 shadow-lg"><Save size={18}/> Save Record</button>
             </div>
+            <div className="md:col-span-4 flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={handleSendEmail} 
+              className="bg-green-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center gap-2 shadow-lg"
+            >
+              <Mail size={18}/> Send & Save
+            </button>
+            <button 
+              type="submit" 
+              className="bg-blue-600 text-white px-10 py-2 rounded-lg font-bold hover:bg-blue-700 flex items-center gap-2 shadow-lg"
+            >
+              <Save size={18}/> Save Only (No Email)
+            </button>
+          </div>
           </form>
         )}
 
