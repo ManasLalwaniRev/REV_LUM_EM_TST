@@ -1670,7 +1670,6 @@
 
 // export default App;
 
-
 import React, { useState, useEffect } from 'react';
 import LoginPage from '@/components/LoginPage.jsx';
 import Sidebar from '@/components/Sidebar.jsx';
@@ -1693,7 +1692,6 @@ import AddSubcontractorModal from '@/components/AddSubcontractorModal.jsx';
 import EditSubcontractorModal from '@/components/EditSubcontractorModal.jsx';
 import BillingPage from '@/components/BillingPage.jsx';
 import EmailRecords from '@/components/EmailRecords.jsx';
-
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
@@ -1725,45 +1723,84 @@ const App = () => {
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-  // --- Dynamic Fetching logic for Screen-Specific Tables ---
+  // --- Helper: Snake Case to Camel Case ---
+  const snakeToCamel = (obj) => {
+    if (Array.isArray(obj)) return obj.map(v => snakeToCamel(v));
+    if (obj !== null && typeof obj === 'object') {
+      return Object.keys(obj).reduce((acc, key) => {
+        let camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
+        if (key === 'vendor_id') camelKey = 'vendorId'; 
+        if (key === 'prime_key') camelKey = 'primeKey'; // Explicit mapping for versioning
+        acc[camelKey] = snakeToCamel(obj[key]);
+        return acc;
+      }, {});
+    }
+    return obj;
+  };
+
+  // --- REFACTORED FETCH LOGIC ---
   const fetchEntries = async () => {
     if (!isLoggedIn) return;
     setIsLoading(true);
-
-    const endpointMap = {
-      'view': 'vendor-expenses',
-      'credit-card-expenses': 'credit-card-expenses',
-      'travel-expenses': 'travel-expenses',
-      'subcontractor-assignments': 'subcontractor-assignments',
-      'bill': 'billing',
-      'emails': 'email-records'
-    };
-    
-    const currentEndpoint = endpointMap[currentPage] || 'vendor-expenses';
+    setError(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/${currentEndpoint}?userId=${currentUserId}&userRole=${currentUserRole}`);
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data = await response.json();
-      
-      const snakeToCamel = (obj) => {
-        if (Array.isArray(obj)) return obj.map(v => snakeToCamel(v));
-        if (obj !== null && typeof obj === 'object') {
-          return Object.keys(obj).reduce((acc, key) => {
-            let camelKey = key.replace(/_([a-z])/g, g => g[1].toUpperCase());
-            // Map DB vendor_id to state vendorId for the Vendor screen
-            if (key === 'vendor_id') camelKey = 'vendorId'; 
-            acc[camelKey] = snakeToCamel(obj[key]);
-            return acc;
-          }, {});
-        }
-        return obj;
-      };
-      setDataEntries(snakeToCamel(data));
-    } catch (err) { setError('Failed to load data.'); } finally { setIsLoading(false); }
+      // 1. Check if we are on the SLA (Accountant) page - This requires MULTIPLE endpoints
+      if (currentPage === 'accountant') {
+        const [vendorRes, emailRes, billRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/vendor-expenses`),
+          fetch(`${API_BASE_URL}/email-records`),
+          fetch(`${API_BASE_URL}/billing`)
+        ]);
+
+        const [vendors, emails, bills] = await Promise.all([
+          vendorRes.json(),
+          emailRes.json(),
+          billRes.json()
+        ]);
+
+        // Merge all records and tag them for the SLA Tabs to filter
+        const mergedData = [
+          ...vendors.map(v => ({ ...v, moduleType: 'vendor' })),
+          ...emails.map(e => ({ ...e, moduleType: 'email' })),
+          ...bills.map(b => ({ ...b, moduleType: 'bill' }))
+        ];
+
+        setDataEntries(snakeToCamel(mergedData));
+      } else {
+        // 2. Standard single-screen fetching
+        const endpointMap = {
+          'view': 'vendor-expenses',
+          'credit-card-expenses': 'credit-card-expenses',
+          'travel-expenses': 'travel-expenses',
+          'subcontractor-assignments': 'subcontractor-assignments',
+          'bill': 'billing',
+          'emails': 'email-records'
+        };
+
+        const currentEndpoint = endpointMap[currentPage] || 'vendor-expenses';
+        const response = await fetch(`${API_BASE_URL}/${currentEndpoint}?userId=${currentUserId}&userRole=${currentUserRole}`);
+        
+        if (!response.ok) throw new Error('Failed to fetch data');
+        const data = await response.json();
+        
+        // Add moduleType even for single screens to keep structure consistent
+        const taggedData = data.map(item => ({
+            ...item,
+            moduleType: currentPage === 'view' ? 'vendor' : currentPage === 'emails' ? 'email' : 'bill'
+        }));
+
+        setDataEntries(snakeToCamel(taggedData));
+      }
+    } catch (err) {
+      console.error("Fetch Error:", err);
+      setError('Failed to load data. Please check your connection.');
+      setDataEntries([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // --- Independent Option Fetching ---
   const fetchOptions = async () => {
     try {
       const [contractsRes, cardsRes] = await Promise.allSettled([
@@ -1822,8 +1859,7 @@ const App = () => {
       case 'settings':
       case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
       case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
-      case 'emails': 
-  return <EmailRecords {...commonProps} dataEntries={dataEntries || []} />;
+      case 'emails': return <EmailRecords {...commonProps} />;
       default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
@@ -1836,7 +1872,7 @@ const App = () => {
       <main className={`transition-all duration-300 flex-grow ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
         {renderContent()}
       </main>
-      {/* ... (Modals remain identical to previous versions) ... */}
+      
       {showAddDataModal && <AddDataModal onClose={() => setShowAddDataModal(false)} userId={currentUserId} username={currentUsername} contractOptions={contractOptions} creditCardOptions={creditCardOptions} onDataAdded={fetchEntries} />}
       {showAddSubkModal && <AddSubcontractorModal onClose={() => setShowAddSubkModal(false)} userId={currentUserId} username={currentUsername} onDataAdded={fetchEntries} />}
       {showEditDataModal && <EditDataModal onClose={() => setShowEditDataModal(false)} userId={currentUserId} userRole={currentUserRole} username={currentUsername} contractOptions={contractOptions} creditCardOptions={creditCardOptions} onDataEdited={fetchEntries} />}
