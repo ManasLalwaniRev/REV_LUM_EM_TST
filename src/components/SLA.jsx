@@ -3491,14 +3491,13 @@ import {
   Loader, LogOut, Mail, FileText, Book, AlertCircle, CheckCircle2 
 } from 'lucide-react';
 
-// --- Helper: SLA Status Calculation ---
+// --- SLA Status Calculation ---
 const getAutoStatus = (infoDateStr, processDateStr) => {
   if (!infoDateStr || !processDateStr) return { text: 'Awaiting Dates', color: 'text-gray-400', bg: 'bg-gray-50' };
 
   const infoDate = new Date(infoDateStr);
   const processDate = new Date(processDateStr);
 
-  // Use UTC to avoid timezone shifts
   const i = Date.UTC(infoDate.getUTCFullYear(), infoDate.getUTCMonth(), infoDate.getUTCDate());
   const p = Date.UTC(processDate.getUTCFullYear(), processDate.getUTCMonth(), processDate.getUTCDate());
 
@@ -3523,61 +3522,73 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  // --- Tab Configurations ---
   const tabConfig = {
     vendor: {
       label: 'Vendor Expenses',
       icon: <FileText size={18} />,
       columns: ['Contract', 'Vendor Name', 'Amount', 'Charge Date'],
-      keys: ['contractShortName', 'vendorName', 'chargeAmount', 'chargeDate']
+      keys: ['displayContract', 'displayName', 'displayAmount', 'displayDate']
     },
     email: {
       label: 'Email Records',
       icon: <Mail size={18} />,
       columns: ['Subject', 'Sent To', 'Task', 'Email Date'],
-      keys: ['subject', 'recipient', 'task', 'emailDate']
+      keys: ['displaySubject', 'displayRecipient', 'displayTask', 'displayDate']
     },
     bill: {
       label: 'Billing',
       icon: <Book size={18} />,
       columns: ['Contract', 'Invoice No', 'Period', 'Amount'],
-      keys: ['contractShortName', 'invoiceNo', 'billingPeriod', 'amount']
+      keys: ['displayContract', 'displayInvoice', 'displayPeriod', 'displayAmount']
     }
   };
 
-  // --- Aggressive Filtering (The Fix for records not populating) ---
-  const filteredData = useMemo(() => {
+  // --- DATA NORMALIZER ---
+  // This maps inconsistent backend keys to a unified set of "Display Keys"
+  const normalizedData = useMemo(() => {
     if (!dataEntries || !Array.isArray(dataEntries)) return [];
 
-    return dataEntries.filter(entry => {
-      // 1. Direct tag check
-      if (entry.moduleType === activeTab) return true;
+    return dataEntries.map(entry => ({
+      ...entry,
+      // Shared mappings
+      pKey: entry.primeKey || entry.prime_key || "0",
+      displayContract: entry.contractShortName || entry.contract_short_name || 'N/A',
+      displayDate: entry.chargeDate || entry.charge_date || entry.emailDate || entry.email_date || entry.created_at,
+      displayAmount: entry.chargeAmount || entry.charge_amount || entry.amount || 0,
+      
+      // Module specific mappings
+      displayName: entry.vendorName || entry.vendor_name,
+      displaySubject: entry.subject,
+      displayRecipient: entry.recipient,
+      displayTask: entry.task,
+      displayInvoice: entry.invoiceNo || entry.invoice_no,
+      displayPeriod: entry.billingPeriod || entry.billing_period,
 
-      // 2. Auto-Detection based on field presence
-      if (activeTab === 'vendor' && (entry.vendorName || entry.vendor_name || entry.vendorId)) return true;
-      if (activeTab === 'email' && (entry.subject || entry.recipient || entry.task)) return true;
-      if (activeTab === 'bill' && (entry.invoiceNo || entry.invoice_no || entry.billingPeriod)) return true;
+      // Detect Module Type if missing
+      mType: entry.moduleType || (
+        (entry.vendorName || entry.vendor_name) ? 'vendor' :
+        (entry.subject || entry.recipient) ? 'email' : 'bill'
+      )
+    }));
+  }, [dataEntries]);
 
-      return false;
-    });
-  }, [dataEntries, activeTab]);
+  const filteredData = useMemo(() => {
+    return normalizedData.filter(entry => entry.mType === activeTab);
+  }, [normalizedData, activeTab]);
 
-  // --- Versioning Grouping Logic ---
   const groupedEntries = useMemo(() => {
     const groups = filteredData.reduce((acc, entry) => {
-      const pk = entry.primeKey || entry.prime_key || "0";
-      const baseKey = String(pk).split('.')[0];
+      const baseKey = String(entry.pKey).split('.')[0];
       if (!acc[baseKey]) acc[baseKey] = [];
       acc[baseKey].push(entry);
       return acc;
     }, {});
 
     for (const key in groups) {
-      groups[key].sort((a, b) => parseFloat(b.primeKey || b.prime_key) - parseFloat(a.primeKey || a.prime_key));
+      groups[key].sort((a, b) => parseFloat(b.pKey) - parseFloat(a.pKey));
     }
 
     let result = Object.values(groups);
-
     if (searchValue.trim()) {
       const term = searchValue.toLowerCase();
       result = result.filter(g => g.some(e => 
@@ -3587,7 +3598,6 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
     return result;
   }, [filteredData, searchValue]);
 
-  // --- Handlers ---
   const handleEditChange = (id, field, value) => {
     setEditedData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
@@ -3596,17 +3606,14 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
     setIsSaving(true);
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     try {
-      // We map to the appropriate endpoint based on activeTab
-      const endpoint = activeTab === 'vendor' ? 'vendor-expenses' : activeTab === 'email' ? 'email-records' : 'billing';
-      
+      const endpointMap = { vendor: 'vendor-expenses', email: 'email-records', bill: 'billing' };
       await Promise.all(Object.keys(editedData).map(async (id) => {
-        return fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
+        return fetch(`${API_BASE_URL}/${endpointMap[activeTab]}/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...editedData[id], userId })
         });
       }));
-      
       setEditedData({});
       setMessage('Records updated successfully!');
       fetchEntries();
@@ -3619,40 +3626,29 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
-      <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-full text-gray-800 animate-in fade-in duration-500">
+      <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-full text-gray-800">
         
-        {/* Header Section */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-lime-100 rounded-xl text-lime-700"><CheckCircle2 size={32} /></div>
-            <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tighter">SLA MONITOR</h1>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Efficiency Tracking System</p>
-            </div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase italic">SLA Monitoring</h1>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <img src="/Lumina_logo.png" className="h-10 opacity-80" alt="Logo" />
-            <div className="h-10 w-[2px] bg-gray-200 mx-2" />
-            <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
-              <img src={userAvatar} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="avatar" />
-              <div className="flex flex-col">
-                <span className="text-xs font-black text-gray-400">ACCOUNTANT</span>
-                <span className="text-sm font-bold text-gray-700 leading-tight">{userName}</span>
-              </div>
-              <button onClick={handleLogout} className="ml-2 p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors"><LogOut size={16}/></button>
-            </div>
+          <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
+            <img src={userAvatar} className="w-10 h-10 rounded-full border-2 border-white" alt="avatar" />
+            <span className="text-sm font-bold text-gray-700 leading-tight">{userName}</span>
+            <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 rounded-full"><LogOut size={16}/></button>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex overflow-x-auto bg-gray-100 p-1 rounded-xl mb-6 no-scrollbar">
+        <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
           {Object.entries(tabConfig).map(([key, config]) => (
             <button
               key={key}
               onClick={() => { setActiveTab(key); setExpandedRows(new Set()); }}
-              className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold transition-all whitespace-nowrap ${
-                activeTab === key ? 'bg-white text-lime-700 shadow-sm scale-100' : 'text-gray-400 hover:text-gray-600'
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-all ${
+                activeTab === key ? 'bg-white text-lime-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               {config.icon} {config.label}
@@ -3660,123 +3656,88 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
           ))}
         </div>
 
-        {/* Debug Info (Hidden unless troubleshooting) */}
-        {dataEntries.length === 0 && !isLoading && (
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-6 flex items-center gap-3 text-amber-700">
-            <AlertCircle size={20} />
-            <span className="text-sm font-medium">No data received from server. Check your backend endpoints.</span>
-          </div>
-        )}
-
-        {/* Search & Action Bar */}
+        {/* Global Controls */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
           <div className="relative w-full md:max-w-md">
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input 
               type="text" 
-              placeholder={`Search across all ${tabConfig[activeTab].label} fields...`}
-              className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl focus:border-lime-500 outline-none transition-all"
+              placeholder={`Search ${tabConfig[activeTab].label}...`}
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl focus:border-lime-500 outline-none"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
           </div>
-          
           {Object.keys(editedData).length > 0 && (
-            <button 
-              onClick={handleSaveAll}
-              disabled={isSaving}
-              className="w-full md:w-auto bg-lime-600 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-lime-700 shadow-xl shadow-lime-200 transition-all hover:-translate-y-1"
-            >
-              <Save size={20} /> {isSaving ? 'Processing...' : `Save ${Object.keys(editedData).length} Changes`}
+            <button onClick={handleSaveAll} disabled={isSaving} className="bg-lime-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-lime-700">
+              <Save size={20} /> {isSaving ? 'Saving...' : `Save ${Object.keys(editedData).length} Changes`}
             </button>
           )}
         </div>
 
-        {/* Main Table Area */}
-        <div className="overflow-x-auto rounded-2xl border-2 border-gray-100 shadow-sm">
+        {/* Data Table */}
+        <div className="overflow-x-auto rounded-2xl border-2 border-gray-100">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50/50">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Ref</th>
+                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Ref No</th>
                 {tabConfig[activeTab].columns.map(col => (
                   <th key={col} className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{col}</th>
                 ))}
-                <th className="px-4 py-4 text-center text-[10px] font-black text-blue-600 uppercase bg-blue-50/50 tracking-widest border-x">SLA Status</th>
-                <th className="px-4 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Proc.</th>
-                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Info Recv</th>
-                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Processed On</th>
+                <th className="px-4 py-4 text-center text-[10px] font-black text-blue-600 uppercase bg-blue-50/50 border-x">SLA Status</th>
+                <th className="px-4 py-4 text-center text-[10px] font-black text-gray-400 uppercase">Proc.</th>
+                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase">Info Received</th>
+                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase">Processed Date</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan="10" className="p-12 text-center"><Loader className="animate-spin mx-auto text-lime-600" size={40}/></td></tr>
+                <tr><td colSpan="10" className="p-12 text-center"><Loader className="animate-spin mx-auto text-lime-600" size={32}/></td></tr>
               ) : groupedEntries.length === 0 ? (
-                <tr><td colSpan="10" className="p-12 text-center text-gray-400 italic font-medium">No records matching this category.</td></tr>
+                <tr><td colSpan="10" className="p-12 text-center text-gray-400 italic">No records found for this tab. Check Console for data status.</td></tr>
               ) : groupedEntries.map((group) => {
                 const latest = group[0];
-                const baseKey = String(latest.primeKey || latest.prime_key).split('.')[0];
+                const baseKey = String(latest.pKey).split('.')[0];
                 const isExpanded = expandedRows.has(baseKey);
                 
-                const curInfoDate = editedData[latest.id]?.infoReceivedDate ?? latest.infoReceivedDate;
-                const curProcDate = editedData[latest.id]?.dateProcessed ?? latest.dateProcessed;
+                const curInfoDate = editedData[latest.id]?.infoReceivedDate ?? latest.infoReceivedDate || latest.info_received_date;
+                const curProcDate = editedData[latest.id]?.dateProcessed ?? latest.dateProcessed || latest.date_processed;
                 const status = getAutoStatus(curInfoDate, curProcDate);
 
                 return (
-                  <React.Fragment key={latest.id}>
-                    <tr className={`${editedData[latest.id] ? 'bg-amber-50' : 'hover:bg-gray-50/50'} transition-colors group`}>
-                      <td className="px-4 py-4 whitespace-nowrap font-black text-gray-900 text-sm">
-                        <div className="flex items-center gap-2">
-                          {group.length > 1 && (
-                            <button onClick={() => setExpandedRows(prev => {
-                              const n = new Set(prev);
-                              n.has(baseKey) ? n.delete(baseKey) : n.add(baseKey);
-                              return n;
-                            })} className="p-1 hover:bg-gray-200 rounded text-gray-400">
-                              {isExpanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-                            </button>
-                          )}
-                          {latest.primeKey || latest.prime_key}
-                        </div>
+                  <tr key={latest.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 whitespace-nowrap font-black text-gray-900 text-sm">{latest.pKey}</td>
+                    {tabConfig[activeTab].keys.map(key => (
+                      <td key={key} className="px-4 py-4 text-xs font-bold text-gray-600">
+                        {key.includes('Amount') ? `$${parseFloat(latest[key] || 0).toLocaleString(undefined, {minimumFractionDigits:2})}` : latest[key] || '---'}
                       </td>
-                      
-                      {tabConfig[activeTab].keys.map(key => (
-                        <td key={key} className="px-4 py-4 text-xs font-bold text-gray-600">
-                          {key.toLowerCase().includes('amount') ? `$${parseFloat(latest[key] || 0).toLocaleString(undefined, {minimumFractionDigits:2})}` : latest[key] || '---'}
-                        </td>
-                      ))}
-                      
-                      <td className={`px-4 py-4 text-center text-[10px] font-black uppercase ${status.color} ${status.bg} border-x`}>
-                        {status.text}
-                      </td>
-
-                      <td className="px-4 py-4 text-center">
-                        <input 
-                          type="checkbox" 
-                          checked={editedData[latest.id]?.accountingProcessed === 'T' || latest.accountingProcessed === 'T'}
-                          onChange={e => handleEditChange(latest.id, 'accountingProcessed', e.target.checked ? 'T' : 'F')}
-                          className="w-4 h-4 rounded-md accent-lime-600"
-                        />
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <input 
-                          type="date" 
-                          value={editedData[latest.id]?.infoReceivedDate ?? formatDateForInput(latest.infoReceivedDate)}
-                          onChange={e => handleEditChange(latest.id, 'infoReceivedDate', e.target.value)}
-                          className="text-xs font-bold border-2 border-gray-50 bg-gray-50 rounded-lg p-1.5 focus:bg-white focus:border-lime-200 outline-none transition-all"
-                        />
-                      </td>
-
-                      <td className="px-4 py-4">
-                        <input 
-                          type="date" 
-                          value={editedData[latest.id]?.dateProcessed ?? formatDateForInput(latest.dateProcessed)}
-                          onChange={e => handleEditChange(latest.id, 'dateProcessed', e.target.value)}
-                          className="text-xs font-bold border-2 border-gray-50 bg-gray-50 rounded-lg p-1.5 focus:bg-white focus:border-lime-200 outline-none transition-all"
-                        />
-                      </td>
-                    </tr>
-                  </React.Fragment>
+                    ))}
+                    <td className={`px-4 py-4 text-center text-[10px] font-black uppercase ${status.color} ${status.bg} border-x`}>{status.text}</td>
+                    <td className="px-4 py-4 text-center">
+                      <input 
+                        type="checkbox" 
+                        checked={editedData[latest.id]?.accountingProcessed === 'T' || (latest.accountingProcessed === 'T' || latest.accounting_processed === 'T')}
+                        onChange={e => handleEditChange(latest.id, 'accountingProcessed', e.target.checked ? 'T' : 'F')}
+                        className="w-4 h-4 rounded accent-lime-600"
+                      />
+                    </td>
+                    <td className="px-4 py-4">
+                      <input 
+                        type="date" 
+                        value={editedData[latest.id]?.infoReceivedDate ?? formatDateForInput(latest.infoReceivedDate || latest.info_received_date)}
+                        onChange={e => handleEditChange(latest.id, 'infoReceivedDate', e.target.value)}
+                        className="text-xs font-bold border rounded p-1"
+                      />
+                    </td>
+                    <td className="px-4 py-4">
+                      <input 
+                        type="date" 
+                        value={editedData[latest.id]?.dateProcessed ?? formatDateForInput(latest.dateProcessed || latest.date_processed)}
+                        onChange={e => handleEditChange(latest.id, 'dateProcessed', e.target.value)}
+                        className="text-xs font-bold border rounded p-1"
+                      />
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
