@@ -3700,8 +3700,24 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
                 const baseKey = String(latest.pKey).split('.')[0];
                 const isExpanded = expandedRows.has(baseKey);
                 
-                const curInfoDate = editedData[latest.id]?.infoReceivedDate ?? latest.infoReceivedDate || latest.info_received_date;
-                const curProcDate = editedData[latest.id]?.dateProcessed ?? latest.dateProcessed || latest.date_processed;
+                // const curInfoDate = editedData[latest.id]?.infoReceivedDate ?? latest.infoReceivedDate || latest.info_received_date;
+                // const curProcDate = editedData[latest.id]?.dateProcessed ?? latest.dateProcessed || latest.date_processed;
+                // 1. Ensure latest exists to prevent "Cannot read property id of undefined"
+const entryId = latest?.id;
+if (!entryId) return null; // Skip rendering if ID is missing
+
+// 2. Use a fallback sequence that handles Edited State -> CamelCase -> snake_case -> null
+const curInfoDate = editedData[entryId]?.infoReceivedDate 
+                 ?? latest.infoReceivedDate 
+                 ?? latest.info_received_date 
+                 ?? null;
+
+const curProcDate = editedData[entryId]?.dateProcessed 
+                 ?? latest.dateProcessed 
+                 ?? latest.date_processed 
+                 ?? null;
+                 
+                 
                 const status = getAutoStatus(curInfoDate, curProcDate);
 
                 return (
