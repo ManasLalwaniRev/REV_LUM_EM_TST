@@ -3485,54 +3485,37 @@
 // export default SLA; // UPDATED EXPORT
 
 
+import React, { useState, useMemo, useEffect } from 'react';
+import { 
+  Save, Search, UserCircle, ChevronDown, ChevronRight, 
+  Loader, LogOut, Mail, FileText, Book, AlertCircle, CheckCircle2 
+} from 'lucide-react';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Save, Search, UserCircle, ChevronDown, ChevronRight, Loader, LogOut, Mail, FileText, Book } from 'lucide-react';
-
-// --- Helper Functions ---
-const snakeToCamel = (obj) => {
-  if (Array.isArray(obj)) return obj.map(v => snakeToCamel(v));
-  if (obj !== null && typeof obj === 'object') {
-    return Object.keys(obj).reduce((acc, key) => {
-      const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-      acc[camelKey] = snakeToCamel(obj[key]);
-      return acc;
-    }, {});
-  }
-  return obj;
-};
-
-const formatDateForDisplay = (isoString) => {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) return 'Invalid Date';
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' });
-};
-
-const formatDateForInput = (isoString) => {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  return date.toISOString().slice(0, 10);
-};
-
-// --- SLA Status Logic ---
+// --- Helper: SLA Status Calculation ---
 const getAutoStatus = (infoDateStr, processDateStr) => {
-  if (!infoDateStr || !processDateStr) return { text: '-', color: 'text-gray-400' };
+  if (!infoDateStr || !processDateStr) return { text: 'Awaiting Dates', color: 'text-gray-400', bg: 'bg-gray-50' };
 
   const infoDate = new Date(infoDateStr);
   const processDate = new Date(processDateStr);
 
+  // Use UTC to avoid timezone shifts
   const i = Date.UTC(infoDate.getUTCFullYear(), infoDate.getUTCMonth(), infoDate.getUTCDate());
   const p = Date.UTC(processDate.getUTCFullYear(), processDate.getUTCMonth(), processDate.getUTCDate());
 
   const diffDays = (p - i) / (1000 * 60 * 60 * 24);
 
-  if (diffDays > 2) return { text: 'Deadline crossed', color: 'text-red-600 font-bold' };
-  if (diffDays === 2) return { text: 'On deadline', color: 'text-yellow-600 font-bold' };
-  return { text: 'Before Deadline', color: 'text-green-600 font-bold' };
+  if (diffDays > 2) return { text: 'Deadline crossed', color: 'text-red-600 font-bold', bg: 'bg-red-50' };
+  if (diffDays === 2) return { text: 'On deadline', color: 'text-yellow-600 font-bold', bg: 'bg-yellow-50' };
+  return { text: 'Before Deadline', color: 'text-green-600 font-bold', bg: 'bg-green-50' };
 };
 
-const SLA = ({ dataEntries, isLoading, error, fetchEntries, userId, userRole, userName = 'Accountant', userAvatar, handleLogout }) => {
+const formatDateForInput = (isoString) => {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  return isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+};
+
+const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userName = 'Accountant', userAvatar, handleLogout }) => {
   const [activeTab, setActiveTab] = useState('vendor');
   const [searchValue, setSearchValue] = useState('');
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -3540,82 +3523,95 @@ const SLA = ({ dataEntries, isLoading, error, fetchEntries, userId, userRole, us
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
 
-  // --- Configuration for Tabs ---
+  // --- Tab Configurations ---
   const tabConfig = {
     vendor: {
       label: 'Vendor Expenses',
       icon: <FileText size={18} />,
       columns: ['Contract', 'Vendor Name', 'Amount', 'Charge Date'],
-      dataKeyMap: ['contractShortName', 'vendorName', 'chargeAmount', 'chargeDate']
+      keys: ['contractShortName', 'vendorName', 'chargeAmount', 'chargeDate']
     },
     email: {
       label: 'Email Records',
       icon: <Mail size={18} />,
-      columns: ['Subject', 'Sent To', 'Task', 'Date'],
-      dataKeyMap: ['subject', 'recipient', 'task', 'emailDate']
+      columns: ['Subject', 'Sent To', 'Task', 'Email Date'],
+      keys: ['subject', 'recipient', 'task', 'emailDate']
     },
     bill: {
       label: 'Billing',
       icon: <Book size={18} />,
       columns: ['Contract', 'Invoice No', 'Period', 'Amount'],
-      dataKeyMap: ['contractShortName', 'invoiceNo', 'billingPeriod', 'amount']
+      keys: ['contractShortName', 'invoiceNo', 'billingPeriod', 'amount']
     }
   };
 
-  // --- Filtered Data based on Tab ---
-  // Note: In production, ensure dataEntries has a 'type' field or separate arrays
+  // --- Aggressive Filtering (The Fix for records not populating) ---
   const filteredData = useMemo(() => {
     if (!dataEntries || !Array.isArray(dataEntries)) return [];
 
     return dataEntries.filter(entry => {
-      // 1. Explicit check
+      // 1. Direct tag check
       if (entry.moduleType === activeTab) return true;
 
-      // 2. Fallback check (in case moduleType didn't attach)
-      if (activeTab === 'vendor' && (entry.vendorName || entry.vendor_name)) return true;
-      if (activeTab === 'email' && (entry.subject || entry.recipient)) return true;
-      if (activeTab === 'bill' && (entry.invoiceNo || entry.invoice_no)) return true;
+      // 2. Auto-Detection based on field presence
+      if (activeTab === 'vendor' && (entry.vendorName || entry.vendor_name || entry.vendorId)) return true;
+      if (activeTab === 'email' && (entry.subject || entry.recipient || entry.task)) return true;
+      if (activeTab === 'bill' && (entry.invoiceNo || entry.invoice_no || entry.billingPeriod)) return true;
 
       return false;
     });
   }, [dataEntries, activeTab]);
 
+  // --- Versioning Grouping Logic ---
   const groupedEntries = useMemo(() => {
     const groups = filteredData.reduce((acc, entry) => {
-      const baseKey = String(entry.primeKey).split('.')[0];
+      const pk = entry.primeKey || entry.prime_key || "0";
+      const baseKey = String(pk).split('.')[0];
       if (!acc[baseKey]) acc[baseKey] = [];
       acc[baseKey].push(entry);
       return acc;
     }, {});
 
     for (const key in groups) {
-      groups[key].sort((a, b) => parseFloat(b.primeKey) - parseFloat(a.primeKey));
+      groups[key].sort((a, b) => parseFloat(b.primeKey || b.prime_key) - parseFloat(a.primeKey || a.prime_key));
     }
 
     let result = Object.values(groups);
-    if (searchValue) {
+
+    if (searchValue.trim()) {
+      const term = searchValue.toLowerCase();
       result = result.filter(g => g.some(e => 
-        Object.values(e).some(val => String(val || '').toLowerCase().includes(searchValue.toLowerCase()))
+        Object.values(e).some(val => String(val || '').toLowerCase().includes(term))
       ));
     }
     return result;
   }, [filteredData, searchValue]);
 
+  // --- Handlers ---
   const handleEditChange = (id, field, value) => {
-    setEditedData(prev => ({
-      ...prev,
-      [id]: { ...prev[id], [field]: value }
-    }));
+    setEditedData(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
   const handleSaveAll = async () => {
     setIsSaving(true);
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     try {
-      // API call logic here...
+      // We map to the appropriate endpoint based on activeTab
+      const endpoint = activeTab === 'vendor' ? 'vendor-expenses' : activeTab === 'email' ? 'email-records' : 'billing';
+      
+      await Promise.all(Object.keys(editedData).map(async (id) => {
+        return fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...editedData[id], userId })
+        });
+      }));
+      
       setEditedData({});
-      setMessage('SLA updates saved successfully!');
+      setMessage('Records updated successfully!');
+      fetchEntries();
     } catch (err) {
-      setMessage(`Error: ${err.message}`);
+      setMessage('Error: ' + err.message);
     } finally {
       setIsSaving(false);
     }
@@ -3623,30 +3619,40 @@ const SLA = ({ dataEntries, isLoading, error, fetchEntries, userId, userRole, us
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
-      <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full text-gray-800">
+      <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-full text-gray-800 animate-in fade-in duration-500">
         
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center gap-4">
-            <img src="/Lumina_logo.png" className="h-10" alt="Logo" />
-            <h1 className="text-2xl font-black text-lime-800 border-l-2 pl-4 border-gray-300">SLA MONITOR</h1>
+            <div className="p-3 bg-lime-100 rounded-xl text-lime-700"><CheckCircle2 size={32} /></div>
+            <div>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tighter">SLA MONITOR</h1>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Efficiency Tracking System</p>
+            </div>
           </div>
           
-          <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-xl">
-            <img src={userAvatar} className="w-10 h-10 rounded-full border-2 border-white" alt="avatar" />
-            <span className="font-bold text-gray-700">Accountant: {userName}</span>
-            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"><LogOut size={18}/></button>
+          <div className="flex items-center gap-4">
+            <img src="/Lumina_logo.png" className="h-10 opacity-80" alt="Logo" />
+            <div className="h-10 w-[2px] bg-gray-200 mx-2" />
+            <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
+              <img src={userAvatar} className="w-10 h-10 rounded-full border-2 border-white shadow-sm" alt="avatar" />
+              <div className="flex flex-col">
+                <span className="text-xs font-black text-gray-400">ACCOUNTANT</span>
+                <span className="text-sm font-bold text-gray-700 leading-tight">{userName}</span>
+              </div>
+              <button onClick={handleLogout} className="ml-2 p-2 bg-red-50 text-red-500 rounded-full hover:bg-red-100 transition-colors"><LogOut size={16}/></button>
+            </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 mb-6 gap-2">
+        <div className="flex overflow-x-auto bg-gray-100 p-1 rounded-xl mb-6 no-scrollbar">
           {Object.entries(tabConfig).map(([key, config]) => (
             <button
               key={key}
               onClick={() => { setActiveTab(key); setExpandedRows(new Set()); }}
-              className={`flex items-center gap-2 px-6 py-3 font-bold transition-all border-b-4 ${
-                activeTab === key ? 'border-lime-600 text-lime-700 bg-lime-50' : 'border-transparent text-gray-400 hover:text-gray-600'
+              className={`flex items-center gap-2 px-8 py-3 rounded-lg font-bold transition-all whitespace-nowrap ${
+                activeTab === key ? 'bg-white text-lime-700 shadow-sm scale-100' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
               {config.icon} {config.label}
@@ -3654,48 +3660,61 @@ const SLA = ({ dataEntries, isLoading, error, fetchEntries, userId, userRole, us
           ))}
         </div>
 
-        {/* Global Controls */}
-        <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
-          <div className="relative flex-grow">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+        {/* Debug Info (Hidden unless troubleshooting) */}
+        {dataEntries.length === 0 && !isLoading && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl mb-6 flex items-center gap-3 text-amber-700">
+            <AlertCircle size={20} />
+            <span className="text-sm font-medium">No data received from server. Check your backend endpoints.</span>
+          </div>
+        )}
+
+        {/* Search & Action Bar */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          <div className="relative w-full md:max-w-md">
+            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input 
               type="text" 
-              placeholder={`Search ${tabConfig[activeTab].label}...`}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-lime-500 outline-none"
+              placeholder={`Search across all ${tabConfig[activeTab].label} fields...`}
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl focus:border-lime-500 outline-none transition-all"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
           </div>
+          
           {Object.keys(editedData).length > 0 && (
             <button 
               onClick={handleSaveAll}
-              className="bg-lime-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-lime-700 shadow-lg animate-pulse"
+              disabled={isSaving}
+              className="w-full md:w-auto bg-lime-600 text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-lime-700 shadow-xl shadow-lime-200 transition-all hover:-translate-y-1"
             >
-              <Save size={18} /> Save {Object.keys(editedData).length} Changes
+              <Save size={20} /> {isSaving ? 'Processing...' : `Save ${Object.keys(editedData).length} Changes`}
             </button>
           )}
         </div>
 
-        {/* Data Table */}
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+        {/* Main Table Area */}
+        <div className="overflow-x-auto rounded-2xl border-2 border-gray-100 shadow-sm">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-black text-gray-500 uppercase">Record No</th>
+                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Ref</th>
                 {tabConfig[activeTab].columns.map(col => (
-                  <th key={col} className="px-4 py-3 text-left text-xs font-black text-gray-500 uppercase">{col}</th>
+                  <th key={col} className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{col}</th>
                 ))}
-                <th className="px-4 py-3 text-center text-xs font-black text-blue-600 uppercase bg-blue-50">SLA Status</th>
-                <th className="px-4 py-3 text-center text-xs font-black text-gray-500 uppercase">Processed</th>
-                <th className="px-4 py-3 text-left text-xs font-black text-gray-500 uppercase">Info Received</th>
-                <th className="px-4 py-3 text-left text-xs font-black text-gray-500 uppercase">Date Processed</th>
-                <th className="px-4 py-3 text-left text-xs font-black text-gray-500 uppercase">Submitter</th>
+                <th className="px-4 py-4 text-center text-[10px] font-black text-blue-600 uppercase bg-blue-50/50 tracking-widest border-x">SLA Status</th>
+                <th className="px-4 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Proc.</th>
+                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Info Recv</th>
+                <th className="px-4 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Processed On</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {groupedEntries.map((group) => {
+              {isLoading ? (
+                <tr><td colSpan="10" className="p-12 text-center"><Loader className="animate-spin mx-auto text-lime-600" size={40}/></td></tr>
+              ) : groupedEntries.length === 0 ? (
+                <tr><td colSpan="10" className="p-12 text-center text-gray-400 italic font-medium">No records matching this category.</td></tr>
+              ) : groupedEntries.map((group) => {
                 const latest = group[0];
-                const baseKey = String(latest.primeKey).split('.')[0];
+                const baseKey = String(latest.primeKey || latest.prime_key).split('.')[0];
                 const isExpanded = expandedRows.has(baseKey);
                 
                 const curInfoDate = editedData[latest.id]?.infoReceivedDate ?? latest.infoReceivedDate;
@@ -3704,57 +3723,59 @@ const SLA = ({ dataEntries, isLoading, error, fetchEntries, userId, userRole, us
 
                 return (
                   <React.Fragment key={latest.id}>
-                    <tr className={`${editedData[latest.id] ? 'bg-yellow-50' : 'hover:bg-gray-50'} transition-colors`}>
-                      <td className="px-4 py-4 whitespace-nowrap font-bold text-gray-900">
+                    <tr className={`${editedData[latest.id] ? 'bg-amber-50' : 'hover:bg-gray-50/50'} transition-colors group`}>
+                      <td className="px-4 py-4 whitespace-nowrap font-black text-gray-900 text-sm">
                         <div className="flex items-center gap-2">
                           {group.length > 1 && (
                             <button onClick={() => setExpandedRows(prev => {
                               const n = new Set(prev);
                               n.has(baseKey) ? n.delete(baseKey) : n.add(baseKey);
                               return n;
-                            })}>
+                            })} className="p-1 hover:bg-gray-200 rounded text-gray-400">
                               {isExpanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
                             </button>
                           )}
-                          {latest.primeKey}
+                          {latest.primeKey || latest.prime_key}
                         </div>
                       </td>
-                      {/* Dynamic Columns based on Tab */}
-                      {tabConfig[activeTab].dataKeyMap.map(key => (
-                        <td key={key} className="px-4 py-4 text-sm text-gray-600">
-                          {key.toLowerCase().includes('amount') ? `$${parseFloat(latest[key] || 0).toFixed(2)}` : latest[key]}
+                      
+                      {tabConfig[activeTab].keys.map(key => (
+                        <td key={key} className="px-4 py-4 text-xs font-bold text-gray-600">
+                          {key.toLowerCase().includes('amount') ? `$${parseFloat(latest[key] || 0).toLocaleString(undefined, {minimumFractionDigits:2})}` : latest[key] || '---'}
                         </td>
                       ))}
                       
-                      {/* SLA Specific Columns */}
-                      <td className={`px-4 py-4 text-center text-xs ${status.color} bg-gray-50/50`}>{status.text}</td>
+                      <td className={`px-4 py-4 text-center text-[10px] font-black uppercase ${status.color} ${status.bg} border-x`}>
+                        {status.text}
+                      </td>
+
                       <td className="px-4 py-4 text-center">
                         <input 
                           type="checkbox" 
                           checked={editedData[latest.id]?.accountingProcessed === 'T' || latest.accountingProcessed === 'T'}
                           onChange={e => handleEditChange(latest.id, 'accountingProcessed', e.target.checked ? 'T' : 'F')}
-                          className="w-4 h-4 rounded text-lime-600"
+                          className="w-4 h-4 rounded-md accent-lime-600"
                         />
                       </td>
+
                       <td className="px-4 py-4">
                         <input 
                           type="date" 
                           value={editedData[latest.id]?.infoReceivedDate ?? formatDateForInput(latest.infoReceivedDate)}
                           onChange={e => handleEditChange(latest.id, 'infoReceivedDate', e.target.value)}
-                          className="text-sm border rounded p-1"
+                          className="text-xs font-bold border-2 border-gray-50 bg-gray-50 rounded-lg p-1.5 focus:bg-white focus:border-lime-200 outline-none transition-all"
                         />
                       </td>
+
                       <td className="px-4 py-4">
                         <input 
                           type="date" 
                           value={editedData[latest.id]?.dateProcessed ?? formatDateForInput(latest.dateProcessed)}
                           onChange={e => handleEditChange(latest.id, 'dateProcessed', e.target.value)}
-                          className="text-sm border rounded p-1"
+                          className="text-xs font-bold border-2 border-gray-50 bg-gray-50 rounded-lg p-1.5 focus:bg-white focus:border-lime-200 outline-none transition-all"
                         />
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{latest.submitter}</td>
                     </tr>
-                    {/* Version History Rows (Render if expanded) */}
                   </React.Fragment>
                 );
               })}
