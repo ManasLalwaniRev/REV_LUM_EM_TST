@@ -382,16 +382,19 @@ app.use(express.json());
 
 
 // --- 2. Updated Transporter for Render Environment ---
+// --- 2. Outlook Transporter Configuration (Fixed for Render & SSL Cipher Match) ---
 const transporter = nodemailer.createTransport({
   host: "smtp.office365.com",
-  port: 465,            // Switch to 465
-  secure: true,          // Must be true for 465
+  port: 465,            // Port 465 for implicit SSL/TLS
+  secure: true,         // Must be true for port 465
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, 
+    pass: process.env.EMAIL_PASS, // Your 16-character App Password
   },
   tls: {
-    ciphers: 'SSLv1.2', 
+    // Remove specific 'SSLv1.2' cipher strings to prevent mismatch errors
+    // Instead, specify the minimum version if needed, or let it negotiate.
+    minVersion: 'TLSv1.2',
     rejectUnauthorized: false
   },
   connectionTimeout: 20000, 
