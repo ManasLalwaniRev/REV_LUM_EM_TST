@@ -325,7 +325,6 @@
 
 // app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
-
 require('dotenv').config();
 const ExcelJS = require('exceljs');
 const fs = require('fs');
@@ -334,7 +333,8 @@ const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
-const nodemailer = require('nodemailer');
+const { Client } = require('@microsoft/microsoft-graph-client');
+const { ConfidentialClientApplication } = require('@azure/msal-node');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -359,51 +359,27 @@ app.use(cors({
 
 app.use(express.json()); 
 
-// --- 2. Outlook Transporter Configuration (Enhanced for ETIMEDOUT) ---
-// const transporter = nodemailer.createTransport({
-//   host: "smtp.office365.com",
-//   port: 587,
-//   secure: false, // Must be false for 587
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS, // Your 16-character App Password
-//   },
-//   tls: {
-//     ciphers: 'SSLv1.2', 
-//     rejectUnauthorized: false
-//   },
-//   // Increased timeouts to handle network latency and prevent ETIMEDOUT
-//   connectionTimeout: 20000, 
-//   greetingTimeout: 20000,
-//   socketTimeout: 30000,
-//   debug: true, // Enable to see detailed SMTP traffic in console
-//   logger: true 
-// });
-
-
-// --- 2. Updated Transporter for Render Environment ---
-// --- 2. Outlook Transporter Configuration (Fixed for Render & SSL Cipher Match) ---
-const transporter = nodemailer.createTransport({
-  host: "smtp.office365.com",
-  port: 465,            // Port 465 for implicit SSL/TLS
-  secure: true,         // Must be true for port 465
+// --- 2. Microsoft Graph Client Configuration ---
+// This replaces Nodemailer to avoid Render's SMTP port blocks
+const msalConfig = {
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Your 16-character App Password
+    clientId: process.env.MS_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${process.env.MS_TENANT_ID}`,
+    clientSecret: process.env.MS_CLIENT_SECRET,
   },
-  tls: {
-    // Remove specific 'SSLv1.2' cipher strings to prevent mismatch errors
-    // Instead, specify the minimum version if needed, or let it negotiate.
-    minVersion: 'TLSv1.2',
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 20000, 
-  greetingTimeout: 20000,
-  socketTimeout: 30000,
-  debug: true, 
-  logger: true 
-});
+};
 
+const cca = new ConfidentialClientApplication(msalConfig);
+
+async function getAuthenticatedClient() {
+  const tokenRequest = {
+    scopes: ['https://graph.microsoft.com/.default'],
+  };
+  const response = await cca.acquireTokenByClientCredential(tokenRequest);
+  return Client.init({
+    authProvider: (done) => done(null, response.accessToken),
+  });
+}
 
 // --- 3. PostgreSQL Connection Pool ---
 const dbConfig = {};
@@ -463,7 +439,7 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- 5. New Send Email Route (Improved Error Logging) ---
+// --- 5. Updated Send Email Route (Using Graph API) ---
 app.post('/api/send-email', async (req, res) => {
   const { recipient, cc, subject, bodyContent } = req.body;
 
@@ -471,31 +447,29 @@ app.post('/api/send-email', async (req, res) => {
     return res.status(400).json({ error: 'Recipient and Subject are required' });
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: recipient,
-    cc: cc || '', 
-    subject: subject,
-    text: bodyContent,
-  };
-
   try {
-    console.log(`Attempting to send email to ${recipient}...`);
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.response);
-    res.status(200).json({ message: 'Email sent successfully', response: info.response });
+    const client = await getAuthenticatedClient();
+    const sendMail = {
+      message: {
+        subject: subject,
+        body: {
+          contentType: 'Text',
+          content: bodyContent,
+        },
+        toRecipients: [{ emailAddress: { address: recipient } }],
+        ccRecipients: cc ? [{ emailAddress: { address: cc } }] : [],
+      },
+      saveToSentItems: 'true',
+    };
+
+    // Replace the email below with your authorized Office 365 email
+    await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
+    
+    console.log(`Email sent successfully to ${recipient}`);
+    res.status(200).json({ message: 'Email sent successfully via Microsoft Graph API' });
   } catch (error) {
-    console.error('SMTP Error Detailed:', {
-      message: error.message,
-      code: error.code,
-      command: error.command,
-      stack: error.stack
-    });
-    res.status(500).json({ 
-      error: 'Failed to send email', 
-      details: error.message,
-      code: error.code 
-    });
+    console.error('Graph API Error:', error);
+    res.status(500).json({ error: 'Failed to send email', details: error.message });
   }
 });
 
@@ -549,21 +523,6 @@ app.post('/api/vendor-expenses/new', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.patch('/api/vendor-expenses/:id', async (req, res) => {
-  const { id } = req.params;
-  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
-  try {
-    const original = await pool.query('SELECT prime_key FROM vendor_expenses WHERE id = $1', [id]);
-    const nextKey = await getNextVersionedKey('vendor_expenses', original.rows[0].prime_key);
-    const result = await pool.query(
-      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
 // --- 9. Credit Card Expenses ---
 app.get('/api/credit-card-expenses', async (req, res) => {
   const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
@@ -583,31 +542,10 @@ app.post('/api/credit-card-expenses/new', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.patch('/api/credit-card-expenses/:id', async (req, res) => {
-  const { id } = req.params;
-  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
-  try {
-    const original = await pool.query('SELECT prime_key FROM credit_card_expenses WHERE id = $1', [id]);
-    const nextKey = await getNextVersionedKey('credit_card_expenses', original.rows[0].prime_key);
-    const result = await pool.query(
-      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
 // --- 10. Travel Expenses ---
 app.get('/api/travel-expenses', async (req, res) => {
   const result = await pool.query(`SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC`);
   res.json(result.rows.map(row => ({ id: row.id, contractShortName: row.contract_short_name, pdfFilePath: row.pdf_file_path, notes: row.notes, submitter: row.submitter_name })));
-});
-
-app.post('/api/travel-expenses/new', async (req, res) => {
-  const { contractShortName, pdfFilePath, notes, userId } = req.body;
-  const result = await pool.query(`INSERT INTO travel_expenses (contract_short_name, pdf_file_path, notes, submitter_id) VALUES ($1, $2, $3, $4) RETURNING *`, [contractShortName, pdfFilePath, notes, userId]);
-  res.status(201).json(result.rows[0]);
 });
 
 // --- 11. Excel Generation ---
@@ -623,7 +561,7 @@ app.post('/api/generate-excel', async (req, res) => {
   } catch (err) { res.status(500).send('Excel Error'); }
 });
 
-// --- 12. Email Records History Endpoints ---
+// --- 12. Email Records History ---
 app.get('/api/email-records', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -656,31 +594,7 @@ app.post('/api/email-records/new', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("POST Email Record Error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.patch('/api/email-records/:id', async (req, res) => {
-  const { id } = req.params;
-  const { 
-    subject, recipient, cc, task, bodyType, bodyContent, 
-    contractShortName, sender, pdfFilePath, emailDate, userId 
-  } = req.body;
-
-  try {
-    const original = await pool.query('SELECT prime_key FROM email_records WHERE id = $1', [id]);
-    const nextKey = await getNextVersionedKey('email_records', original.rows[0].prime_key);
-    const result = await pool.query(
-      `INSERT INTO email_records (
-        prime_key, subject, recipient, cc_recipients, task, body_type, 
-        body_content, sender, contract_short_name, 
-        pdf_file_path, email_date, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [nextKey, subject, recipient, cc || null, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
+    console.error("POST Error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
