@@ -361,6 +361,26 @@ app.use(express.json());
 
 // --- 2. Microsoft Graph Client Configuration ---
 // This replaces Nodemailer to avoid Render's SMTP port blocks
+// const msalConfig = {
+//   auth: {
+//     clientId: process.env.MS_CLIENT_ID,
+//     authority: `https://login.microsoftonline.com/${process.env.MS_TENANT_ID}`,
+//     clientSecret: process.env.MS_CLIENT_SECRET,
+//   },
+// };
+
+// const cca = new ConfidentialClientApplication(msalConfig);
+
+// async function getAuthenticatedClient() {
+//   const tokenRequest = {
+//     scopes: ['https://graph.microsoft.com/.default'],
+//   };
+//   const response = await cca.acquireTokenByClientCredential(tokenRequest);
+//   return Client.init({
+//     authProvider: (done) => done(null, response.accessToken),
+//   });
+// }
+
 const msalConfig = {
   auth: {
     clientId: process.env.MS_CLIENT_ID,
@@ -380,6 +400,7 @@ async function getAuthenticatedClient() {
     authProvider: (done) => done(null, response.accessToken),
   });
 }
+
 
 // --- 3. PostgreSQL Connection Pool ---
 const dbConfig = {};
@@ -440,6 +461,39 @@ async function getNextVersionedKey(tableName, baseKey = null) {
 }
 
 // --- 5. Updated Send Email Route (Using Graph API) ---
+// app.post('/api/send-email', async (req, res) => {
+//   const { recipient, cc, subject, bodyContent } = req.body;
+
+//   if (!recipient || !subject) {
+//     return res.status(400).json({ error: 'Recipient and Subject are required' });
+//   }
+
+//   try {
+//     const client = await getAuthenticatedClient();
+//     const sendMail = {
+//       message: {
+//         subject: subject,
+//         body: {
+//           contentType: 'Text',
+//           content: bodyContent,
+//         },
+//         toRecipients: [{ emailAddress: { address: recipient } }],
+//         ccRecipients: cc ? [{ emailAddress: { address: cc } }] : [],
+//       },
+//       saveToSentItems: 'true',
+//     };
+
+//     // Replace the email below with your authorized Office 365 email
+//     await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
+    
+//     console.log(`Email sent successfully to ${recipient}`);
+//     res.status(200).json({ message: 'Email sent successfully via Microsoft Graph API' });
+//   } catch (error) {
+//     console.error('Graph API Error:', error);
+//     res.status(500).json({ error: 'Failed to send email', details: error.message });
+//   }
+// });
+
 app.post('/api/send-email', async (req, res) => {
   const { recipient, cc, subject, bodyContent } = req.body;
 
@@ -462,16 +516,14 @@ app.post('/api/send-email', async (req, res) => {
       saveToSentItems: 'true',
     };
 
-    // Replace the email below with your authorized Office 365 email
     await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
-    
-    console.log(`Email sent successfully to ${recipient}`);
-    res.status(200).json({ message: 'Email sent successfully via Microsoft Graph API' });
+    res.status(200).json({ message: 'Email sent successfully via Graph API' });
   } catch (error) {
     console.error('Graph API Error:', error);
     res.status(500).json({ error: 'Failed to send email', details: error.message });
   }
 });
+
 
 // --- 6. Authentication ---
 app.post('/api/login', async (req, res) => {
