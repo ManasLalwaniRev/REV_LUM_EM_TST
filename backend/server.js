@@ -360,25 +360,47 @@ app.use(cors({
 app.use(express.json()); 
 
 // --- 2. Outlook Transporter Configuration (Enhanced for ETIMEDOUT) ---
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.office365.com",
+//   port: 587,
+//   secure: false, // Must be false for 587
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS, // Your 16-character App Password
+//   },
+//   tls: {
+//     ciphers: 'SSLv1.2', 
+//     rejectUnauthorized: false
+//   },
+//   // Increased timeouts to handle network latency and prevent ETIMEDOUT
+//   connectionTimeout: 20000, 
+//   greetingTimeout: 20000,
+//   socketTimeout: 30000,
+//   debug: true, // Enable to see detailed SMTP traffic in console
+//   logger: true 
+// });
+
+
+// --- 2. Updated Transporter for Render Environment ---
 const transporter = nodemailer.createTransport({
   host: "smtp.office365.com",
-  port: 587,
-  secure: false, // Must be false for 587
+  port: 465,            // Switch to 465
+  secure: true,          // Must be true for 465
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Your 16-character App Password
+    pass: process.env.EMAIL_PASS, 
   },
   tls: {
     ciphers: 'SSLv1.2', 
     rejectUnauthorized: false
   },
-  // Increased timeouts to handle network latency and prevent ETIMEDOUT
   connectionTimeout: 20000, 
   greetingTimeout: 20000,
   socketTimeout: 30000,
-  debug: true, // Enable to see detailed SMTP traffic in console
+  debug: true, 
   logger: true 
 });
+
 
 // --- 3. PostgreSQL Connection Pool ---
 const dbConfig = {};
