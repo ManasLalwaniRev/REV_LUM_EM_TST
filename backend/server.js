@@ -124,12 +124,16 @@ app.post('/api/send-email', async (req, res) => {
   };
 
   try {
-    console.log(`Attempting to send email to ${recipient}...`);
-    await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: 'Email sent successfully via Outlook' });
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent: ' + info.response); // Log successful response
+    res.status(200).json({ message: 'Email sent successfully' });
   } catch (error) {
-    console.error('Detailed Email Error:', error);
-    res.status(500).json({ error: 'Failed to send email', details: error.message });
+    console.error('SMTP Error:', error); // This will show if it's "Auth Failed" or "Timeout"
+    res.status(500).json({ 
+      error: 'Failed to send email', 
+      code: error.code, 
+      command: error.command 
+    });
   }
 });
 
