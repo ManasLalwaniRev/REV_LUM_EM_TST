@@ -426,7 +426,7 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- 5. Email Route (Microsoft Graph API) ---
+// --- 5. Email Route ---
 app.post('/api/send-email', async (req, res) => {
   const { recipient, cc, subject, bodyContent } = req.body;
   if (!recipient || !subject) return res.status(400).json({ error: 'Recipient/Subject required' });
@@ -485,7 +485,7 @@ app.get('/api/contract-options', async (req, res) => {
   res.json(result.rows);
 });
 
-// --- 8. Vendor Expenses (CRUD) ---
+// --- 8. Vendor Expenses (Updated for Status Column) ---
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -498,13 +498,13 @@ app.get('/api/vendor-expenses', async (req, res) => {
 });
 
 app.post('/api/vendor-expenses/new', async (req, res) => {
-  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
   try {
     const nextKey = await getNextVersionedKey('vendor_expenses');
     const result = await pool.query(
-      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -512,16 +512,16 @@ app.post('/api/vendor-expenses/new', async (req, res) => {
 
 app.patch('/api/vendor-expenses/:id', async (req, res) => {
   const { id } = req.params;
-  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
   try {
     const original = await pool.query('SELECT prime_key FROM vendor_expenses WHERE id = $1', [id]);
     if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
     const nextKey = await getNextVersionedKey('vendor_expenses', original.rows[0].prime_key);
     const result = await pool.query(
-      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -540,13 +540,13 @@ app.get('/api/credit-card-expenses', async (req, res) => {
 });
 
 app.post('/api/credit-card-expenses/new', async (req, res) => {
-  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
   try {
     const nextKey = await getNextVersionedKey('credit_card_expenses');
     const result = await pool.query(
-      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -554,79 +554,22 @@ app.post('/api/credit-card-expenses/new', async (req, res) => {
 
 app.patch('/api/credit-card-expenses/:id', async (req, res) => {
   const { id } = req.params;
-  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
   try {
     const original = await pool.query('SELECT prime_key FROM credit_card_expenses WHERE id = $1', [id]);
     if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
     const nextKey = await getNextVersionedKey('credit_card_expenses', original.rows[0].prime_key);
     const result = await pool.query(
-      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 10. Travel & Excel ---
-app.post('/api/generate-excel', async (req, res) => {
-  try {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Data');
-    sheet.addRows(req.body.data);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (err) { res.status(500).send('Excel Error'); }
-});
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-// --- Automated Change Monitor (Every 15 Minutes) ---
-const CHECK_INTERVAL = 15 * 60 * 1000; // 15 minutes
-
-setInterval(async () => {
-  try {
-    const fifteenMinutesAgo = new Date(Date.now() - CHECK_INTERVAL);
-    
-    // Check both Vendor and Credit Card expenses for changes
-    const result = await pool.query(`
-      SELECT 'Vendor' as type, prime_key, vendor_name as name, is_approved 
-      FROM vendor_expenses WHERE created_at >= $1
-      UNION ALL
-      SELECT 'Credit Card' as type, prime_key, vendor_name as name, is_approved 
-      FROM credit_card_expenses WHERE created_at >= $1
-    `, [fifteenMinutesAgo]);
-
-    if (result.rows.length > 0) {
-      const client = await getAuthenticatedClient();
-      
-      let reportBody = "The following records were added or updated in the last 15 minutes:\n\n";
-      result.rows.forEach(row => {
-        reportBody += `[${row.type}] Record: ${row.prime_key} | Vendor: ${row.name} | Status: ${row.is_approved ? 'Approved' : 'Rejected'}\n`;
-      });
-      reportBody += `\nView changes here: https://rev-lum-em-tst.vercel.app`;
-
-      const sendMail = {
-        message: {
-          subject: "System Alert: Expense Records Modified",
-          body: { contentType: 'Text', content: reportBody },
-          toRecipients: [{ emailAddress: { address: 'Manas.Lalwani@revolvespl.com' } }],
-        }
-      };
-
-      await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
-      console.log(`15-min update sent for ${result.rows.length} records.`);
-    }
-  } catch (error) {
-    console.error("Monitor Error:", error.message);
-  }
-}, CHECK_INTERVAL);
-
-// --- Subk & Travel Combined Routes ---
-
-// GET all records
+// --- 10. Subk & Travel Combined Routes ---
 app.get('/api/subk-travel', async (req, res) => {
   try {
     const result = await pool.query(`
@@ -638,11 +581,10 @@ app.get('/api/subk-travel', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST new record
 app.post('/api/subk-travel/new', async (req, res) => {
   const { 
     category, contractShortName, projectName, pmName, email, ccRecipients, 
-    chargeAmount, chargeDate, pdfFilePath, notes, isApproved, subkName, 
+    chargeAmount, chargeDate, pdfFilePath, notes, status, subkName, 
     laborCategory, userId 
   } = req.body;
   
@@ -652,19 +594,18 @@ app.post('/api/subk-travel/new', async (req, res) => {
       `INSERT INTO subk_travel_expenses (
         prime_key, category, contract_short_name, project_name, pm_name, email, 
         cc_recipients, charge_amount, charge_date, pdf_file_path, notes, 
-        is_approved, subk_name, labor_category, submitter_id
+        status, subk_name, labor_category, submitter_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         nextKey, category, contractShortName, projectName, pmName, email, 
         ccRecipients, chargeAmount || 0, chargeDate || null, pdfFilePath, notes, 
-        isApproved, subkName, laborCategory, userId
+        status || 'Submitted', subkName, laborCategory, userId
       ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// PATCH (Update/Version) record
 app.patch('/api/subk-travel/:id', async (req, res) => {
   const { id } = req.params;
   const data = req.body;
@@ -677,15 +618,59 @@ app.patch('/api/subk-travel/:id', async (req, res) => {
       `INSERT INTO subk_travel_expenses (
         prime_key, category, contract_short_name, project_name, pm_name, email, 
         cc_recipients, charge_amount, charge_date, pdf_file_path, notes, 
-        is_approved, subk_name, labor_category, submitter_id
+        status, subk_name, labor_category, submitter_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
       [
         nextKey, data.category, data.contractShortName, data.projectName, data.pmName, 
         data.email, data.ccRecipients, data.chargeAmount || 0, data.chargeDate || null, 
-        data.pdfFilePath, data.notes, data.isApproved, data.subkName, 
+        data.pdfFilePath, data.notes, data.status || 'Submitted', data.subkName, 
         data.laborCategory, data.userId
       ]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// --- 11. Automated Change Monitor (Updated for Status String) ---
+const CHECK_INTERVAL = 15 * 60 * 1000;
+
+setInterval(async () => {
+  try {
+    const fifteenMinutesAgo = new Date(Date.now() - CHECK_INTERVAL);
+    
+    const result = await pool.query(`
+      SELECT 'Vendor' as type, prime_key, vendor_name as name, status 
+      FROM vendor_expenses WHERE created_at >= $1
+      UNION ALL
+      SELECT 'Credit Card' as type, prime_key, vendor_name as name, status 
+      FROM credit_card_expenses WHERE created_at >= $1
+      UNION ALL
+      SELECT 'Subk/Travel' as type, prime_key, project_name as name, status 
+      FROM subk_travel_expenses WHERE created_at >= $1
+    `, [fifteenMinutesAgo]);
+
+    if (result.rows.length > 0) {
+      const client = await getAuthenticatedClient();
+      
+      let reportBody = "The following records were added or updated in the last 15 minutes:\n\n";
+      result.rows.forEach(row => {
+        reportBody += `[${row.type}] Record: ${row.prime_key} | Item/Vendor: ${row.name} | Status: ${row.status}\n`;
+      });
+      reportBody += `\nView changes here: https://rev-lum-em-tst.vercel.app`;
+
+      const sendMail = {
+        message: {
+          subject: "System Alert: Expense Records Modified",
+          body: { contentType: 'Text', content: reportBody },
+          toRecipients: [{ emailAddress: { address: 'Manas.Lalwani@revolvespl.com' } }],
+        }
+      };
+
+      await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
+    }
+  } catch (error) {
+    console.error("Monitor Error:", error.message);
+  }
+}, CHECK_INTERVAL);
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

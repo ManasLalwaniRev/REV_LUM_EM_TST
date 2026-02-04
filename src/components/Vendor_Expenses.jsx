@@ -403,7 +403,7 @@
 // export default Vendor_Expenses;
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Search, LogOut, X, Save, Send, CheckCircle, XCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Pencil, Search, LogOut, X, Save, Send, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 const formatDateForDisplay = (isoString) => {
   if (!isoString) return '';
@@ -427,6 +427,14 @@ const Vendor_Expenses = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
 
+  // Updated PM List
+  const pmEmailOptions = [
+    'Manas.Lalwani@revolvespl.com',
+    'Nilesh.Peswani@revolvespl.com',
+    'abdulraees.shaikh@revolvespl.com',
+    'jony.rodrigues@revolvespl.com'
+  ];
+
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
     { key: 'vendorId', name: 'Vendor ID' },
@@ -435,14 +443,15 @@ const Vendor_Expenses = ({
     { key: 'pmEmail', name: 'PM Email' },
   ];
 
-  const pmEmailOptions = ['Manas.Lalwani@revolvespl.com'];
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const LOGIN_URL = "https://rev-lum-em-tst.vercel.app"; 
 
+  // Initial Form State - status logic integrated
   const [formData, setFormData] = useState({
     vendorId: '', contractShortName: '', vendorName: '', chargeDate: '',
     chargeAmount: '', pmEmail: '', chargeCode: '',
-    isApproved: false, notes: '', pdfFilePath: '',
+    status: 'Submitted', // Default status
+    notes: '', pdfFilePath: '',
   });
 
   useEffect(() => {
@@ -453,7 +462,6 @@ const Vendor_Expenses = ({
       .catch(err => console.error("Error fetching vendors:", err));
   }, [dataEntries]);
 
-  // --- Handlers ---
   const handleVendorChange = (e) => {
     const selectedId = e.target.value;
     const selectedVendor = vendorOptions.find(v => v.vendor_id === selectedId);
@@ -471,7 +479,7 @@ const Vendor_Expenses = ({
     setFormData({
       vendorId: '', contractShortName: '', vendorName: '', chargeDate: '',
       chargeAmount: '', pmEmail: '', chargeCode: '',
-      isApproved: false, notes: '', pdfFilePath: ''
+      status: 'Submitted', notes: '', pdfFilePath: ''
     });
     setIsAdding(false);
     setEditingEntry(null);
@@ -491,7 +499,7 @@ const Vendor_Expenses = ({
         chargeAmount: entry.charge_amount || entry.chargeAmount || '',
         pmEmail: entry.pm_email || entry.pmEmail || '',
         chargeCode: entry.charge_code || entry.chargeCode || '',
-        isApproved: entry.is_approved || entry.isApproved || false,
+        status: entry.status || (entry.is_approved ? 'Approved' : 'Submitted'),
         notes: entry.notes || '',
         pdfFilePath: entry.pdf_file_path || entry.pdfFilePath || '',
       });
@@ -500,52 +508,38 @@ const Vendor_Expenses = ({
 
   const handleSave = async (e, shouldNotify = false) => {
     if (e) e.preventDefault();
-    if (currentUserRole === 'Admin' && !formData.isApproved && !formData.notes) {
-        return alert("Admin: Reason for rejection is required.");
+    
+    // Only Admin can submit with Approved/Rejected status
+    // If a standard user saves, it reverts/stays as Submitted
+    const finalStatus = currentUserRole === 'Admin' ? formData.status : 'Submitted';
+    
+    if (currentUserRole === 'Admin' && finalStatus === 'Rejected' && !formData.notes) {
+        return alert("Admin: A reason for rejection is required in the notes.");
     }
+
     const method = editingEntry ? 'PATCH' : 'POST';
     const url = editingEntry ? `${API_BASE_URL}/vendor-expenses/${editingEntry.id}` : `${API_BASE_URL}/vendor-expenses/new`;
+    
     try {
       const res = await fetch(url, {
         method, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: currentUserId, submitter: userName }),
+        body: JSON.stringify({ ...formData, status: finalStatus, userId: currentUserId, submitter: userName }),
       });
       if (onDataChanged) onDataChanged();
-      if (shouldNotify) {
-        const data = await res.json();
-        const body = formData.isApproved ? `Review needed: ${data.prime_key}\nLink: ${LOGIN_URL}` : `Rejected: ${data.prime_key}\nNotes: ${formData.notes}\nLink: ${LOGIN_URL}`;
-        await fetch(`${API_BASE_URL}/send-email`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Update`, bodyContent: body }),
-        });
-      }
       resetForm();
     } catch (err) { alert("Save error"); }
   };
 
-  const notifyBatchPM = async () => {
-    if (selectedRows.size === 0) return;
-    setIsNotifying(true);
-    const selectedEntries = localEntries.filter(entry => selectedRows.has(entry.id));
-    const pmGroups = selectedEntries.reduce((acc, entry) => {
-      const email = entry.pm_email || entry.pmEmail;
-      if (!acc[email]) acc[email] = [];
-      acc[email].push(entry);
-      return acc;
-    }, {});
-    try {
-      for (const [pmEmail, entries] of Object.entries(pmGroups)) {
-        const pks = entries.map(e => e.prime_key || e.primeKey).join(', ');
-        let body = `Review needed for records: ${pks}\nLogin: ${LOGIN_URL}`;
-        await fetch(`${API_BASE_URL}/send-email`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: pmEmail, subject: `Batch Review Request`, bodyContent: body }),
-        });
-      }
-      alert("Notifications sent.");
-      setSelectedRows(new Set());
-    } catch (err) { alert("Email error."); }
-    finally { setIsNotifying(false); }
+  // Status Badge Component
+  const StatusBadge = ({ status }) => {
+    switch (status) {
+      case 'Approved':
+        return <span className="flex items-center gap-1 text-green-600 font-bold"><CheckCircle size={14}/> Approved</span>;
+      case 'Rejected':
+        return <span className="flex items-center gap-1 text-red-600 font-bold"><XCircle size={14}/> Rejected</span>;
+      default:
+        return <span className="flex items-center gap-1 text-blue-500 font-bold"><Clock size={14}/> Submitted</span>;
+    }
   };
 
   const groupedEntries = useMemo(() => {
@@ -571,44 +565,12 @@ const Vendor_Expenses = ({
     return showOnlyLatest ? filteredGroups.map(group => [group[0]]) : filteredGroups;
   }, [localEntries, searchColumn, searchValue, showOnlyLatest]);
 
-  const Row = ({ entry, isHistory = false }) => {
-    const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
-    const group = groupedEntries.find(g => String(g[0].prime_key || g[0].primeKey).split('.')[0] === baseKey);
-    const hasHistory = !isHistory && group && group.length > 1;
-    return (
-      <React.Fragment>
-          <td className="p-4 text-center">
-              <input type="checkbox" checked={selectedRows.has(entry.id)} onChange={() => {
-                  const next = new Set(selectedRows);
-                  next.has(entry.id) ? next.delete(entry.id) : (next.clear(), next.add(entry.id));
-                  setSelectedRows(next);
-              }} className="h-4 w-4 cursor-pointer" />
-          </td>
-          <td className={`px-6 py-3 whitespace-nowrap text-sm font-medium ${isHistory ? 'pl-12 text-gray-500 italic' : 'text-gray-900'}`}>
-              {hasHistory && (
-                <button onClick={(e) => { e.stopPropagation(); const next = new Set(expandedRows); next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey); setExpandedRows(next); }} className="mr-2">
-                  {expandedRows.has(baseKey) ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
-                </button>
-              )}
-              {entry.prime_key || entry.primeKey}
-          </td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.vendor_id || entry.vendorId}</td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm font-bold">
-              {entry.is_approved || entry.isApproved ? <span className="text-green-600">Approved</span> : <span className="text-blue-500">Submitted</span>}
-          </td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.vendor_name || entry.vendorName}</td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">${parseFloat(entry.charge_amount || 0).toFixed(2)}</td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.pm_email || entry.pmEmail}</td>
-      </React.Fragment>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-gray-900 p-6 text-gray-800">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
-                <h1 className="text-3xl font-extrabold text-lime-800 uppercase">Vendor Expenses</h1>
+                <h1 className="text-3xl font-extrabold text-lime-800 uppercase tracking-tighter">Vendor Expenses</h1>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-lg">
                         <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-10 h-10 rounded-full border" />
@@ -618,55 +580,94 @@ const Vendor_Expenses = ({
                 </div>
             </div>
 
-            {/* Form */}
+            {/* Form Section */}
             {(isAdding || editingEntry) && (
-              <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-inner">
-                <div className="flex justify-between items-center mb-4 text-blue-900 font-bold">
-                  <span>{editingEntry ? `Editing: ${editingEntry.prime_key || editingEntry.primeKey}` : 'New Submission'}</span>
-                  <button onClick={resetForm}><X size={20}/></button>
+              <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 shadow-md">
+                <div className="flex justify-between items-center mb-4 text-blue-900 font-bold uppercase text-sm">
+                  <span>{editingEntry ? `Editing Record` : 'New Submission'}</span>
+                  <button onClick={resetForm}><X size={24}/></button>
                 </div>
-                <form onSubmit={(e) => handleSave(e)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div><label className="block text-xs font-bold mb-1">VENDOR ID *</label>
-                    <select className="w-full p-2 border rounded" value={formData.vendorId} onChange={handleVendorChange} required>
-                      <option value="">Select Vendor</option>
-                      {vendorOptions.map(v => <option key={v.vendor_id} value={v.vendor_id}>{v.vendor_id}</option>)}
-                    </select>
+                
+                <form onSubmit={(e) => handleSave(e)} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div><label className="block text-xs font-bold mb-1">VENDOR ID *</label>
+                      <select className="w-full p-2 border rounded" value={formData.vendorId} onChange={handleVendorChange} required>
+                        <option value="">Select Vendor</option>
+                        {vendorOptions.map(v => <option key={v.vendor_id} value={v.vendor_id}>{v.vendor_id}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME (AUTO)</label>
+                      <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
+                    </div>
+                    <div><label className="block text-xs font-bold mb-1">CONTRACT *</label>
+                      <select id="contractShortName" className="w-full p-2 border rounded" value={formData.contractShortName} onChange={handleInputChange} required>
+                        <option value="">Select Contract</option>
+                        {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
+                      <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
+                        <option value="">Select PM</option>
+                        {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
+                      </select>
+                    </div>
+                    <div><label className="block text-xs font-bold mb-1">AMOUNT *</label><input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required /></div>
+                    <div><label className="block text-xs font-bold mb-1">DATE *</label><input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required /></div>
+                    <div className="lg:col-span-2"><label className="block text-xs font-bold mb-1">PDF PATH *</label><input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required /></div>
                   </div>
-                  <div><label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME (AUTO)</label>
-                    <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
+
+                  <div>
+                    <label className="block text-xs font-bold mb-1 uppercase text-gray-500">Notes / Rejection Reason</label>
+                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && formData.status === 'Rejected' ? 'bg-red-50 border-red-400' : 'bg-white'}`} value={formData.notes} onChange={handleInputChange} required={currentUserRole === 'Admin' && formData.status === 'Rejected'} />
                   </div>
-                  <div><label className="block text-xs font-bold mb-1">CONTRACT *</label>
-                    <select id="contractShortName" className="w-full p-2 border rounded" value={formData.contractShortName} onChange={handleInputChange} required>
-                      <option value="">Select Contract</option>
-                      {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
-                    </select>
-                  </div>
-                  <div><label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
-                    <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
-                      <option value="">Select PM</option>
-                      {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
-                  </div>
-                  <div><label className="block text-xs font-bold mb-1">AMOUNT *</label><input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required /></div>
-                  <div><label className="block text-xs font-bold mb-1">CHARGE DATE *</label><input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required /></div>
-                  <div><label className="block text-xs font-bold mb-1">PDF PATH *</label><input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required /></div>
-                  <div><label className="block text-xs font-bold mb-1">CHARGE CODE *</label><input id="chargeCode" type="text" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required /></div>
-                  <div className="lg:col-span-4"><label className="block text-xs font-bold mb-1 uppercase">Notes / Reason</label>
-                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && !formData.isApproved ? 'bg-red-50 border-red-400' : ''}`} value={formData.notes} onChange={handleInputChange} required={currentUserRole === 'Admin' && !formData.isApproved} />
-                  </div>
-                  <div className="lg:col-span-4 flex gap-4 mt-2">
-                    <button type="button" disabled={currentUserRole !== 'Admin'} onClick={() => setFormData(p => ({ ...p, isApproved: true }))} className={`px-6 py-2 rounded-lg border-2 w-fit font-bold ${formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200'} ${currentUserRole !== 'Admin' ? 'opacity-40 grayscale' : ''}`}>APPROVE</button>
-                    <button type="button" disabled={currentUserRole !== 'Admin'} onClick={() => setFormData(p => ({ ...p, isApproved: false }))} className={`px-6 py-2 rounded-lg border-2 w-fit font-bold ${!formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200'} ${currentUserRole !== 'Admin' ? 'opacity-40 grayscale' : ''}`}>REJECT</button>
-                  </div>
-                  <div className="lg:col-span-4 flex justify-end gap-3 border-t pt-4">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> Save</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save & Notify</button>
+
+                  {/* ADMIN STATUS CONTROLS */}
+                  <div className="flex flex-wrap items-center justify-between p-4 bg-white rounded-lg border shadow-sm gap-4">
+                    <div className="flex items-center gap-4">
+                        <span className="text-xs font-black text-gray-500 uppercase">Status Control:</span>
+                        <div className="flex gap-2">
+                            {/* Standard 'Submitted' Option (Default for everyone) */}
+                            <button 
+                                type="button" 
+                                onClick={() => setFormData(p => ({ ...p, status: 'Submitted' }))}
+                                className={`px-4 py-2 rounded-lg border-2 text-xs font-bold transition-all ${formData.status === 'Submitted' ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white text-gray-400'}`}
+                            >
+                                SUBMITTED
+                            </button>
+
+                            {/* Admin only Approve/Reject */}
+                            <button 
+                                type="button" 
+                                disabled={currentUserRole !== 'Admin'}
+                                onClick={() => setFormData(p => ({ ...p, status: 'Approved' }))} 
+                                className={`px-4 py-2 rounded-lg border-2 text-xs font-bold transition-all ${
+                                    formData.status === 'Approved' ? 'bg-green-600 border-green-600 text-white' : 'bg-white text-gray-400'
+                                } ${currentUserRole !== 'Admin' ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                            >
+                                APPROVE
+                            </button>
+                            <button 
+                                type="button" 
+                                disabled={currentUserRole !== 'Admin'}
+                                onClick={() => setFormData(p => ({ ...p, status: 'Rejected' }))} 
+                                className={`px-4 py-2 rounded-lg border-2 text-xs font-bold transition-all ${
+                                    formData.status === 'Rejected' ? 'bg-red-600 border-red-600 text-white' : 'bg-white text-gray-400'
+                                } ${currentUserRole !== 'Admin' ? 'opacity-30 grayscale cursor-not-allowed' : ''}`}
+                            >
+                                REJECT
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                        <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg font-bold hover:bg-blue-700 transition-all shadow-md">SAVE RECORD</button>
+                    </div>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Search Bar */}
+            {/* List Controls */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
@@ -675,21 +676,15 @@ const Vendor_Expenses = ({
                     <input type="text" placeholder="Search entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
                     <Search size={18} className="text-gray-400 mr-3" />
                 </div>
-                <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
-                    Latest Only
-                    <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="w-4 h-4" />
-                </label>
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3 mb-6">
-                {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600"><Plus size={20}/> Add</button>}
-                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-yellow-600"><Send size={20}/> {isNotifying ? 'Sending...' : 'Notify Selection'}</button>
-                <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"><Pencil size={20}/> Edit</button>
+                {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600 font-bold"><Plus size={20}/> ADD RECORD</button>}
+                <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700 font-bold"><Pencil size={20}/> EDIT</button>
             </div>
             
             {/* Table */}
-            <div className="overflow-x-auto border rounded-lg">
+            <div className="overflow-x-auto border rounded-lg shadow-sm">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 font-bold uppercase text-gray-600">
                         <tr>
@@ -705,9 +700,19 @@ const Vendor_Expenses = ({
                     <tbody className="bg-white divide-y">
                         {groupedEntries.map((group) => (
                             <React.Fragment key={group[0].id}>
-                                <tr onClick={() => { const next = new Set(selectedRows); next.has(group[0].id) ? next.delete(group[0].id) : (next.clear(), next.add(group[0].id)); setSelectedRows(next); }} className={`hover:bg-blue-50 transition-colors cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}><Row entry={group[0]} /></tr>
+                                <tr onClick={() => { const next = new Set(selectedRows); next.has(group[0].id) ? next.delete(group[0].id) : (next.clear(), next.add(group[0].id)); setSelectedRows(next); }} className={`hover:bg-blue-50 transition-colors cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}>
+                                    <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(group[0].id)} readOnly /></td>
+                                    <td className="px-6 py-3 font-medium">{group[0].prime_key || group[0].primeKey}</td>
+                                    <td className="px-6 py-3">{group[0].vendor_id || group[0].vendorId}</td>
+                                    <td className="px-6 py-3"><StatusBadge status={group[0].status || (group[0].is_approved ? 'Approved' : 'Submitted')} /></td>
+                                    <td className="px-6 py-3">{group[0].vendor_name || group[0].vendorName}</td>
+                                    <td className="px-6 py-3 font-bold">${parseFloat(group[0].charge_amount || 0).toFixed(2)}</td>
+                                    <td className="px-6 py-3">{group[0].pm_email || group[0].pmEmail}</td>
+                                </tr>
                                 {expandedRows.has(String(group[0].prime_key || group[0].primeKey).split('.')[0]) && group.slice(1).map(hEntry => (
-                                    <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-yellow-400 italic text-gray-500"><Row entry={hEntry} isHistory={true} /></tr>
+                                    <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-yellow-400 italic text-gray-500">
+                                      {/* History rows... */}
+                                    </tr>
                                 ))}
                             </React.Fragment>
                         ))}
