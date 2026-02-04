@@ -465,7 +465,7 @@ const Vendor_Expenses = ({
   const setStatus = (newStatus) => {
     // HARDCODED PERMISSION: Only username "Revolve" can change status
     if (userName !== 'Revolve') {
-      alert("Permission Denied: Only user 'Revolve' can Approve or Reject records.");
+      alert("Permission Denied: Only Admins can Approve or Reject records.");
       return;
     }
     setFormData(prev => ({ ...prev, status: newStatus }));

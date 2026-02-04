@@ -473,7 +473,7 @@ const CreditCardExpenses = ({
 
   const setStatus = (newStatus) => {
     if (userName !== 'Revolve') {
-      alert("Permission Denied: Only user 'Revolve' can Approve or Reject.");
+      alert("Permission Denied: Only Admins can Approve or Reject.");
       return;
     }
     setFormData(prev => ({ ...prev, status: newStatus }));
