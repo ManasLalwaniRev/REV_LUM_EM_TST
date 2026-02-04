@@ -623,3 +623,69 @@ setInterval(async () => {
     console.error("Monitor Error:", error.message);
   }
 }, CHECK_INTERVAL);
+
+// --- Subk & Travel Combined Routes ---
+
+// GET all records
+app.get('/api/subk-travel', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT st.*, u.username as submitter_name 
+      FROM subk_travel_expenses st 
+      LEFT JOIN users u ON st.submitter_id = u.id 
+      ORDER BY st.created_at DESC`);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST new record
+app.post('/api/subk-travel/new', async (req, res) => {
+  const { 
+    category, contractShortName, projectName, pmName, email, ccRecipients, 
+    chargeAmount, chargeDate, pdfFilePath, notes, isApproved, subkName, 
+    laborCategory, userId 
+  } = req.body;
+  
+  try {
+    const nextKey = await getNextVersionedKey('subk_travel_expenses');
+    const result = await pool.query(
+      `INSERT INTO subk_travel_expenses (
+        prime_key, category, contract_short_name, project_name, pm_name, email, 
+        cc_recipients, charge_amount, charge_date, pdf_file_path, notes, 
+        is_approved, subk_name, labor_category, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [
+        nextKey, category, contractShortName, projectName, pmName, email, 
+        ccRecipients, chargeAmount || 0, chargeDate || null, pdfFilePath, notes, 
+        isApproved, subkName, laborCategory, userId
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// PATCH (Update/Version) record
+app.patch('/api/subk-travel/:id', async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+  try {
+    const original = await pool.query('SELECT prime_key FROM subk_travel_expenses WHERE id = $1', [id]);
+    if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
+
+    const nextKey = await getNextVersionedKey('subk_travel_expenses', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO subk_travel_expenses (
+        prime_key, category, contract_short_name, project_name, pm_name, email, 
+        cc_recipients, charge_amount, charge_date, pdf_file_path, notes, 
+        is_approved, subk_name, labor_category, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [
+        nextKey, data.category, data.contractShortName, data.projectName, data.pmName, 
+        data.email, data.ccRecipients, data.chargeAmount || 0, data.chargeDate || null, 
+        data.pdfFilePath, data.notes, data.isApproved, data.subkName, 
+        data.laborCategory, data.userId
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});

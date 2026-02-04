@@ -237,25 +237,20 @@
 
 
 import React from 'react';
-import AboutPage from '@/components/AboutPage.jsx';
 import {
   Menu,
-  Database,
   Briefcase,
   Settings,
   LogOut,
-  FileText,      // General Entries
-  CreditCard,    // Credit Card
-  Plane,         // Travel        // New
-  Users,
+  FileText,
+  CreditCard,
+  Plane,
   Info,
   Book,
   LayoutDashboard,
-  Mail
-   // 1. Import the 'Info' icon for the About page
+  ShieldCheck // Icon for SLA
 } from "lucide-react";
 
-// Individual Sidebar Item Component (no changes needed here)
 const SidebarItem = ({ icon, text, page, currentPage, setCurrentPage, isCollapsed }) => (
   <button
     onClick={() => setCurrentPage(page)}
@@ -274,35 +269,33 @@ const SidebarItem = ({ icon, text, page, currentPage, setCurrentPage, isCollapse
       {text}
     </span>
     {isCollapsed && (
-        <div className="absolute left-full rounded-md px-2 py-1 ml-6 bg-gray-900 text-white text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
-            {text}
-        </div>
+      <div className="absolute left-full rounded-md px-2 py-1 ml-6 bg-gray-900 text-white text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
+        {text}
+      </div>
     )}
   </button>
 );
 
 export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, handleLogout, sidebarOpen, setSidebarOpen }) {
   
-  // 2. Update the navigation items
- const navItems = [
-  { page: 'view', label: 'Vendor Expenses', icon: <FileText className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <CreditCard className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'travel-expenses', label: 'Travel Expenses', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'subcontractor-assignments', label: 'SubK Assignments', icon: <Users className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'accountant', label: 'SLA', icon: <Briefcase className="h-5 w-5" />, roles: ['admin', 'accountant'] },
+  const navItems = [
+    { page: 'view', label: 'Vendor Expenses', icon: <FileText className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <CreditCard className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    // Combined Page
+    { page: 'subk-travel', label: 'SubK & Travel', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'bill', label: 'Billing', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-    { page: 'emails', label: 'Email Records', icon: <Mail size={20} />, roles: ['user', 'admin', 'accountant'] },
+    // Moved SLA Above Financial Dashboard
+    { page: 'accountant', label: 'SLA', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin', 'accountant'] },
     { 
-    page: 'dashboard', 
-    label: 'Financial Dashboard', 
-    icon: <LayoutDashboard className="h-5 w-5" />, // Use LayoutDashboard icon
-    roles: ['user', 'admin', 'accountant'] 
-  },
-  { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  // { page: 'bill', label: 'Billing', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
-  { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+      page: 'dashboard', 
+      label: 'Financial Dashboard', 
+      icon: <LayoutDashboard className="h-5 w-5" />, 
+      roles: ['user', 'admin', 'accountant'] 
+    },
+    { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+  ];
 
-];
   return (
     <div
       className={`fixed inset-y-0 left-0 bg-gray-100 text-gray-800 shadow-lg z-40 flex flex-col border-r border-gray-200 transition-all duration-300 ${
@@ -310,26 +303,15 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
       }`}
     >
       <div className="flex flex-col flex-1 p-3 overflow-y-auto">
-        {/* Header with Menu Toggle */}
-        <div
-          className={`flex items-center mb-4 p-2 ${
-            sidebarOpen ? "justify-start" : "justify-center"
-          }`}
-        >
+        <div className={`flex items-center mb-4 p-2 ${sidebarOpen ? "justify-start" : "justify-center"}`}>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 rounded-lg hover:bg-gray-100">
             <Menu className="h-6 w-6 text-gray-800" />
           </button>
-          <span
-            className={`ml-3 text-lg font-bold text-gray-900 transition-all duration-200 ${
-              sidebarOpen ? "opacity-100" : "opacity-0 hidden"
-            }`}
-          >
-            {/* 3. Change header text */}
-                Financial Management
-           </span>
+          <span className={`ml-3 text-lg font-bold text-gray-900 transition-all duration-200 ${sidebarOpen ? "opacity-100" : "opacity-0 hidden"}`}>
+            Financial Management
+          </span>
         </div>
         
-        {/* Navigation Items */}
         <nav className="flex-grow">
           {navItems.map(item =>
             item.roles.includes(currentUserRole) && (
@@ -346,32 +328,20 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
           )}
         </nav>
 
-        {/* --- DIVIDER & LOGOUT BUTTON (UNCOMMENTED) --- */}
         <div className="pt-2 mt-auto border-t border-gray-200">
-          {/* <button
+          <button
             onClick={handleLogout}
             className={`relative flex items-center w-full p-3 my-1 rounded-lg transition-colors duration-200 group cursor-pointer text-red-700 hover:bg-red-100 ${
               !sidebarOpen ? "justify-center" : ""
             }`}
-          > */}
-            {/* <LogOut className="h-5 w-5" /> */}
-            {/* <span
-              className={`ml-4 font-semibold transition-opacity duration-200 ${
-                !sidebarOpen ? "opacity-0 hidden" : "opacity-100"
-              }`}
-            >
+          >
+            <LogOut className="h-5 w-5" />
+            <span className={`ml-4 font-semibold transition-opacity duration-200 ${!sidebarOpen ? "opacity-0 hidden" : "opacity-100"}`}>
               Logout
-            </span> */}
-             {/* Tooltip for collapsed state */}
-            {/* {!sidebarOpen && (
-                <div className="absolute left-full rounded-md px-2 py-1 ml-6 bg-gray-900 text-white text-sm invisible opacity-20 -translate-x-3 transition-all group-hover:visible group-hover:opacity-100 group-hover:translate-x-0">
-                    Logout
-                </div>
-            )}
-          </button> */}
+            </span>
+          </button>
         </div>
 
-        {/* --- 4. "POWERED BY" TEXT AT THE BOTTOM --- */}
         <div className="pt-2 text-center">
             <span className={`text-xs text-gray-800 transition-opacity duration-200 ${!sidebarOpen ? 'hidden' : 'opacity-100'}`}>
                 Powered by Revolve
