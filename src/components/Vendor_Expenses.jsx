@@ -419,7 +419,7 @@ const Vendor_Expenses = ({
   userName = 'User', 
   userAvatar, 
   handleLogout, 
-  currentUserRole,
+  currentUserRole, // 'Admin' or 'User'
   currentUserId,
   onDataChanged,
   contractOptions = [],
@@ -437,7 +437,7 @@ const Vendor_Expenses = ({
 
   useEffect(() => {
     setLocalEntries(dataEntries || []);
-    // Fetch Master Vendors from Database
+    // Fetch Master Vendors
     fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
       .then(res => res.json())
       .then(data => setVendorOptions(data))
@@ -498,7 +498,6 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
-  // Grouping logic for versions
   const groupedEntries = useMemo(() => {
     const groups = localEntries.reduce((acc, entry) => {
       const baseKey = String(entry.prime_key || entry.primeKey).split('.')[0];
@@ -577,7 +576,7 @@ const Vendor_Expenses = ({
       for (const [pmEmail, entries] of Object.entries(pmGroups)) {
         const approved = entries.filter(e => e.is_approved || e.isApproved).map(e => e.prime_key || e.primeKey);
         const rejected = entries.filter(e => !(e.is_approved || e.isApproved)).map(e => `${e.prime_key || e.primeKey} (${e.notes})`);
-        let body = `Multiple records require action.\nApproved: ${approved.join(', ')}\nRejected: ${rejected.join(', ')}\nLogin: ${LOGIN_URL}`;
+        let body = `Multiple records require action.\nApproved: ${approved.join(', ')}\nRejected: ${rejected.join(', ')}\n\nLogin: ${LOGIN_URL}`;
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -624,7 +623,7 @@ const Vendor_Expenses = ({
                   setSelectedRows(next);
               }} className="h-4 w-4" />
           </td>
-          <td className={`px-6 py-3 whitespace-nowrap text-sm font-medium ${isHistory ? 'pl-12 text-gray-500' : 'text-gray-900'}`}>
+          <td className={`px-6 py-3 whitespace-nowrap text-sm font-medium ${isHistory ? 'pl-12 text-gray-500 italic' : 'text-gray-900'}`}>
               {hasHistory ? (
                 <button onClick={() => {
                   const next = new Set(expandedRows);
@@ -652,7 +651,7 @@ const Vendor_Expenses = ({
   return (
     <div className="min-h-screen bg-gray-900 p-6">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full text-gray-800">
-            {/* HEADER SECTION RESTORED */}
+            {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
                 <h1 className="text-3xl font-extrabold text-lime-800 uppercase">Vendor Expenses</h1>
                 <div className="flex items-center gap-4">
@@ -667,7 +666,7 @@ const Vendor_Expenses = ({
                 </div>
             </div>
 
-            {/* FORM SECTION */}
+            {/* Form Section */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <div className="flex justify-between items-center mb-4">
@@ -683,8 +682,8 @@ const Vendor_Expenses = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1">VENDOR NAME</label>
-                    <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
+                    <label className="block text-xs font-bold mb-1 uppercase text-gray-400">Vendor Name (Auto)</label>
+                    <input className="w-full p-2 border rounded bg-gray-100 text-gray-500" value={formData.vendorName} readOnly />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">CONTRACT *</label>
@@ -694,7 +693,7 @@ const Vendor_Expenses = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
+                    <label className="block text-xs font-bold mb-1 text-blue-700 uppercase">Notify PM *</label>
                     <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
                       <option value="">Select PM</option>
                       {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
@@ -718,23 +717,43 @@ const Vendor_Expenses = ({
                   </div>
                   <div className="lg:col-span-4">
                     <label className="block text-xs font-bold mb-1 uppercase">Notes / Rejection Reason</label>
-                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'bg-red-50 border-red-400' : ''}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} />
+                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'bg-red-50 border-red-400' : 'bg-white border-gray-300'}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} placeholder={!formData.isApproved ? "Mandatory for rejection..." : "Add notes..."} />
                   </div>
 
+                  {/* Role-Based Action Buttons (Shortened) */}
                   <div className="lg:col-span-4 flex gap-4">
-                    <button type="button" onClick={() => setFormData(p => ({ ...p, isApproved: true }))} className={`px-6 py-2 rounded-lg border-2 w-fit font-bold ${formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200'}`}>APPROVE</button>
-                    <button type="button" onClick={() => setFormData(p => ({ ...p, isApproved: false }))} className={`px-6 py-2 rounded-lg border-2 w-fit font-bold ${!formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200'}`}>REJECT</button>
+                    <button 
+                      type="button" 
+                      disabled={currentUserRole !== 'Admin'}
+                      onClick={() => setFormData(p => ({ ...p, isApproved: true }))} 
+                      className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 transition-all w-fit font-bold ${
+                        formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200'
+                      } ${currentUserRole !== 'Admin' ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:shadow-md'}`}
+                    >
+                      <CheckCircle size={18} /> APPROVE
+                    </button>
+                    
+                    <button 
+                      type="button" 
+                      disabled={currentUserRole !== 'Admin'}
+                      onClick={() => setFormData(p => ({ ...p, isApproved: false }))} 
+                      className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 transition-all w-fit font-bold ${
+                        !formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200'
+                      } ${currentUserRole !== 'Admin' ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:shadow-md'}`}
+                    >
+                      <XCircle size={18} /> REJECT
+                    </button>
                   </div>
 
-                  <div className="lg:col-span-4 flex justify-end gap-3">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save & Notify</button>
+                  <div className="lg:col-span-4 flex justify-end gap-3 mt-4 border-t pt-4">
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition"><Send size={18}/> Save & Notify</button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* SEARCH BAR SECTION RESTORED */}
+            {/* Search Section */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
@@ -749,14 +768,14 @@ const Vendor_Expenses = ({
                 </label>
             </div>
 
-            {/* ACTION BUTTONS RESTORED */}
+            {/* Main Action Buttons */}
             <div className="flex gap-3 mb-6">
                 {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600"><Plus size={20}/> Add</button>}
                 <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-purple-700"><Send size={20}/> {isNotifying ? 'Sending...' : 'Notify Selection'}</button>
                 <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"><Pencil size={20}/> Edit</button>
             </div>
             
-            {/* TABLE SECTION */}
+            {/* Table Section */}
             <div className="overflow-x-auto border rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 font-bold uppercase text-gray-600">

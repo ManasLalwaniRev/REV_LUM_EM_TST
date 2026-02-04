@@ -582,3 +582,44 @@ app.post('/api/generate-excel', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// --- Automated Change Monitor (Every 15 Minutes) ---
+const CHECK_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+setInterval(async () => {
+  try {
+    const fifteenMinutesAgo = new Date(Date.now() - CHECK_INTERVAL);
+    
+    // Check both Vendor and Credit Card expenses for changes
+    const result = await pool.query(`
+      SELECT 'Vendor' as type, prime_key, vendor_name as name, is_approved 
+      FROM vendor_expenses WHERE created_at >= $1
+      UNION ALL
+      SELECT 'Credit Card' as type, prime_key, vendor_name as name, is_approved 
+      FROM credit_card_expenses WHERE created_at >= $1
+    `, [fifteenMinutesAgo]);
+
+    if (result.rows.length > 0) {
+      const client = await getAuthenticatedClient();
+      
+      let reportBody = "The following records were added or updated in the last 15 minutes:\n\n";
+      result.rows.forEach(row => {
+        reportBody += `[${row.type}] Record: ${row.prime_key} | Vendor: ${row.name} | Status: ${row.is_approved ? 'Approved' : 'Rejected'}\n`;
+      });
+      reportBody += `\nView changes here: https://rev-lum-em-tst.vercel.app`;
+
+      const sendMail = {
+        message: {
+          subject: "System Alert: Expense Records Modified",
+          body: { contentType: 'Text', content: reportBody },
+          toRecipients: [{ emailAddress: { address: 'Manas.Lalwani@revolvespl.com' } }],
+        }
+      };
+
+      await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
+      console.log(`15-min update sent for ${result.rows.length} records.`);
+    }
+  } catch (error) {
+    console.error("Monitor Error:", error.message);
+  }
+}, CHECK_INTERVAL);
