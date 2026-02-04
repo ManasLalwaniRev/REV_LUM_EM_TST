@@ -425,9 +425,9 @@ const BillingPage = ({
 
         {/* Persistence Banner */}
         {(isAdding || editingEntry) && (
-          // <div className="mb-2 text-[10px] font-bold text-purple-500 uppercase animate-pulse">
-          //   Local Form Cache Active
-          // </div>
+          <div className="mb-2 text-[10px] font-bold text-purple-500 uppercase animate-pulse">
+        
+          </div>
         )}
 
         {/* Input Form */}
