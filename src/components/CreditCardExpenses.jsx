@@ -415,6 +415,7 @@ const CreditCardExpenses = ({
   dataEntries, isLoading, userName = 'User', userAvatar, handleLogout, 
   currentUserRole, currentUserId, onDataChanged, contractOptions = [], creditCardOptions = []
 }) => {
+  const [vendorOptions, setVendorOptions] = useState([]);
   const [searchColumn, setSearchColumn] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
@@ -434,20 +435,36 @@ const CreditCardExpenses = ({
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
     { key: 'creditCard', name: 'Credit Card' },
+    { key: 'vendorId', name: 'Vendor ID' },
+    { key: 'vendorName', name: 'Vendor Name' },
     { key: 'contractShortName', name: 'Contract' },
-    { key: 'vendorName', name: 'Vendor' },
-    { key: 'pmEmail', name: 'PM Email' },
   ];
 
   const [formData, setFormData] = useState({
-    creditCard: '', contractShortName: '', vendorName: '', chargeDate: '',
-    chargeAmount: '', pmEmail: '', chargeCode: '',
+    creditCard: '', vendorId: '', vendorName: '', contractShortName: '', 
+    chargeDate: '', chargeAmount: '', pmEmail: '', chargeCode: '',
     status: 'Submitted', notes: '', pdfFilePath: '',
   });
 
   useEffect(() => {
     setLocalEntries(dataEntries || []);
+    // Fetch Master Vendors for the dropdown
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
+      .then(res => res.json())
+      .then(data => setVendorOptions(data))
+      .catch(err => console.error("Error fetching vendors:", err));
   }, [dataEntries]);
+
+  // --- Logic ---
+  const handleVendorChange = (e) => {
+    const selectedId = e.target.value;
+    const selectedVendor = vendorOptions.find(v => v.vendor_id === selectedId);
+    setFormData(prev => ({
+      ...prev, 
+      vendorId: selectedId, 
+      vendorName: selectedVendor ? selectedVendor.vendor_name : ''
+    }));
+  };
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -455,9 +472,8 @@ const CreditCardExpenses = ({
   };
 
   const setStatus = (newStatus) => {
-    // HARDCODED PERMISSION: Only user "Revolve" can change status
     if (userName !== 'Revolve') {
-      alert("Permission Denied: Only user 'Revolve' can Approve or Reject records.");
+      alert("Permission Denied: Only user 'Revolve' can Approve or Reject.");
       return;
     }
     setFormData(prev => ({ ...prev, status: newStatus }));
@@ -465,7 +481,7 @@ const CreditCardExpenses = ({
 
   const resetForm = () => {
     setFormData({
-      creditCard: '', contractShortName: '', vendorName: '', chargeDate: '',
+      creditCard: '', vendorId: '', vendorName: '', contractShortName: '', chargeDate: '',
       chargeAmount: '', pmEmail: '', chargeCode: '',
       status: 'Submitted', notes: '', pdfFilePath: ''
     });
@@ -481,8 +497,9 @@ const CreditCardExpenses = ({
       setIsAdding(false);
       setFormData({
         creditCard: entry.credit_card || entry.creditCard || '',
-        contractShortName: entry.contract_short_name || entry.contractShortName || '',
+        vendorId: entry.vendor_id || entry.vendorId || '',
         vendorName: entry.vendor_name || entry.vendorName || '',
+        contractShortName: entry.contract_short_name || entry.contractShortName || '',
         chargeDate: (entry.charge_date || entry.chargeDate)?.split('T')[0] || '',
         chargeAmount: entry.charge_amount || entry.chargeAmount || '',
         pmEmail: entry.pm_email || entry.pmEmail || '',
@@ -499,7 +516,6 @@ const CreditCardExpenses = ({
     if (userName === 'Revolve' && formData.status === 'Rejected' && !formData.notes) {
       return alert("Notes are required for rejection.");
     }
-
     try {
       const url = editingEntry 
         ? `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses/${editingEntry.id}`
@@ -546,7 +562,7 @@ const CreditCardExpenses = ({
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h1 className="text-3xl font-extrabold text-blue-800 uppercase tracking-tighter">Credit Card Expenses</h1>
           <div className="flex items-center gap-4">
-            <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2">
+            <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2 border">
               <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-8 h-8 rounded-full" />
               <span className="text-sm font-bold">{userName}</span>
             </div>
@@ -554,7 +570,7 @@ const CreditCardExpenses = ({
           </div>
         </div>
 
-        {/* Form */}
+        {/* Form with Vendor Mapping */}
         {(isAdding || editingEntry) && (
           <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 relative z-30 shadow-xl">
             <form onSubmit={handleSave} className="space-y-6">
@@ -565,7 +581,15 @@ const CreditCardExpenses = ({
                     {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1">VENDOR NAME *</label><input id="vendorName" className="w-full p-2 border rounded bg-white" value={formData.vendorName} onChange={handleInputChange} required /></div>
+                <div><label className="block text-xs font-bold mb-1">VENDOR ID *</label>
+                  <select className="w-full p-2 border rounded bg-white" value={formData.vendorId} onChange={handleVendorChange} required>
+                    <option value="">Select Vendor</option>
+                    {vendorOptions.map(v => <option key={v.vendor_id} value={v.vendor_id}>{v.vendor_id}</option>)}
+                  </select>
+                </div>
+                <div><label className="block text-xs font-bold mb-1 text-gray-400 uppercase">Vendor Name (Auto)</label>
+                  <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
+                </div>
                 <div><label className="block text-xs font-bold mb-1">CONTRACT *</label>
                   <select id="contractShortName" className="w-full p-2 border rounded bg-white" value={formData.contractShortName} onChange={handleInputChange} required>
                     <option value="">Select Contract</option>
@@ -578,17 +602,16 @@ const CreditCardExpenses = ({
                     {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1">AMOUNT *</label><input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded bg-white" value={formData.chargeAmount} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1">DATE *</label><input id="chargeDate" type="date" className="w-full p-2 border rounded bg-white" value={formData.chargeDate} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1">PDF PATH *</label><input id="pdfFilePath" type="text" className="w-full p-2 border rounded bg-white" value={formData.pdfFilePath} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1">CHARGE CODE *</label><input id="chargeCode" type="text" className="w-full p-2 border rounded bg-white" value={formData.chargeCode} onChange={handleInputChange} required /></div>
+                <div><label className="block text-xs font-bold mb-1 uppercase">Amount *</label><input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded bg-white" value={formData.chargeAmount} onChange={handleInputChange} required /></div>
+                <div><label className="block text-xs font-bold mb-1 uppercase">Date *</label><input id="chargeDate" type="date" className="w-full p-2 border rounded bg-white" value={formData.chargeDate} onChange={handleInputChange} required /></div>
+                <div><label className="block text-xs font-bold mb-1 uppercase">PDF Path *</label><input id="pdfFilePath" type="text" className="w-full p-2 border rounded bg-white" value={formData.pdfFilePath} onChange={handleInputChange} required /></div>
               </div>
 
               <div><label className="block text-xs font-bold mb-1 uppercase text-gray-500">Notes / Reason</label>
                 <textarea id="notes" rows="1" className={`w-full p-2 border rounded bg-white ${userName === 'Revolve' && formData.status === 'Rejected' ? 'border-red-500' : ''}`} value={formData.notes} onChange={handleInputChange} />
               </div>
 
-              {/* Status Bar */}
+              {/* Status Section */}
               <div className="p-4 bg-white border-2 border-dashed rounded-lg flex flex-wrap items-center justify-between gap-4">
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setStatus('Submitted')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Submitted' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>SUBMITTED</button>
@@ -597,7 +620,7 @@ const CreditCardExpenses = ({
                 </div>
                 <div className="flex gap-2">
                    <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs">CANCEL</button>
-                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-blue-700 transition"><Save size={18}/> SAVE RECORD</button>
+                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><Save size={18}/> SAVE RECORD</button>
                 </div>
               </div>
             </form>
@@ -610,7 +633,7 @@ const CreditCardExpenses = ({
                 <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
                     {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
                 </select>
-                <input type="text" placeholder="Search entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm outline-none" />
+                <input type="text" placeholder="Search credit card entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm outline-none" />
                 <Search size={18} className="text-gray-400 mr-3" />
             </div>
             <label className="flex items-center cursor-pointer gap-2 text-sm font-bold">
@@ -631,16 +654,16 @@ const CreditCardExpenses = ({
             <thead className="bg-gray-50 uppercase font-bold text-gray-600">
               <tr>
                 <th className="p-4 w-12 text-center"></th>
-                <th className="px-6 py-3 text-left">Record No</th>
+                <th className="px-6 py-3 text-left">Record</th>
                 <th className="px-6 py-3 text-left">Credit Card</th>
+                <th className="px-6 py-3 text-left">Vendor Name</th>
                 <th className="px-6 py-3 text-left">Status</th>
                 <th className="px-6 py-3 text-left">Amount</th>
-                <th className="px-6 py-3 text-left">PM Email</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y">
               {groupedEntries.map(group => {
-                const baseKey = String(group[0].prime_key || group[0].primeKey).split('.')[0];
+                const baseKey = String(group[0].prime_key || group[0].primeKey || '').split('.')[0];
                 const hasHistory = group.length > 1;
                 return (
                   <React.Fragment key={group[0].id}>
@@ -655,20 +678,21 @@ const CreditCardExpenses = ({
                         {group[0].prime_key || group[0].primeKey}
                       </td>
                       <td className="px-6 py-3">{group[0].credit_card || group[0].creditCard}</td>
+                      <td className="px-6 py-3">{group[0].vendor_name || group[0].vendorName}</td>
                       <td className="px-6 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
                       </td>
                       <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || 0).toFixed(2)}</td>
-                      <td className="px-6 py-3 text-gray-500">{group[0].pm_email || group[0].pmEmail}</td>
                     </tr>
+                    {/* History Rows Logic */}
                     {expandedRows.has(baseKey) && group.slice(1).map(hEntry => (
                       <tr key={hEntry.id} className="bg-gray-50 italic text-gray-400 border-l-4 border-yellow-400">
                         <td className="p-4"></td>
-                        <td className="px-6 py-3 pl-12">{hEntry.prime_key || hEntry.primeKey}</td>
+                        <td className="px-6 py-3 pl-12 font-bold">{hEntry.prime_key || hEntry.primeKey}</td>
                         <td className="px-6 py-3">{hEntry.credit_card || hEntry.creditCard}</td>
-                        <td className="px-6 py-3"><span className="text-xs uppercase font-bold">{hEntry.status || 'Submitted'}</span></td>
+                        <td className="px-6 py-3">{hEntry.vendor_name || hEntry.vendorName}</td>
+                        <td className="px-6 py-3 uppercase text-xs">{hEntry.status || 'Submitted'}</td>
                         <td className="px-6 py-3">${parseFloat(hEntry.charge_amount || 0).toFixed(2)}</td>
-                        <td className="px-6 py-3">{hEntry.pm_email || hEntry.pmEmail}</td>
                       </tr>
                     ))}
                   </React.Fragment>
