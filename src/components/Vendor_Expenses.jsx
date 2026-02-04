@@ -415,7 +415,6 @@ const Vendor_Expenses = ({
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [selectedRows, setSelectedRows] = useState(new Set());
-  const [isNotifying, setIsNotifying] = useState(false);
   const [localEntries, setLocalEntries] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -432,7 +431,6 @@ const Vendor_Expenses = ({
     { key: 'vendorId', name: 'Vendor ID' },
     { key: 'contractShortName', name: 'Contract' },
     { key: 'vendorName', name: 'Vendor' },
-    { key: 'pmEmail', name: 'PM Email' },
   ];
 
   const [formData, setFormData] = useState({
@@ -449,14 +447,17 @@ const Vendor_Expenses = ({
       .catch(err => console.error("Error fetching vendors:", err));
   }, [dataEntries]);
 
-  const handleVendorChange = (e) => {
-    const selectedId = e.target.value;
-    const selectedVendor = vendorOptions.find(v => v.vendor_id === selectedId);
-    setFormData(prev => ({ ...prev, vendorId: selectedId, vendorName: selectedVendor ? selectedVendor.vendor_name : '' }));
+  const handleInputChange = (e) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const setStatus = (newStatus) => {
-    if (currentUserRole !== 'Admin') return;
+  // REFACTORED STATUS UPDATER
+  const updateStatus = (newStatus) => {
+    if (currentUserRole !== 'Admin') {
+      alert("Unauthorized: Only Admin can change record status.");
+      return;
+    }
     setFormData(prev => ({ ...prev, status: newStatus }));
   };
 
@@ -491,19 +492,20 @@ const Vendor_Expenses = ({
     }
   };
 
-  const handleSave = async (e, shouldNotify = false) => {
+  const handleSave = async (e) => {
     if (e) e.preventDefault();
     if (currentUserRole === 'Admin' && formData.status === 'Rejected' && !formData.notes) {
-      return alert("Reason for rejection is required.");
+      return alert("Reason for rejection is required in Notes.");
     }
-    const method = editingEntry ? 'PATCH' : 'POST';
-    const url = editingEntry 
-      ? `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses/${editingEntry.id}`
-      : `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses/new`;
 
     try {
+      const url = editingEntry 
+        ? `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses/${editingEntry.id}`
+        : `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses/new`;
+
       await fetch(url, {
-        method, headers: { 'Content-Type': 'application/json' },
+        method: editingEntry ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, userId: currentUserId }),
       });
       if (onDataChanged) onDataChanged();
@@ -512,121 +514,108 @@ const Vendor_Expenses = ({
   };
 
   const groupedEntries = useMemo(() => {
-    const groups = localEntries.reduce((acc, entry) => {
+    const groups = (localEntries || []).reduce((acc, entry) => {
       const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
+      if (!baseKey) return acc;
       if (!acc[baseKey]) acc[baseKey] = [];
       acc[baseKey].push(entry);
       return acc;
     }, {});
-    for (const key in groups) {
-      groups[key].sort((a, b) => parseFloat(b.prime_key || b.primeKey || 0) - parseFloat(a.prime_key || a.primeKey || 0));
-    }
     let filteredGroups = Object.values(groups);
     if (searchValue) {
-      const lowVal = searchValue.toLowerCase();
       filteredGroups = filteredGroups.filter(group =>
-        group.some(e => {
-          if (searchColumn === 'all') return Object.values(e).some(v => String(v).toLowerCase().includes(lowVal));
-          return String(e[searchColumn] || '').toLowerCase().includes(lowVal);
-        })
+        group.some(e => Object.values(e).some(v => String(v).toLowerCase().includes(searchValue.toLowerCase())))
       );
     }
-    return showOnlyLatest ? filteredGroups.map(g => [g[0]]) : filteredGroups;
-  }, [localEntries, searchColumn, searchValue, showOnlyLatest]);
+    return filteredGroups;
+  }, [localEntries, searchValue]);
 
   return (
     <div className="min-h-screen bg-gray-900 p-6 text-gray-800">
       <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
+        {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h1 className="text-3xl font-extrabold text-lime-800 uppercase tracking-tighter">Vendor Expenses</h1>
           <div className="flex items-center gap-4">
-            <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2">
-              <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-8 h-8 rounded-full" />
-              <span className="text-sm font-bold">{userName} ({currentUserRole})</span>
-            </div>
+            <span className="text-xs font-black px-2 py-1 bg-blue-100 text-blue-800 rounded uppercase">{currentUserRole}</span>
             <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"><LogOut/></button>
           </div>
         </div>
 
+        {/* Form Section */}
         {(isAdding || editingEntry) && (
-          <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 relative z-20 shadow-lg">
-            <form onSubmit={handleSave} className="space-y-4">
+          <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 relative z-30 shadow-xl">
+            <form onSubmit={handleSave} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div><label className="block text-xs font-bold mb-1">VENDOR ID *</label>
-                  <select className="w-full p-2 border rounded bg-white" value={formData.vendorId} onChange={handleVendorChange} required>
+                  <select className="w-full p-2 border rounded bg-white" value={formData.vendorId} onChange={(e) => setFormData({...formData, vendorId: e.target.value, vendorName: vendorOptions.find(v => v.vendor_id === e.target.value)?.vendor_name || ''})} required>
                     <option value="">Select Vendor</option>
                     {vendorOptions.map(v => <option key={v.vendor_id} value={v.vendor_id}>{v.vendor_id}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME (AUTO)</label>
-                  <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
-                </div>
+                <div><label className="block text-xs font-bold mb-1 text-gray-400 uppercase">Vendor Name (Auto)</label><input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly /></div>
                 <div><label className="block text-xs font-bold mb-1">CONTRACT *</label>
                   <select className="w-full p-2 border rounded bg-white" value={formData.contractShortName} onChange={(e) => setFormData({...formData, contractShortName: e.target.value})} required>
                     <option value="">Select Contract</option>
                     {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1 text-blue-700 font-bold">NOTIFY PM *</label>
+                <div><label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
                   <select className="w-full p-2 border rounded bg-white" value={formData.pmEmail} onChange={(e) => setFormData({...formData, pmEmail: e.target.value})} required>
                     <option value="">Select PM</option>
                     {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1">AMOUNT *</label><input type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={(e) => setFormData({...formData, chargeAmount: e.target.value})} required /></div>
-                <div><label className="block text-xs font-bold mb-1">CHARGE DATE *</label><input type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={(e) => setFormData({...formData, chargeDate: e.target.value})} required /></div>
-                <div><label className="block text-xs font-bold mb-1">PDF PATH *</label><input type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={(e) => setFormData({...formData, pdfFilePath: e.target.value})} required /></div>
-                <div><label className="block text-xs font-bold mb-1">CHARGE CODE *</label><input type="text" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={(e) => setFormData({...formData, chargeCode: e.target.value})} required /></div>
               </div>
 
-              <div><label className="block text-xs font-bold mb-1 uppercase text-gray-500">Notes / Reason</label>
-                <textarea rows="1" className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && formData.status === 'Rejected' ? 'bg-red-50 border-red-400' : ''}`} value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} required={currentUserRole === 'Admin' && formData.status === 'Rejected'} />
+              <div><label className="block text-xs font-bold mb-1">NOTES / REJECTION REASON</label>
+                <textarea rows="1" className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && formData.status === 'Rejected' ? 'bg-red-50 border-red-400' : 'bg-white'}`} value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} required={currentUserRole === 'Admin' && formData.status === 'Rejected'} />
               </div>
 
-              {/* Status Section - Role restricted */}
+              {/* ADMIN STATUS CONTROL BAR - RE-RE-FIXED */}
               <div className="p-4 bg-white border-2 border-dashed rounded-lg flex flex-wrap items-center justify-between gap-4">
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setStatus('Submitted')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Submitted' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>SUBMITTED</button>
-                  <button type="button" onClick={() => setStatus('Approved')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Approved' ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'} ${currentUserRole !== 'Admin' ? 'opacity-20 grayscale' : ''}`}>APPROVE</button>
-                  <button type="button" onClick={() => setStatus('Rejected')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Rejected' ? 'bg-red-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'} ${currentUserRole !== 'Admin' ? 'opacity-20 grayscale' : ''}`}>REJECT</button>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-black text-gray-500 uppercase">Status Control:</span>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => updateStatus('Submitted')} className={`px-4 py-2 rounded font-bold text-xs transition-all cursor-pointer border-2 ${formData.status === 'Submitted' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white text-gray-400 border-gray-100'}`}>SUBMITTED</button>
+                    <button type="button" onClick={() => updateStatus('Approved')} className={`px-4 py-2 rounded font-bold text-xs transition-all cursor-pointer border-2 ${formData.status === 'Approved' ? 'bg-green-600 border-green-600 text-white shadow-md scale-105' : 'bg-white text-gray-400 border-gray-100'} ${currentUserRole !== 'Admin' ? 'opacity-20 cursor-not-allowed' : 'hover:border-green-600'}`}>APPROVE</button>
+                    <button type="button" onClick={() => updateStatus('Rejected')} className={`px-4 py-2 rounded font-bold text-xs transition-all cursor-pointer border-2 ${formData.status === 'Rejected' ? 'bg-red-600 border-red-600 text-white shadow-md scale-105' : 'bg-white text-gray-400 border-gray-100'} ${currentUserRole !== 'Admin' ? 'opacity-20 cursor-not-allowed' : 'hover:border-red-600'}`}>REJECT</button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                   <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs">CANCEL</button>
-                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg flex items-center gap-2 transition hover:bg-blue-700"><Save size={18}/> SAVE RECORD</button>
+                <div className="flex gap-3">
+                   <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs hover:bg-gray-300">CANCEL</button>
+                   <button type="submit" className="bg-blue-600 text-white px-10 py-2 rounded font-bold shadow-lg hover:bg-blue-700 flex items-center gap-2"><Save size={18}/> SAVE CHANGES</button>
                 </div>
               </div>
             </form>
           </div>
         )}
 
-        {/* Search Bar Restored */}
+        {/* Search Bar */}
         <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
             <div className="flex items-center border rounded-lg bg-white flex-grow">
                 <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
                     {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
                 </select>
-                <input type="text" placeholder="Search entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+                <input type="text" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm outline-none" />
                 <Search size={18} className="text-gray-400 mr-3" />
             </div>
-            <label className="flex items-center cursor-pointer gap-2 text-sm font-bold">
-                Latest Only
-                <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="w-4 h-4" />
-            </label>
         </div>
 
-        {/* Action Buttons Restored */}
+        {/* Action Buttons */}
         <div className="flex gap-3 mb-6">
-            <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> ADD</button>
-            <button onClick={() => alert("Notify triggered")} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Send size={20}/> NOTIFY SELECTION</button>
+            {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> ADD RECORD</button>}
+            <button disabled={selectedRows.size === 0} onClick={() => alert("PM Notified")} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Send size={20}/> NOTIFY PM</button>
             <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 font-bold transition"><Pencil size={20}/> EDIT</button>
         </div>
 
-        <div className="overflow-x-auto border rounded-lg">
+        {/* Table */}
+        <div className="overflow-x-auto border rounded-lg shadow-sm">
           <table className="min-w-full divide-y text-sm">
-            <thead className="bg-gray-50 uppercase font-bold text-gray-600">
+            <thead className="bg-gray-50 uppercase font-black text-gray-500">
               <tr>
                 <th className="p-4 w-12 text-center"></th>
-                <th className="px-6 py-3 text-left">Record No</th>
+                <th className="px-6 py-3 text-left">Record</th>
                 <th className="px-6 py-3 text-left">Vendor ID</th>
                 <th className="px-6 py-3 text-left">Status</th>
                 <th className="px-6 py-3 text-left">Amount</th>
@@ -649,19 +638,19 @@ const Vendor_Expenses = ({
                         )}
                         {group[0].prime_key || group[0].primeKey}
                       </td>
-                      <td className="px-6 py-3">{group[0].vendor_id || group[0].vendorId}</td>
+                      <td className="px-6 py-3 text-gray-600">{group[0].vendor_id || group[0].vendorId}</td>
                       <td className="px-6 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-black uppercase ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
                       </td>
                       <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || 0).toFixed(2)}</td>
                       <td className="px-6 py-3 text-gray-500">{group[0].pm_email || group[0].pmEmail}</td>
                     </tr>
                     {expandedRows.has(baseKey) && group.slice(1).map(hEntry => (
-                      <tr key={hEntry.id} className="bg-gray-50 italic text-gray-500 border-l-4 border-yellow-400">
+                      <tr key={hEntry.id} className="bg-gray-50 italic text-gray-400 border-l-4 border-yellow-400">
                         <td className="p-4"></td>
                         <td className="px-6 py-3 pl-12">{hEntry.prime_key || hEntry.primeKey}</td>
                         <td className="px-6 py-3">{hEntry.vendor_id || hEntry.vendorId}</td>
-                        <td className="px-6 py-3"><span className="text-xs">{hEntry.status || 'Submitted'}</span></td>
+                        <td className="px-6 py-3 text-xs uppercase">{hEntry.status || 'Submitted'}</td>
                         <td className="px-6 py-3">${parseFloat(hEntry.charge_amount || 0).toFixed(2)}</td>
                         <td className="px-6 py-3">{hEntry.pm_email || hEntry.pmEmail}</td>
                       </tr>
