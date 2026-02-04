@@ -434,7 +434,6 @@ const Vendor_Expenses = ({
   const [isNotifying, setIsNotifying] = useState(false);
   const [localEntries, setLocalEntries] = useState([]);
 
-  // RESTORED: Definition for searchable columns
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
     { key: 'vendorId', name: 'Vendor ID' },
@@ -487,7 +486,6 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
-  // Grouping logic for versions
   const groupedEntries = useMemo(() => {
     const groups = localEntries.reduce((acc, entry) => {
       const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
@@ -496,17 +494,10 @@ const Vendor_Expenses = ({
       acc[baseKey].push(entry);
       return acc;
     }, {});
-
     for (const key in groups) {
-      groups[key].sort((a, b) => {
-        const aVal = parseFloat(a.prime_key || a.primeKey || 0);
-        const bVal = parseFloat(b.prime_key || b.primeKey || 0);
-        return bVal - aVal;
-      });
+      groups[key].sort((a, b) => parseFloat(b.prime_key || b.primeKey || 0) - parseFloat(a.prime_key || a.primeKey || 0));
     }
-
     let filteredGroups = Object.values(groups);
-
     if (searchValue) {
       const lowVal = searchValue.toLowerCase();
       filteredGroups = filteredGroups.filter(group =>
@@ -518,7 +509,6 @@ const Vendor_Expenses = ({
         })
       );
     }
-
     return showOnlyLatest ? filteredGroups.map(group => [group[0]]) : filteredGroups;
   }, [localEntries, searchColumn, searchValue, showOnlyLatest]);
 
@@ -539,21 +529,67 @@ const Vendor_Expenses = ({
       if (onDataChanged) onDataChanged();
       if (shouldNotify) {
         const data = await res.json();
-        const body = formData.isApproved ? `Review needed for: ${data.prime_key}\nLink: ${LOGIN_URL}` : `Record Rejected: ${data.prime_key}\nNotes: ${formData.notes}\nLink: ${LOGIN_URL}`;
+        const body = formData.isApproved ? `New review needed: ${data.prime_key}\nLink: ${LOGIN_URL}` : `Rejected: ${data.prime_key}\nNotes: ${formData.notes}\nLink: ${LOGIN_URL}`;
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Alert`, bodyContent: body }),
+          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Notification`, bodyContent: body }),
         });
       }
       resetForm();
     } catch (err) { alert("Save error"); }
   };
 
+  const notifyBatchPM = async () => {
+    if (selectedRows.size === 0) return;
+    setIsNotifying(true);
+    const selectedEntries = localEntries.filter(entry => selectedRows.has(entry.id));
+    const pmGroups = selectedEntries.reduce((acc, entry) => {
+      const email = entry.pm_email || entry.pmEmail;
+      if (!acc[email]) acc[email] = [];
+      acc[email].push(entry);
+      return acc;
+    }, {});
+    try {
+      for (const [pmEmail, entries] of Object.entries(pmGroups)) {
+        const pks = entries.map(e => e.prime_key || e.primeKey).join(', ');
+        let body = `Multiple records require review:\n\nRecords: ${pks}\n\nLogin here: ${LOGIN_URL}`;
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipient: pmEmail, subject: `Batch Review Request`, bodyContent: body }),
+        });
+      }
+      alert("Notifications sent.");
+      setSelectedRows(new Set());
+    } catch (err) { alert("Email error."); }
+    finally { setIsNotifying(false); }
+  };
+
+  const startEdit = () => {
+    const entryId = Array.from(selectedRows)[0];
+    const entry = localEntries.find(e => e.id === entryId);
+    if (entry) {
+      setEditingEntry(entry);
+      setFormData({
+        vendorId: entry.vendor_id || entry.vendorId,
+        contractShortName: entry.contract_short_name || entry.contractShortName,
+        vendorName: entry.vendor_name || entry.vendorName,
+        chargeDate: entry.charge_date?.split('T')[0] || '',
+        chargeAmount: entry.charge_amount || entry.chargeAmount,
+        submittedDate: entry.submitted_date?.split('T')[0] || '',
+        pmEmail: entry.pm_email || entry.pmEmail,
+        chargeCode: entry.charge_code || entry.chargeCode,
+        isApproved: entry.is_approved || entry.isApproved,
+        notes: entry.notes || '',
+        pdfFilePath: entry.pdf_file_path || entry.pdfFilePath,
+      });
+      setIsAdding(false);
+    }
+  };
+
   const Row = ({ entry, isHistory = false }) => {
     const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
     const group = groupedEntries.find(g => String(g[0].prime_key || g[0].primeKey).split('.')[0] === baseKey);
     const hasHistory = !isHistory && group && group.length > 1;
-
     return (
       <React.Fragment>
           <td className="p-4 text-center">
@@ -561,7 +597,7 @@ const Vendor_Expenses = ({
                   const next = new Set(selectedRows);
                   next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id);
                   setSelectedRows(next);
-              }} className="h-4 w-4" />
+              }} className="h-4 w-4 cursor-pointer" />
           </td>
           <td className={`px-6 py-3 whitespace-nowrap text-sm font-medium ${isHistory ? 'pl-12 text-gray-500 italic' : 'text-gray-900'}`}>
               {hasHistory ? (
@@ -602,7 +638,7 @@ const Vendor_Expenses = ({
                 </div>
             </div>
 
-            {/* Form */}
+            {/* Form with all fields restored */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <div className="flex justify-between items-center mb-4">
@@ -618,7 +654,7 @@ const Vendor_Expenses = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME (AUTO)</label>
+                    <label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME </label>
                     <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
                   </div>
                   <div>
@@ -635,6 +671,24 @@ const Vendor_Expenses = ({
                       {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
                     </select>
                   </div>
+                  {/* RESTORED MISSING FIELDS */}
+                  <div>
+                    <label className="block text-xs font-bold mb-1">AMOUNT *</label>
+                    <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">CHARGE DATE *</label>
+                    <input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">PDF PATH *</label>
+                    <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
+                    <input id="chargeCode" type="text" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
+                  </div>
+                  
                   <div className="lg:col-span-4">
                     <label className="block text-xs font-bold mb-1 uppercase">Notes / Reason</label>
                     <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && !formData.isApproved ? 'bg-red-50 border-red-400' : 'bg-white'}`} value={formData.notes} onChange={handleInputChange} required={currentUserRole === 'Admin' && !formData.isApproved} />
@@ -646,14 +700,14 @@ const Vendor_Expenses = ({
                   </div>
 
                   <div className="lg:col-span-4 flex justify-end gap-3 mt-4 border-t pt-4">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> Save</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save & Notify</button>
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-blue-700"><Save size={18}/> Save</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-purple-700"><Send size={18}/> Save & Notify</button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Search Bar RESTORED */}
+            {/* Search Bar */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
@@ -668,13 +722,32 @@ const Vendor_Expenses = ({
                 </label>
             </div>
 
-            {/* Action Buttons */}
+            {/* RESTORED NOTIFY BUTTON BESIDE ADD & EDIT */}
             <div className="flex gap-3 mb-6">
-                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"><Plus size={20}/> Add</button>}
-                <button disabled={selectedRows.size !== 1} onClick={() => {
-                   const entry = localEntries.find(e => e.id === Array.from(selectedRows)[0]);
-                   if(entry) { setEditingEntry(entry); setIsAdding(false); }
-                }} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Pencil size={20}/> Edit</button>
+                {!isAdding && !editingEntry && (
+                  <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600">
+                    <Plus size={20}/> Add
+                  </button>
+                )}
+                
+                <button 
+                  onClick={notifyBatchPM} 
+                  disabled={selectedRows.size === 0 || isNotifying} 
+                  className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-yellow-600"
+                >
+                  <Send size={20}/> {isNotifying ? 'Sending...' : 'Notify Selection'}
+                </button>
+
+                <button 
+                  disabled={selectedRows.size !== 1} 
+                  onClick={() => {
+                    const entry = localEntries.find(e => e.id === Array.from(selectedRows)[0]);
+                    if(entry) { setEditingEntry(entry); setIsAdding(false); }
+                  }} 
+                  className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"
+                >
+                  <Pencil size={20}/> Edit
+                </button>
             </div>
             
             {/* Table */}
