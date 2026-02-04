@@ -29,6 +29,7 @@ const App = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('luminaUser'));
   const [currentPage, setCurrentPage] = useState('view');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [subkTravelData, setSubkTravelData] = useState([]);
 
   // Modal States
   const [showEditSubkModal, setShowEditSubkModal] = useState(false);
@@ -52,6 +53,16 @@ const App = () => {
   const [creditCardOptions, setCreditCardOptions] = useState([]);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+  const fetchSubkTravelData = async () => {
+  try {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/subk-travel`);
+    const data = await response.json();
+    setSubkTravelData(data);
+  } catch (err) {
+    console.error("Error fetching Subk/Travel data:", err);
+  }
+};
 
   // --- Helper: Snake Case to Camel Case ---
   const snakeToCamel = (obj) => {
@@ -191,16 +202,18 @@ const App = () => {
       case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
       case 'emails': return <EmailRecords {...commonProps} />;
       case 'subk-travel':
-      return <Subk_Travel_Combined 
-                dataEntries={subkTravelData} // Ensure you are fetching this data
-                userName={user.username}
-                userAvatar={user.avatar}
-                handleLogout={handleLogout}
-                currentUserRole={user.role}
-                currentUserId={user.userId}
-                onDataChanged={fetchSubkTravelData}
-                contractOptions={contractOptions}
-             />;
+  return (
+    <Subk_Travel_Combined 
+      dataEntries={subkTravelData} // This will now be defined
+      userName={user.username}
+      userAvatar={user.avatar}
+      handleLogout={handleLogout}
+      currentUserRole={user.role}
+      currentUserId={user.userId}
+      onDataChanged={fetchSubkTravelData} // Passes the refresh function
+      contractOptions={contractOptions}
+    />
+  );
       default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
