@@ -360,27 +360,6 @@ app.use(cors({
 app.use(express.json()); 
 
 // --- 2. Microsoft Graph Client Configuration ---
-// This replaces Nodemailer to avoid Render's SMTP port blocks
-// const msalConfig = {
-//   auth: {
-//     clientId: process.env.MS_CLIENT_ID,
-//     authority: `https://login.microsoftonline.com/${process.env.MS_TENANT_ID}`,
-//     clientSecret: process.env.MS_CLIENT_SECRET,
-//   },
-// };
-
-// const cca = new ConfidentialClientApplication(msalConfig);
-
-// async function getAuthenticatedClient() {
-//   const tokenRequest = {
-//     scopes: ['https://graph.microsoft.com/.default'],
-//   };
-//   const response = await cca.acquireTokenByClientCredential(tokenRequest);
-//   return Client.init({
-//     authProvider: (done) => done(null, response.accessToken),
-//   });
-// }
-
 const msalConfig = {
   auth: {
     clientId: process.env.MS_CLIENT_ID,
@@ -401,29 +380,16 @@ async function getAuthenticatedClient() {
   });
 }
 
-
 // --- 3. PostgreSQL Connection Pool ---
-const dbConfig = {};
-if (process.env.NODE_ENV === 'production') {
-  dbConfig.connectionString = process.env.DATABASE_URL;
-  dbConfig.ssl = { rejectUnauthorized: false };
-} else {
-  dbConfig.user = process.env.DB_USER;
-  dbConfig.password = process.env.DB_PASSWORD;
-  dbConfig.host = process.env.DB_HOST;
-  dbConfig.port = process.env.DB_PORT;
-  dbConfig.database = process.env.DB_NAME;
-  dbConfig.ssl = false;
-}
+const dbConfig = {
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+};
 
 const pool = new Pool(dbConfig);
-pool.connect((err, client, done) => {
-  if (err) {
-    console.error('Database connection error:', err.stack);
-    return;
-  }
-  console.log('Successfully connected to PostgreSQL database!');
-  if (client) client.release();
+pool.connect((err) => {
+  if (err) console.error('Database connection error:', err.stack);
+  else console.log('Successfully connected to PostgreSQL database!');
 });
 
 // --- 4. Helper Function: Versioning ---
@@ -460,77 +426,35 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- 5. Updated Send Email Route (Using Graph API) ---
-// app.post('/api/send-email', async (req, res) => {
-//   const { recipient, cc, subject, bodyContent } = req.body;
-
-//   if (!recipient || !subject) {
-//     return res.status(400).json({ error: 'Recipient and Subject are required' });
-//   }
-
-//   try {
-//     const client = await getAuthenticatedClient();
-//     const sendMail = {
-//       message: {
-//         subject: subject,
-//         body: {
-//           contentType: 'Text',
-//           content: bodyContent,
-//         },
-//         toRecipients: [{ emailAddress: { address: recipient } }],
-//         ccRecipients: cc ? [{ emailAddress: { address: cc } }] : [],
-//       },
-//       saveToSentItems: 'true',
-//     };
-
-//     // Replace the email below with your authorized Office 365 email
-//     await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
-    
-//     console.log(`Email sent successfully to ${recipient}`);
-//     res.status(200).json({ message: 'Email sent successfully via Microsoft Graph API' });
-//   } catch (error) {
-//     console.error('Graph API Error:', error);
-//     res.status(500).json({ error: 'Failed to send email', details: error.message });
-//   }
-// });
-
+// --- 5. Email Route (Microsoft Graph API) ---
 app.post('/api/send-email', async (req, res) => {
   const { recipient, cc, subject, bodyContent } = req.body;
-
-  if (!recipient || !subject) {
-    return res.status(400).json({ error: 'Recipient and Subject are required' });
-  }
+  if (!recipient || !subject) return res.status(400).json({ error: 'Recipient/Subject required' });
 
   try {
     const client = await getAuthenticatedClient();
     const sendMail = {
       message: {
         subject: subject,
-        body: {
-          contentType: 'Text',
-          content: bodyContent,
-        },
+        body: { contentType: 'Text', content: bodyContent },
         toRecipients: [{ emailAddress: { address: recipient } }],
         ccRecipients: cc ? [{ emailAddress: { address: cc } }] : [],
       },
       saveToSentItems: 'true',
     };
-
     await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
-    res.status(200).json({ message: 'Email sent successfully via Graph API' });
+    res.status(200).json({ message: 'Email sent via Graph API' });
   } catch (error) {
-    console.error('Graph API Error:', error);
-    res.status(500).json({ error: 'Failed to send email', details: error.message });
+    res.status(500).json({ error: 'Mail failed', details: error.message });
   }
 });
-
 
 // --- 6. Authentication ---
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const clientIp = req.headers['x-forwarded-for'] || req.ip;
   try {
-    const userResult = await pool.query('SELECT id, username, password_hash, role, avtr FROM users WHERE username = $1', [username]);
+    const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = userResult.rows[0];
     if (user) {
       const isMatch = await bcrypt.compare(password, user.password_hash).catch(() => password === user.password_hash);
@@ -543,7 +467,14 @@ app.post('/api/login', async (req, res) => {
   } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
 });
 
-// --- 7. Admin Options ---
+// --- 7. Master Data & Options ---
+app.get('/api/vendors', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT vendor_id, vendor_name FROM vendors ORDER BY vendor_id ASC');
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/credit-card-options', async (req, res) => {
   const result = await pool.query('SELECT id, name FROM credit_card_options ORDER BY name ASC');
   res.json(result.rows);
@@ -554,10 +485,14 @@ app.get('/api/contract-options', async (req, res) => {
   res.json(result.rows);
 });
 
-// --- 8. Vendor Expenses ---
+// --- 8. Vendor Expenses (CRUD) ---
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC`);
+    const result = await pool.query(`
+      SELECT ve.*, u.username as submitter_name 
+      FROM vendor_expenses ve 
+      LEFT JOIN users u ON ve.submitter_id = u.id 
+      ORDER BY ve.created_at DESC`);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -575,17 +510,12 @@ app.post('/api/vendor-expenses/new', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 8. Vendor Expenses PATCH Fix ---
 app.patch('/api/vendor-expenses/:id', async (req, res) => {
-  const { id } = req.params; // Correctly extract the ID from the URL path
+  const { id } = req.params;
   const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
   try {
-    // Locate the original record using the ID from the URL
     const original = await pool.query('SELECT prime_key FROM vendor_expenses WHERE id = $1', [id]);
-    
-    if (original.rows.length === 0) {
-      return res.status(404).json({ error: 'Record not found' });
-    }
+    if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
     const nextKey = await getNextVersionedKey('vendor_expenses', original.rows[0].prime_key);
     const result = await pool.query(
@@ -594,16 +524,19 @@ app.patch('/api/vendor-expenses/:id', async (req, res) => {
       [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
     );
     res.status(201).json(result.rows[0]);
-  } catch (err) { 
-    console.error("Update Error:", err.message);
-    res.status(500).json({ error: err.message }); 
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 9. Credit Card Expenses ---
+// --- 9. Credit Card Expenses (CRUD) ---
 app.get('/api/credit-card-expenses', async (req, res) => {
-  const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
-  res.json(result.rows);
+  try {
+    const result = await pool.query(`
+      SELECT cc.*, u.username as submitter_name 
+      FROM credit_card_expenses cc 
+      LEFT JOIN users u ON cc.submitter_id = u.id 
+      ORDER BY cc.created_at DESC`);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/credit-card-expenses/new', async (req, res) => {
@@ -619,62 +552,33 @@ app.post('/api/credit-card-expenses/new', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.patch('/api/credit-card-expenses/:id', async (req, res) => {
+  const { id } = req.params;
+  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  try {
+    const original = await pool.query('SELECT prime_key FROM credit_card_expenses WHERE id = $1', [id]);
+    if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
 
-// --- 10. Travel Expenses ---
-app.get('/api/travel-expenses', async (req, res) => {
-  const result = await pool.query(`SELECT te.*, u.username as submitter_name FROM travel_expenses te JOIN users u ON te.submitter_id = u.id ORDER BY te.created_at DESC`);
-  res.json(result.rows.map(row => ({ id: row.id, contractShortName: row.contract_short_name, pdfFilePath: row.pdf_file_path, notes: row.notes, submitter: row.submitter_name })));
+    const nextKey = await getNextVersionedKey('credit_card_expenses', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 11. Excel Generation ---
+// --- 10. Travel & Excel ---
 app.post('/api/generate-excel', async (req, res) => {
   try {
-    const dataForSheet = req.body.data;
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Data');
-    sheet.addRows(dataForSheet);
+    sheet.addRows(req.body.data);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) { res.status(500).send('Excel Error'); }
-});
-
-// --- 12. Email Records History ---
-app.get('/api/email-records', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT er.*, u.username as submitter_name 
-      FROM email_records er 
-      JOIN users u ON er.submitter_id = u.id 
-      ORDER BY er.created_at DESC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/email-records/new', async (req, res) => {
-  const { 
-    subject, recipient, cc, task, bodyType, bodyContent, 
-    contractShortName, sender, pdfFilePath, emailDate, userId 
-  } = req.body;
-
-  try {
-    const nextKey = await getNextVersionedKey('email_records');
-    const result = await pool.query(
-      `INSERT INTO email_records (
-        prime_key, subject, recipient, cc_recipients, task, body_type, 
-        body_content, sender, contract_short_name, 
-        pdf_file_path, email_date, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-      [nextKey, subject, recipient, cc || null, task, bodyType, bodyContent, sender, contractShortName, pdfFilePath, emailDate || null, userId]
-    );
-    res.status(201).json(result.rows[0]);
-  } catch (err) {
-    console.error("POST Error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
 });
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
