@@ -596,7 +596,7 @@ const CreditCardExpenses = ({
                     {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1 text-blue-700 font-bold">NOTIFY PM *</label>
+                <div><label className="block text-xs font-bold mb-1 text-blue-700 ">NOTIFY PM *</label>
                   <select id="pmEmail" className="w-full p-2 border rounded bg-white" value={formData.pmEmail} onChange={handleInputChange} required>
                     <option value="">Select PM</option>
                     {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
@@ -669,7 +669,7 @@ const CreditCardExpenses = ({
                   <React.Fragment key={group[0].id}>
                     <tr onClick={() => { const s = new Set(); s.add(group[0].id); setSelectedRows(s); }} className={`hover:bg-blue-50 cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}>
                       <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(group[0].id)} readOnly /></td>
-                      <td className="px-6 py-3 font-bold">
+                      <td className="px-6 py-3 ">
                         {hasHistory && (
                           <button onClick={(e) => { e.stopPropagation(); const next = new Set(expandedRows); next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey); setExpandedRows(next); }} className="mr-2">
                             {expandedRows.has(baseKey) ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}

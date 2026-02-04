@@ -582,7 +582,7 @@ const Vendor_Expenses = ({
                     {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1 text-blue-700 font-bold">NOTIFY PM *</label>
+                <div><label className="block text-xs font-bold mb-1 text-blue-700 ">NOTIFY PM *</label>
                   <select className="w-full p-2 border rounded bg-white" value={formData.pmEmail} onChange={(e) => setFormData({...formData, pmEmail: e.target.value})} required>
                     <option value="">Select PM</option>
                     {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
