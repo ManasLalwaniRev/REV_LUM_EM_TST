@@ -404,7 +404,7 @@
 
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search, LogOut, X, Save, Send } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Pencil, Download, Search, LogOut, X, Save, Send, CheckCircle, XCircle } from 'lucide-react';
 
 const formatDateForDisplay = (isoString) => {
   if (!isoString) return '';
@@ -456,11 +456,14 @@ const Vendor_Expenses = ({
     pdfFilePath: '',
   });
 
+  // Updated PM Email options: Commented out old ones, added Manas.Lalwani@revolvespl.com
   const pmEmailOptions = [
-    'pm.manager1@infotrend.com',
+    'Manas.Lalwani@revolvespl.com',
+    /* 'pm.manager1@infotrend.com',
     'pm.manager2@infotrend.com',
     'admin.finance@infotrend.com',
-    'operations.lead@infotrend.com'
+    'operations.lead@infotrend.com' 
+    */
   ];
 
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses`;
@@ -546,7 +549,7 @@ const Vendor_Expenses = ({
       else throw new Error('Failed to send email');
     } catch (err) {
       console.error("Notify Error:", err);
-      alert("Failed to send notification. Verify SMTP/Graph API settings.");
+      alert("Failed to send notification.");
     } finally {
       setIsNotifying(false);
     }
@@ -571,13 +574,10 @@ const Vendor_Expenses = ({
       });
       
       const savedData = await response.json();
-      
       if (onDataChanged) onDataChanged();
-      
       if (shouldNotify) {
         await notifyPM({ ...formData, primeKey: savedData.prime_key || editingEntry?.primeKey || 'New Record' });
       }
-      
       resetForm();
     } catch (err) {
       console.warn("Save failed:", err);
@@ -674,7 +674,13 @@ const Vendor_Expenses = ({
         <td className="px-6 py-3 whitespace-nowrap text-sm text-blue-600">
             {entry.pdfFilePath ? <a href={entry.pdfFilePath} target="_blank" rel="noreferrer" className="hover:underline">View PDF</a> : 'N/A'}
         </td>
-        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.isApproved ? 'Approved' : 'Rejected'}</td>
+        <td className="px-6 py-3 whitespace-nowrap text-sm">
+            {entry.isApproved ? (
+              <span className="flex items-center gap-1 text-green-600 font-bold"><CheckCircle size={16}/> Approved</span>
+            ) : (
+              <span className="flex items-center gap-1 text-red-600 font-bold"><XCircle size={16}/> Rejected</span>
+            )}
+        </td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.pmEmail}</td>
     </React.Fragment>
   );
@@ -750,10 +756,28 @@ const Vendor_Expenses = ({
                     <label className="block text-xs font-bold mb-1 uppercase">Reason for Rejection / Notes</label>
                     <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} placeholder={!formData.isApproved ? "Mandatory: Enter rejection reason..." : "Add notes..."} />
                   </div>
-                  <div className="lg:col-span-4 flex items-center gap-3 bg-white p-2 rounded border border-blue-200">
-                    <input type="checkbox" id="isApproved" checked={formData.isApproved} onChange={handleInputChange} className="w-5 h-5 cursor-pointer" />
-                    <label htmlFor="isApproved" className="text-xs font-bold text-blue-800 uppercase cursor-pointer">Program Manager Approver (Uncheck to Reject)</label>
+                  
+                  {/* Two separate visual boxes for Approve and Reject */}
+                  <div className="lg:col-span-4 flex gap-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))}
+                      className={`flex-1 flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${formData.isApproved ? 'bg-green-100 border-green-500 shadow-inner' : 'bg-white border-gray-200 opacity-60'}`}
+                    >
+                      <CheckCircle className={formData.isApproved ? 'text-green-600' : 'text-gray-400'} size={24} />
+                      <span className={`font-bold uppercase ${formData.isApproved ? 'text-green-800' : 'text-gray-500'}`}>Approve Record</span>
+                    </button>
+                    
+                    <button 
+                      type="button" 
+                      onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))}
+                      className={`flex-1 flex items-center justify-center gap-3 p-4 rounded-xl border-2 transition-all ${!formData.isApproved ? 'bg-red-100 border-red-500 shadow-inner' : 'bg-white border-gray-200 opacity-60'}`}
+                    >
+                      <XCircle className={!formData.isApproved ? 'text-red-600' : 'text-gray-400'} size={24} />
+                      <span className={`font-bold uppercase ${!formData.isApproved ? 'text-red-800' : 'text-gray-500'}`}>Reject Record</span>
+                    </button>
                   </div>
+
                   <div className="lg:col-span-4 flex justify-end gap-3">
                     <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
                       <Save size={18}/> {editingEntry ? 'Update' : 'Save'}
