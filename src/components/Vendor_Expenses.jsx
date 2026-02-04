@@ -434,6 +434,15 @@ const Vendor_Expenses = ({
   const [isNotifying, setIsNotifying] = useState(false);
   const [localEntries, setLocalEntries] = useState([]);
 
+  // RESTORED: Definition for searchable columns
+  const searchableColumns = [
+    { key: 'all', name: 'All Fields' },
+    { key: 'vendorId', name: 'Vendor ID' },
+    { key: 'contractShortName', name: 'Contract' },
+    { key: 'vendorName', name: 'Vendor' },
+    { key: 'pmEmail', name: 'PM Email' },
+  ];
+
   useEffect(() => {
     setLocalEntries(dataEntries || []);
     fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
@@ -478,10 +487,9 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
-  // --- FIXED GROUPING LOGIC ---
+  // Grouping logic for versions
   const groupedEntries = useMemo(() => {
     const groups = localEntries.reduce((acc, entry) => {
-      // Group by the integer part of the primeKey (e.g., "1", "1.1", "1.2" all go to group "1")
       const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
       if (!baseKey) return acc;
       if (!acc[baseKey]) acc[baseKey] = [];
@@ -489,7 +497,6 @@ const Vendor_Expenses = ({
       return acc;
     }, {});
 
-    // Sort versions within each group (Latest version first)
     for (const key in groups) {
       groups[key].sort((a, b) => {
         const aVal = parseFloat(a.prime_key || a.primeKey || 0);
@@ -500,7 +507,6 @@ const Vendor_Expenses = ({
 
     let filteredGroups = Object.values(groups);
 
-    // Apply Search
     if (searchValue) {
       const lowVal = searchValue.toLowerCase();
       filteredGroups = filteredGroups.filter(group =>
@@ -533,10 +539,10 @@ const Vendor_Expenses = ({
       if (onDataChanged) onDataChanged();
       if (shouldNotify) {
         const data = await res.json();
-        const body = formData.isApproved ? `Review: ${data.prime_key}\nLink: ${LOGIN_URL}` : `Rejected: ${data.prime_key}\nNotes: ${formData.notes}\nLink: ${LOGIN_URL}`;
+        const body = formData.isApproved ? `Review needed for: ${data.prime_key}\nLink: ${LOGIN_URL}` : `Record Rejected: ${data.prime_key}\nNotes: ${formData.notes}\nLink: ${LOGIN_URL}`;
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Update`, bodyContent: body }),
+          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Alert`, bodyContent: body }),
         });
       }
       resetForm();
@@ -581,8 +587,8 @@ const Vendor_Expenses = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6">
-        <div className="bg-white p-6 rounded-xl shadow-2xl w-full text-gray-800">
+    <div className="min-h-screen bg-gray-900 p-6 text-gray-800">
+        <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
                 <h1 className="text-3xl font-extrabold text-lime-800 uppercase">Vendor Expenses</h1>
@@ -599,6 +605,10 @@ const Vendor_Expenses = ({
             {/* Form */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-blue-900">{editingEntry ? 'Edit Record' : 'Add New Record'}</h2>
+                    <button onClick={resetForm} className="text-gray-500 hover:text-red-500"><X /></button>
+                </div>
                 <form onSubmit={(e) => handleSave(e)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
@@ -643,13 +653,13 @@ const Vendor_Expenses = ({
               </div>
             )}
 
-            {/* Search */}
+            {/* Search Bar RESTORED */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
                         {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
                     </select>
-                    <input type="text" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+                    <input type="text" placeholder="Search entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
                     <Search size={18} className="text-gray-400 mr-3" />
                 </div>
                 <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
@@ -658,12 +668,12 @@ const Vendor_Expenses = ({
                 </label>
             </div>
 
-            {/* Actions */}
+            {/* Action Buttons */}
             <div className="flex gap-3 mb-6">
                 {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"><Plus size={20}/> Add</button>}
                 <button disabled={selectedRows.size !== 1} onClick={() => {
                    const entry = localEntries.find(e => e.id === Array.from(selectedRows)[0]);
-                   if(entry) setEditingEntry(entry); setIsAdding(false);
+                   if(entry) { setEditingEntry(entry); setIsAdding(false); }
                 }} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Pencil size={20}/> Edit</button>
             </div>
             
@@ -672,7 +682,9 @@ const Vendor_Expenses = ({
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 font-bold uppercase text-gray-600">
                         <tr>
-                            <th className="p-4 w-12 text-center"></th>
+                            <th className="p-4 w-12 text-center">
+                              <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
+                            </th>
                             <th className="px-6 py-3 text-left">Record No</th>
                             <th className="px-6 py-3 text-left">Vendor ID</th>
                             <th className="px-6 py-3 text-left">Contract</th>
