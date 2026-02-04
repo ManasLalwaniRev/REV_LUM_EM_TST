@@ -441,6 +441,8 @@ const Vendor_Expenses = ({
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+  
+  // ALL FIELDS RESTORED
   const [formData, setFormData] = useState({
     vendorId: '', 
     contractShortName: '',
@@ -455,11 +457,7 @@ const Vendor_Expenses = ({
     pdfFilePath: '',
   });
 
-  const pmEmailOptions = [
-    'Manas.Lalwani@revolvespl.com',
-  ];
-
-  // FIXED: Removed trailing slash and ensured path matches backend route
+  const pmEmailOptions = ['Manas.Lalwani@revolvespl.com'];
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses`;
   const LOGIN_URL = "https://rev-lum-em-tst.vercel.app";
 
@@ -516,11 +514,9 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
-  // NEW: Batch notification logic
   const notifyBatchPM = async () => {
     if (selectedRows.size === 0) return;
     setIsNotifying(true);
-
     const selectedEntries = localEntries.filter(entry => selectedRows.has(entry.id));
     const pmGroups = selectedEntries.reduce((acc, entry) => {
       if (!acc[entry.pmEmail]) acc[entry.pmEmail] = [];
@@ -536,37 +532,29 @@ const Vendor_Expenses = ({
         let body = `Hello,\n\nYou have multiple Vendor Expense records awaiting action.\n\n`;
         if (approvedRecords.length > 0) body += `RECORDS TO REVIEW/APPROVE: ${approvedRecords.join(', ')}\n`;
         if (rejectedRecords.length > 0) body += `REJECTED RECORDS: ${rejectedRecords.join(', ')}\n`;
-        
         body += `\nPlease login here to process them: ${LOGIN_URL}`;
 
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipient: pmEmail,
-            subject: `Action Required: Multiple Records (${entries.length})`,
-            bodyContent: body
-          }),
+          body: JSON.stringify({ recipient: pmEmail, subject: `Action Required: Multiple Records (${entries.length})`, bodyContent: body }),
         });
       }
-      alert("Batch notifications sent successfully.");
+      alert("Notifications sent.");
       setSelectedRows(new Set());
-    } catch (err) {
-      alert("Failed to send batch notifications.");
-    } finally {
-      setIsNotifying(false);
-    }
+    } catch (err) { alert("Error sending mail."); }
+    finally { setIsNotifying(false); }
   };
 
   const handleSave = async (e, shouldNotify = false) => {
     if (e) e.preventDefault();
     if (!formData.isApproved && !formData.notes) {
-      alert("Please provide a reason for rejection.");
+      alert("Reason for rejection is required.");
       return;
     }
 
     const method = editingEntry ? 'PATCH' : 'POST';
-    // FIXED: Corrected URL pathing for PATCH to match the ID-based route
+    // FIX: URL pathing for update
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
     
     try {
@@ -581,23 +569,17 @@ const Vendor_Expenses = ({
       
       if (shouldNotify) {
         const body = formData.isApproved 
-          ? `A new record requires review: ${savedData.prime_key || 'New'}\nLogin: ${LOGIN_URL}`
-          : `Record ${savedData.prime_key || 'New'} was REJECTED: ${formData.notes}\nLogin: ${LOGIN_URL}`;
+          ? `A record requires review: ${savedData.prime_key || 'New'}\nLogin here: ${LOGIN_URL}`
+          : `Record ${savedData.prime_key || 'New'} was REJECTED: ${formData.notes}\nLogin here: ${LOGIN_URL}`;
         
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            recipient: formData.pmEmail,
-            subject: `Vendor Expense Record Notification`,
-            bodyContent: body
-          }),
+          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Notification`, bodyContent: body }),
         });
       }
       resetForm();
-    } catch (err) {
-      alert("Failed to save record.");
-    }
+    } catch (err) { alert("Update failed."); }
   };
 
   const startEdit = () => {
@@ -625,85 +607,97 @@ const Vendor_Expenses = ({
   const Row = ({ entry, isHistory = false }) => (
     <React.Fragment>
         <td className="p-0 text-center">
-            <label className="flex items-center justify-center p-4 cursor-pointer">
-                <input type="checkbox" checked={selectedRows.has(entry.id)} onChange={() => {
-                   const next = new Set(selectedRows);
-                   next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id);
-                   setSelectedRows(next);
-                }} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
-            </label>
+            <input type="checkbox" checked={selectedRows.has(entry.id)} onChange={() => {
+                const next = new Set(selectedRows);
+                next.has(entry.id) ? next.delete(entry.id) : next.add(entry.id);
+                setSelectedRows(next);
+            }} className="h-4 w-4" />
         </td>
-        <td className={`px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900 ${isHistory ? 'pl-12' : ''}`}>
-            {!isHistory && groupedEntries.find(g => g[0].id === entry.id)?.length > 1 ? (
-              <button onClick={() => {
-                const baseKey = String(entry.primeKey).split('.')[0];
-                const next = new Set(expandedRows);
-                next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey);
-                setExpandedRows(next);
-              }} className="mr-2 inline-block">
-                {expandedRows.has(String(entry.primeKey).split('.')[0]) ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-              </button>
-            ) : isHistory ? null : <span className="w-6 inline-block"/>}
-            {entry.primeKey}
-        </td>
+        <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{entry.primeKey}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.vendorId}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.contractShortName}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.vendorName}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{formatDateForDisplay(entry.chargeDate)}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">${parseFloat(entry.chargeAmount || 0).toFixed(2)}</td>
-        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.submitter}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-blue-600">
-            {entry.pdfFilePath ? <a href={entry.pdfFilePath} target="_blank" rel="noreferrer" className="hover:underline">View PDF</a> : 'N/A'}
+            {entry.pdfFilePath ? <a href={entry.pdfFilePath} target="_blank" rel="noreferrer">View PDF</a> : 'N/A'}
         </td>
         <td className="px-6 py-3 whitespace-nowrap text-sm">
-            {entry.isApproved ? (
-              <span className="flex items-center gap-1 text-green-600 font-bold"><CheckCircle size={16}/> Approved</span>
-            ) : (
-              <span className="flex items-center gap-1 text-red-600 font-bold"><XCircle size={16}/> Rejected</span>
-            )}
+            {entry.isApproved ? <span className="text-green-600 font-bold">Approved</span> : <span className="text-red-600 font-bold">Rejected</span>}
         </td>
+        <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.apvNumber || 'N/A'}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.pmEmail}</td>
     </React.Fragment>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100">
+    <div className="min-h-screen bg-gray-900 p-6">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full text-gray-800">
-            {/* ... Header stays the same ... */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <h1 className="text-3xl font-extrabold text-lime-800">Vendor Expenses</h1>
-                <div className="flex items-center gap-4">
-                    <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
-                    <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"><LogOut size={20}/></button>
-                </div>
-            </div>
+            <h1 className="text-3xl font-extrabold text-lime-800 mb-6">Vendor Expenses</h1>
 
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <form onSubmit={(e) => handleSave(e, false)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* ... Form fields stay the same ... */}
+                  {/* RESTORED ALL FORM FIELDS */}
                   <div>
-                    <label className="block text-xs font-bold mb-1">VENDOR NAME *</label>
-                    <input id="vendorName" type="text" className="w-full p-2 border border-gray-300 rounded" value={formData.vendorName} onChange={handleInputChange} required />
+                    <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
+                    <select id="vendorId" className="w-full p-2 border rounded" value={formData.vendorId} onChange={handleInputChange} required>
+                      <option value="">Select Vendor ID</option>
+                      {creditCardOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
+                    </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1 text-blue-700 font-bold uppercase">Notify PM *</label>
-                    <select id="pmEmail" className="w-full p-2 border border-gray-300 rounded" value={formData.pmEmail} onChange={handleInputChange} required>
+                    <label className="block text-xs font-bold mb-1">CONTRACT *</label>
+                    <select id="contractShortName" className="w-full p-2 border rounded" value={formData.contractShortName} onChange={handleInputChange} required>
+                      <option value="">Select Contract</option>
+                      {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">VENDOR NAME *</label>
+                    <input id="vendorName" type="text" className="w-full p-2 border rounded" value={formData.vendorName} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">AMOUNT *</label>
+                    <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">CHARGE DATE *</label>
+                    <input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">SUBMITTED DATE *</label>
+                    <input id="submittedDate" type="date" className="w-full p-2 border rounded" value={formData.submittedDate} onChange={handleInputChange} required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
+                    <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
                       <option value="">Select PM Email</option>
                       {pmEmailOptions.map(email => <option key={email} value={email}>{email}</option>)}
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">PDF PATH *</label>
+                    <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
+                  </div>
                   <div className="lg:col-span-2">
-                    <label className="block text-xs font-bold mb-1 uppercase">Reason for Rejection / Notes</label>
-                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : 'border-gray-300'}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} />
+                    <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
+                    <textarea id="chargeCode" rows="1" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
                   </div>
+                  <div className="lg:col-span-2">
+                    <label className="block text-xs font-bold mb-1">REASON / NOTES</label>
+                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : ''}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} />
+                  </div>
+
+                  {/* VISUAL ACTION BOXES */}
                   <div className="lg:col-span-4 flex gap-4">
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200 opacity-60'}`}>Approve</button>
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${!formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200 opacity-60'}`}>Reject</button>
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${formData.isApproved ? 'bg-green-100 border-green-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>APPROVE</button>
+                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${!formData.isApproved ? 'bg-red-100 border-red-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>REJECT</button>
                   </div>
+
                   <div className="lg:col-span-4 flex justify-end gap-3">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"><Send size={18}/> Save and Notify</button>
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save and Notify</button>
                   </div>
                 </form>
               </div>
@@ -716,23 +710,24 @@ const Vendor_Expenses = ({
             </div>
             
             <div className="overflow-x-auto rounded-lg border">
-                <table className="min-w-full divide-y divide-gray-200">
+                <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="p-4 w-12"><input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} /></th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Record No</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vendor ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Contract</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Amount</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                            <th className="p-4 w-12"></th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Record No</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Vendor ID</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Contract</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Vendor</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Date</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Amount</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">PDF</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Status</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">APV No</th>
+                            <th className="px-6 py-3 text-left font-bold uppercase">Notify PM</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y">
-                        {groupedEntries.map((group) => (
-                            <React.Fragment key={group[0].id}>
-                                <tr className="hover:bg-blue-50 transition-colors"><Row entry={group[0]} /></tr>
-                            </React.Fragment>
-                        ))}
+                        {groupedEntries.map((group) => <tr key={group[0].id} className="hover:bg-blue-50 transition-colors"><Row entry={group[0]} /></tr>)}
                     </tbody>
                 </table>
             </div>
