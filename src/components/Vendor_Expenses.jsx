@@ -431,7 +431,6 @@ const Vendor_Expenses = ({
   const [showOnlyLatest, setShowOnlyLatest] = useState(false);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [selectedRows, setSelectedRows] = useState(new Set());
-  const [isExporting, setIsExporting] = useState(false);
   const [isNotifying, setIsNotifying] = useState(false);
   const [localEntries, setLocalEntries] = useState([]);
 
@@ -447,38 +446,20 @@ const Vendor_Expenses = ({
   const [editingEntry, setEditingEntry] = useState(null);
   
   const [formData, setFormData] = useState({
-    vendorId: '', 
-    contractShortName: '',
-    vendorName: '',
-    chargeDate: '',
-    chargeAmount: '',
-    submittedDate: '',
-    pmEmail: '',
-    chargeCode: '',
-    isApproved: false,
-    notes: '',
-    pdfFilePath: '',
+    vendorId: '', contractShortName: '', vendorName: '', chargeDate: '',
+    chargeAmount: '', submittedDate: '', pmEmail: '', chargeCode: '',
+    isApproved: false, notes: '', pdfFilePath: '',
   });
 
   const pmEmailOptions = ['Manas.Lalwani@revolvespl.com'];
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses`;
   const LOGIN_URL = "https://rev-lum-em-tst.vercel.app"; 
 
-  const searchableColumns = [
-    { key: 'all', name: 'All Fields' },
-    { key: 'vendorId', name: 'Vendor ID' },
-    { key: 'contractShortName', name: 'Contract' },
-    { key: 'vendorName', name: 'Vendor' },
-    { key: 'submitter_name', name: 'Submitter' },
-  ];
-
   const handleVendorChange = (e) => {
     const selectedId = e.target.value;
     const selectedVendor = vendorOptions.find(v => v.vendor_id === selectedId);
     setFormData(prev => ({
-      ...prev,
-      vendorId: selectedId,
-      vendorName: selectedVendor ? selectedVendor.vendor_name : ''
+      ...prev, vendorId: selectedId, vendorName: selectedVendor ? selectedVendor.vendor_name : ''
     }));
   };
 
@@ -497,29 +478,41 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
+  // --- FIXED GROUPING LOGIC ---
   const groupedEntries = useMemo(() => {
     const groups = localEntries.reduce((acc, entry) => {
-      const baseKey = String(entry.prime_key || entry.primeKey).split('.')[0];
+      // Group by the integer part of the primeKey (e.g., "1", "1.1", "1.2" all go to group "1")
+      const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
+      if (!baseKey) return acc;
       if (!acc[baseKey]) acc[baseKey] = [];
       acc[baseKey].push(entry);
       return acc;
     }, {});
+
+    // Sort versions within each group (Latest version first)
     for (const key in groups) {
-      groups[key].sort((a, b) => parseFloat(b.prime_key || b.primeKey) - parseFloat(a.prime_key || a.primeKey));
+      groups[key].sort((a, b) => {
+        const aVal = parseFloat(a.prime_key || a.primeKey || 0);
+        const bVal = parseFloat(b.prime_key || b.primeKey || 0);
+        return bVal - aVal;
+      });
     }
+
     let filteredGroups = Object.values(groups);
+
+    // Apply Search
     if (searchValue) {
-      const lowercasedValue = searchValue.toLowerCase();
+      const lowVal = searchValue.toLowerCase();
       filteredGroups = filteredGroups.filter(group =>
         group.some(entry => {
           if (searchColumn === 'all') {
-            return Object.values(entry).some(value => (String(value) || '').toLowerCase().includes(lowercasedValue));
-          } else {
-            return String(entry[searchColumn] || '').toLowerCase().includes(lowercasedValue);
+            return Object.values(entry).some(v => String(v || '').toLowerCase().includes(lowVal));
           }
+          return String(entry[searchColumn] || '').toLowerCase().includes(lowVal);
         })
       );
     }
+
     return showOnlyLatest ? filteredGroups.map(group => [group[0]]) : filteredGroups;
   }, [localEntries, searchColumn, searchValue, showOnlyLatest]);
 
@@ -527,92 +520,34 @@ const Vendor_Expenses = ({
 
   const handleSave = async (e, shouldNotify = false) => {
     if (e) e.preventDefault();
-    
-    // FIX: Only require notes if Admin is rejecting. Users don't need to provide notes to save.
     if (currentUserRole === 'Admin' && !formData.isApproved && !formData.notes) {
-        return alert("Admin: A reason for rejection is required in the notes.");
+        return alert("Admin: Reason for rejection is required.");
     }
-
     const method = editingEntry ? 'PATCH' : 'POST';
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
-    
     try {
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, userId: currentUserId, submitter: userName }),
       });
-      
       if (onDataChanged) onDataChanged();
-      
       if (shouldNotify) {
-        const savedData = await response.json();
-        const body = formData.isApproved 
-          ? `Action Required: Review record ${savedData.prime_key || 'New'}\nLogin here: ${LOGIN_URL}`
-          : `Update: Record ${savedData.prime_key || 'New'} has status: Rejected\nNotes: ${formData.notes || 'N/A'}\nLogin here: ${LOGIN_URL}`;
-        
+        const data = await res.json();
+        const body = formData.isApproved ? `Review: ${data.prime_key}\nLink: ${LOGIN_URL}` : `Rejected: ${data.prime_key}\nNotes: ${formData.notes}\nLink: ${LOGIN_URL}`;
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Action Item`, bodyContent: body }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Update`, bodyContent: body }),
         });
       }
       resetForm();
-    } catch (err) { alert("Save failed."); }
-  };
-
-  const notifyBatchPM = async () => {
-    if (selectedRows.size === 0) return;
-    setIsNotifying(true);
-    const selectedEntries = localEntries.filter(entry => selectedRows.has(entry.id));
-    const pmGroups = selectedEntries.reduce((acc, entry) => {
-      const email = entry.pm_email || entry.pmEmail;
-      if (!acc[email]) acc[email] = [];
-      acc[email].push(entry);
-      return acc;
-    }, {});
-
-    try {
-      for (const [pmEmail, entries] of Object.entries(pmGroups)) {
-        const pks = entries.map(e => e.prime_key || e.primeKey).join(', ');
-        let body = `Hello PM,\n\nThe following vendor expense records require your review/approval:\n\nRecords: ${pks}\n\nLogin to the system here: ${LOGIN_URL}`;
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: pmEmail, subject: `Multiple Records Awaiting Approval`, bodyContent: body }),
-        });
-      }
-      alert("PMs notified successfully.");
-      setSelectedRows(new Set());
-    } catch (err) { alert("Email error."); }
-    finally { setIsNotifying(false); }
-  };
-
-  const startEdit = () => {
-    const entryId = Array.from(selectedRows)[0];
-    const entry = localEntries.find(e => e.id === entryId);
-    if (entry) {
-      setEditingEntry(entry);
-      setFormData({
-        vendorId: entry.vendor_id || entry.vendorId,
-        contractShortName: entry.contract_short_name || entry.contractShortName,
-        vendorName: entry.vendor_name || entry.vendorName,
-        chargeDate: entry.charge_date?.split('T')[0] || '',
-        chargeAmount: entry.charge_amount || entry.chargeAmount,
-        submittedDate: entry.submitted_date?.split('T')[0] || '',
-        pmEmail: entry.pm_email || entry.pmEmail,
-        chargeCode: entry.charge_code || entry.chargeCode,
-        isApproved: entry.is_approved || entry.isApproved,
-        notes: entry.notes || '',
-        pdfFilePath: entry.pdf_file_path || entry.pdfFilePath,
-      });
-      setIsAdding(false);
-    }
+    } catch (err) { alert("Save error"); }
   };
 
   const Row = ({ entry, isHistory = false }) => {
-    const baseKey = String(entry.prime_key || entry.primeKey).split('.')[0];
-    const hasHistory = !isHistory && groupedEntries.find(g => String(g[0].prime_key || g[0].prime_key).split('.')[0] === baseKey)?.length > 1;
+    const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
+    const group = groupedEntries.find(g => String(g[0].prime_key || g[0].primeKey).split('.')[0] === baseKey);
+    const hasHistory = !isHistory && group && group.length > 1;
+
     return (
       <React.Fragment>
           <td className="p-4 text-center">
@@ -628,8 +563,8 @@ const Vendor_Expenses = ({
                   const next = new Set(expandedRows);
                   next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey);
                   setExpandedRows(next);
-                }} className="mr-2">
-                  {expandedRows.has(baseKey) ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                }} className="mr-2 inline-flex items-center align-middle">
+                  {expandedRows.has(baseKey) ? <ChevronDown size={16}/> : <ChevronRight size={16}/>}
                 </button>
               ) : !isHistory && <span className="w-6 inline-block"/>}
               {entry.prime_key || entry.primeKey}
@@ -637,8 +572,6 @@ const Vendor_Expenses = ({
           <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.vendor_id || entry.vendorId}</td>
           <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.contract_short_name || entry.contractShortName}</td>
           <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.vendor_name || entry.vendorName}</td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(entry.charge_date || entry.chargeDate)}</td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">${parseFloat(entry.charge_amount || entry.chargeAmount || 0).toFixed(2)}</td>
           <td className="px-6 py-3 whitespace-nowrap text-sm font-bold">
               {(entry.is_approved || entry.isApproved) ? <span className="text-green-600">Approved</span> : <span className="text-red-600">Rejected</span>}
           </td>
@@ -657,19 +590,15 @@ const Vendor_Expenses = ({
                     <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
                     <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-lg">
                         <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-10 h-10 rounded-full border" />
-                        <span className="font-medium text-gray-700">{userName} ({currentUserRole})</span>
+                        <span className="font-medium text-gray-700">{userName}</span>
                     </div>
                     <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"><LogOut size={20}/></button>
                 </div>
             </div>
 
-            {/* Form Section */}
+            {/* Form */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-blue-900">{editingEntry ? 'Edit' : 'Add'} Record</h2>
-                  <button onClick={resetForm} className="text-gray-500 hover:text-red-500"><X /></button>
-                </div>
                 <form onSubmit={(e) => handleSave(e)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
@@ -696,63 +625,19 @@ const Vendor_Expenses = ({
                       {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">AMOUNT *</label>
-                    <input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">CHARGE DATE *</label>
-                    <input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">PDF PATH *</label>
-                    <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
-                    <input id="chargeCode" type="text" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
-                  </div>
-                  
                   <div className="lg:col-span-4">
                     <label className="block text-xs font-bold mb-1 uppercase">Notes / Reason</label>
-                    <textarea 
-                        id="notes" 
-                        rows="1" 
-                        className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && !formData.isApproved ? 'bg-red-50 border-red-400' : 'bg-white'}`} 
-                        value={formData.notes} 
-                        onChange={handleInputChange} 
-                        required={currentUserRole === 'Admin' && !formData.isApproved} 
-                        placeholder={currentUserRole === 'Admin' && !formData.isApproved ? "Mandatory for rejection..." : "Add notes here..."}
-                    />
+                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && !formData.isApproved ? 'bg-red-50 border-red-400' : 'bg-white'}`} value={formData.notes} onChange={handleInputChange} required={currentUserRole === 'Admin' && !formData.isApproved} />
                   </div>
 
-                  {/* Status Buttons - Restricted to Admin */}
                   <div className="lg:col-span-4 flex gap-4">
-                    <button 
-                      type="button" 
-                      disabled={currentUserRole !== 'Admin'}
-                      onClick={() => setFormData(p => ({ ...p, isApproved: true }))} 
-                      className={`px-6 py-2 rounded-lg border-2 w-fit font-bold transition-all ${
-                        formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200'
-                      } ${currentUserRole !== 'Admin' ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:shadow-md'}`}
-                    >
-                      <CheckCircle size={18} className="inline mr-2"/> APPROVE
-                    </button>
-                    <button 
-                      type="button" 
-                      disabled={currentUserRole !== 'Admin'}
-                      onClick={() => setFormData(p => ({ ...p, isApproved: false }))} 
-                      className={`px-6 py-2 rounded-lg border-2 w-fit font-bold transition-all ${
-                        !formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200'
-                      } ${currentUserRole !== 'Admin' ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:shadow-md'}`}
-                    >
-                      <XCircle size={18} className="inline mr-2"/> REJECT
-                    </button>
+                    <button type="button" disabled={currentUserRole !== 'Admin'} onClick={() => setFormData(p => ({ ...p, isApproved: true }))} className={`px-6 py-2 rounded-lg border-2 w-fit font-bold ${formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200'} ${currentUserRole !== 'Admin' ? 'opacity-40 grayscale' : ''}`}>APPROVE</button>
+                    <button type="button" disabled={currentUserRole !== 'Admin'} onClick={() => setFormData(p => ({ ...p, isApproved: false }))} className={`px-6 py-2 rounded-lg border-2 w-fit font-bold ${!formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200'} ${currentUserRole !== 'Admin' ? 'opacity-40 grayscale' : ''}`}>REJECT</button>
                   </div>
 
                   <div className="lg:col-span-4 flex justify-end gap-3 mt-4 border-t pt-4">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-blue-700"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-purple-700"><Send size={18}/> Save & Notify</button>
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> Save</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save & Notify</button>
                   </div>
                 </form>
               </div>
@@ -775,9 +660,11 @@ const Vendor_Expenses = ({
 
             {/* Actions */}
             <div className="flex gap-3 mb-6">
-                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600"><Plus size={20}/> Add</button>}
-                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-purple-700"><Send size={20}/> {isNotifying ? 'Sending...' : 'Notify PM'}</button>
-                <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"><Pencil size={20}/> Edit</button>
+                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"><Plus size={20}/> Add</button>}
+                <button disabled={selectedRows.size !== 1} onClick={() => {
+                   const entry = localEntries.find(e => e.id === Array.from(selectedRows)[0]);
+                   if(entry) setEditingEntry(entry); setIsAdding(false);
+                }} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Pencil size={20}/> Edit</button>
             </div>
             
             {/* Table */}
@@ -785,15 +672,11 @@ const Vendor_Expenses = ({
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 font-bold uppercase text-gray-600">
                         <tr>
-                            <th className="p-4 w-12 text-center">
-                              <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
-                            </th>
+                            <th className="p-4 w-12 text-center"></th>
                             <th className="px-6 py-3 text-left">Record No</th>
                             <th className="px-6 py-3 text-left">Vendor ID</th>
                             <th className="px-6 py-3 text-left">Contract</th>
                             <th className="px-6 py-3 text-left">Vendor Name</th>
-                            <th className="px-6 py-3 text-left">Date</th>
-                            <th className="px-6 py-3 text-left">Amount</th>
                             <th className="px-6 py-3 text-left">Status</th>
                             <th className="px-6 py-3 text-left">PM Email</th>
                         </tr>
