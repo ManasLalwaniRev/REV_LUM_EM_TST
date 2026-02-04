@@ -575,6 +575,31 @@ app.post('/api/vendor-expenses/new', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// --- 8. Vendor Expenses PATCH Fix ---
+app.patch('/api/vendor-expenses/:id', async (req, res) => {
+  const { id } = req.params; // Correctly extract the ID from the URL path
+  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId } = req.body;
+  try {
+    // Locate the original record using the ID from the URL
+    const original = await pool.query('SELECT prime_key FROM vendor_expenses WHERE id = $1', [id]);
+    
+    if (original.rows.length === 0) {
+      return res.status(404).json({ error: 'Record not found' });
+    }
+
+    const nextKey = await getNextVersionedKey('vendor_expenses', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, is_approved, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, isApproved, notes, pdfFilePath, userId]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) { 
+    console.error("Update Error:", err.message);
+    res.status(500).json({ error: err.message }); 
+  }
+});
+
 // --- 9. Credit Card Expenses ---
 app.get('/api/credit-card-expenses', async (req, res) => {
   const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
@@ -593,6 +618,7 @@ app.post('/api/credit-card-expenses/new', async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
 
 // --- 10. Travel Expenses ---
 app.get('/api/travel-expenses', async (req, res) => {
