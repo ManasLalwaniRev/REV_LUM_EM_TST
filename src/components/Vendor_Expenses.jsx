@@ -468,7 +468,6 @@ const Vendor_Expenses = ({
     { key: 'submitter', name: 'Submitter' },
   ];
 
-  // Logic to group versions (1, 1.1, 1.2) under the base record (1)
   const groupedEntries = useMemo(() => {
     const groups = localEntries.reduce((acc, entry) => {
       const baseKey = String(entry.primeKey || entry.prime_key).split('.')[0];
@@ -522,7 +521,6 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
-  // Logic to send a single batch email per PM for all selected records
   const notifyBatchPM = async () => {
     if (selectedRows.size === 0) return;
     setIsNotifying(true);
@@ -553,11 +551,8 @@ const Vendor_Expenses = ({
       }
       alert("Batch notifications sent successfully.");
       setSelectedRows(new Set());
-    } catch (err) { 
-      alert("Error sending batch mail."); 
-    } finally { 
-      setIsNotifying(false); 
-    }
+    } catch (err) { alert("Error sending batch mail."); } 
+    finally { setIsNotifying(false); }
   };
 
   const handleSave = async (e, shouldNotify = false) => {
@@ -566,26 +561,20 @@ const Vendor_Expenses = ({
       alert("Reason for rejection is required.");
       return;
     }
-
     const method = editingEntry ? 'PATCH' : 'POST';
-    // Fix for 404: Ensure URL matches backend parameter expectation
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
-    
     try {
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, userId: currentUserId, submitter: userName }),
       });
-      
-      const savedData = await response.json();
       if (onDataChanged) onDataChanged();
-      
       if (shouldNotify) {
+        const savedData = await response.json();
         const body = formData.isApproved 
           ? `A record requires review: ${savedData.prime_key || 'New'}\nLogin here: ${LOGIN_URL}`
           : `Record ${savedData.prime_key || 'New'} was REJECTED: ${formData.notes}\nLogin here: ${LOGIN_URL}`;
-        
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -593,9 +582,7 @@ const Vendor_Expenses = ({
         });
       }
       resetForm();
-    } catch (err) { 
-      alert("Update/Save failed."); 
-    }
+    } catch (err) { alert("Update/Save failed."); }
   };
 
   const startEdit = () => {
@@ -623,7 +610,6 @@ const Vendor_Expenses = ({
   const Row = ({ entry, isHistory = false }) => {
     const baseKey = String(entry.primeKey || entry.prime_key).split('.')[0];
     const hasHistory = !isHistory && groupedEntries.find(g => String(g[0].primeKey || g[0].prime_key).split('.')[0] === baseKey)?.length > 1;
-
     return (
       <React.Fragment>
           <td className="p-0 text-center">
@@ -653,14 +639,9 @@ const Vendor_Expenses = ({
           <td className="px-6 py-3 whitespace-nowrap text-sm text-blue-600">
               {(entry.pdfFilePath || entry.pdf_file_path) ? <a href={entry.pdfFilePath || entry.pdf_file_path} target="_blank" rel="noreferrer" className="hover:underline">View PDF</a> : 'N/A'}
           </td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">
-              {(entry.isApproved || entry.is_approved) ? (
-                <span className="flex items-center gap-1 text-green-600 font-bold"><CheckCircle size={16}/> Approved</span>
-              ) : (
-                <span className="flex items-center gap-1 text-red-600 font-bold"><XCircle size={16}/> Rejected</span>
-              )}
+          <td className="px-6 py-3 whitespace-nowrap text-sm font-bold">
+              {(entry.isApproved || entry.is_approved) ? <span className="text-green-600">Approved</span> : <span className="text-red-600">Rejected</span>}
           </td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.apvNumber || entry.apv_number || 'N/A'}</td>
           <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.pmEmail || entry.pm_email}</td>
       </React.Fragment>
     );
@@ -677,6 +658,7 @@ const Vendor_Expenses = ({
                 </div>
             </div>
 
+            {/* FORM SECTION */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <form onSubmit={(e) => handleSave(e, false)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -729,12 +711,10 @@ const Vendor_Expenses = ({
                     <label className="block text-xs font-bold mb-1 uppercase">Reason for Rejection / Notes</label>
                     <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : ''}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} />
                   </div>
-
                   <div className="lg:col-span-4 flex gap-4">
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${formData.isApproved ? 'bg-green-100 border-green-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>APPROVE</button>
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${!formData.isApproved ? 'bg-red-100 border-red-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>REJECT</button>
                   </div>
-
                   <div className="lg:col-span-4 flex justify-end gap-3">
                     <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
                     <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save and Notify</button>
@@ -743,29 +723,45 @@ const Vendor_Expenses = ({
               </div>
             )}
 
+            {/* RESTORED SEARCH BAR SECTION */}
+            <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
+                <div className="flex items-center border rounded-lg bg-white flex-grow">
+                    <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
+                        {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
+                    </select>
+                    <input type="text" placeholder="Search vendor expenses..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+                    <Search size={18} className="text-gray-400 mr-3" />
+                </div>
+                <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
+                    Show Latest Only
+                    <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="w-4 h-4" />
+                </label>
+            </div>
+
+            {/* ACTION BUTTONS */}
             <div className="flex gap-3 mb-6">
                 {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"><Plus size={20}/> Add</button>}
                 <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Send size={20}/> {isNotifying ? 'Sending Batch...' : 'Notify Selection'}</button>
                 <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Pencil size={20}/> Edit</button>
             </div>
             
+            {/* DATA TABLE */}
             <div className="overflow-x-auto rounded-lg border">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-gray-50 font-bold uppercase">
                         <tr>
                             <th className="p-4 w-12">
                               <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
                             </th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Record No</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Vendor ID</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Contract</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Vendor</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Date</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Amount</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">PDF</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Status</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">APV No</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Notify PM</th>
+                            <th className="px-6 py-3 text-left">Record No</th>
+                            <th className="px-6 py-3 text-left">Vendor ID</th>
+                            <th className="px-6 py-3 text-left">Contract</th>
+                            <th className="px-6 py-3 text-left">Vendor</th>
+                            <th className="px-6 py-3 text-left">Date</th>
+                            <th className="px-6 py-3 text-left">Amount</th>
+                            <th className="px-6 py-3 text-left">PDF</th>
+                            <th className="px-6 py-3 text-left">Status</th>
+                            <th className="px-6 py-3 text-left">Notify PM</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y">
