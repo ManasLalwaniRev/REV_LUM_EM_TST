@@ -658,7 +658,6 @@ const Vendor_Expenses = ({
                 </div>
             </div>
 
-            {/* FORM SECTION */}
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <form onSubmit={(e) => handleSave(e, false)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -693,7 +692,7 @@ const Vendor_Expenses = ({
                     <input id="submittedDate" type="date" className="w-full p-2 border rounded" value={formData.submittedDate} onChange={handleInputChange} required />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
+                    <label className="block text-xs font-bold mb-1 text-blue-700 font-bold">NOTIFY PM *</label>
                     <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
                       <option value="">Select PM Email</option>
                       {pmEmailOptions.map(email => <option key={email} value={email}>{email}</option>)}
@@ -704,26 +703,48 @@ const Vendor_Expenses = ({
                     <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
                   </div>
                   <div className="lg:col-span-2">
-                    <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
+                    <label className="block text-xs font-bold mb-1 font-bold">CHARGE CODE *</label>
                     <textarea id="chargeCode" rows="1" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
                   </div>
                   <div className="lg:col-span-2">
-                    <label className="block text-xs font-bold mb-1 uppercase">Reason for Rejection / Notes</label>
+                    <label className="block text-xs font-bold mb-1 uppercase font-bold">Reason for Rejection / Notes</label>
                     <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : ''}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} />
                   </div>
+
+                  {/* Shortened Approve/Reject Buttons */}
                   <div className="lg:col-span-4 flex gap-4">
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${formData.isApproved ? 'bg-green-100 border-green-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>APPROVE</button>
-                    <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${!formData.isApproved ? 'bg-red-100 border-red-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>REJECT</button>
+                    <button 
+                        type="button" 
+                        onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))}
+                        className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 transition-all w-fit ${
+                        formData.isApproved ? 'bg-green-100 border-green-500 shadow-inner' : 'bg-white border-gray-200 opacity-60'
+                        }`}
+                    >
+                        <CheckCircle className={formData.isApproved ? 'text-green-600' : 'text-gray-400'} size={18} />
+                        <span className={`font-bold text-xs uppercase ${formData.isApproved ? 'text-green-800' : 'text-gray-500'}`}>Approve</span>
+                    </button>
+                    
+                    <button 
+                        type="button" 
+                        onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))}
+                        className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 transition-all w-fit ${
+                        !formData.isApproved ? 'bg-red-100 border-red-500 shadow-inner' : 'bg-white border-gray-200 opacity-60'
+                        }`}
+                    >
+                        <XCircle className={!formData.isApproved ? 'text-red-600' : 'text-gray-400'} size={18} />
+                        <span className={`font-bold text-xs uppercase ${!formData.isApproved ? 'text-red-800' : 'text-gray-500'}`}>Reject</span>
+                    </button>
                   </div>
+
                   <div className="lg:col-span-4 flex justify-end gap-3">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save and Notify</button>
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-blue-700"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-purple-700"><Send size={18}/> Save and Notify</button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* RESTORED SEARCH BAR SECTION */}
+            {/* Restored Search Bar Section */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
@@ -738,19 +759,17 @@ const Vendor_Expenses = ({
                 </label>
             </div>
 
-            {/* ACTION BUTTONS */}
             <div className="flex gap-3 mb-6">
-                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"><Plus size={20}/> Add</button>}
-                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Send size={20}/> {isNotifying ? 'Sending Batch...' : 'Notify Selection'}</button>
-                <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Pencil size={20}/> Edit</button>
+                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600"><Plus size={20}/> Add</button>}
+                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-purple-700"><Send size={20}/> {isNotifying ? 'Sending Batch...' : 'Notify Selection'}</button>
+                <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"><Pencil size={20}/> Edit</button>
             </div>
             
-            {/* DATA TABLE */}
             <div className="overflow-x-auto rounded-lg border">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 font-bold uppercase">
                         <tr>
-                            <th className="p-4 w-12">
+                            <th className="p-4 w-12 text-center">
                               <input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} />
                             </th>
                             <th className="px-6 py-3 text-left">Record No</th>
