@@ -426,11 +426,9 @@ async function getNextVersionedKey(tableName, baseKey = null) {
   }
 }
 
-// --- 5. Email Route ---
-app.post('/api/send-email', async (req, res) => {
-  const { recipient, cc, subject, bodyContent } = req.body;
-  if (!recipient || !subject) return res.status(400).json({ error: 'Recipient/Subject required' });
-
+// --- 5. Helper Function: Centralized Email Sender ---
+async function sendNotificationEmail(recipient, subject, bodyContent) {
+  if (!recipient) return;
   try {
     const client = await getAuthenticatedClient();
     const sendMail = {
@@ -438,36 +436,19 @@ app.post('/api/send-email', async (req, res) => {
         subject: subject,
         body: { contentType: 'Text', content: bodyContent },
         toRecipients: [{ emailAddress: { address: recipient } }],
-        ccRecipients: cc ? [{ emailAddress: { address: cc } }] : [],
       },
       saveToSentItems: 'true',
     };
     await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
-    res.status(200).json({ message: 'Email sent via Graph API' });
+    console.log(`Notification sent to ${recipient}`);
   } catch (error) {
-    res.status(500).json({ error: 'Mail failed', details: error.message });
+    console.error("Internal Email Helper Error:", error.message);
   }
-});
+}
 
-// --- 6. Authentication ---
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-  const clientIp = req.headers['x-forwarded-for'] || req.ip;
-  try {
-    const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-    const user = userResult.rows[0];
-    if (user) {
-      const isMatch = await bcrypt.compare(password, user.password_hash).catch(() => password === user.password_hash);
-      if (isMatch) {
-        await pool.query('UPDATE users SET last_login_ip = $1 WHERE id = $2', [clientIp, user.id]);
-        return res.status(200).json({ userId: user.id, username: user.username, role: user.role, avatar: user.avtr });
-      }
-    }
-    res.status(401).json({ message: 'Invalid credentials' });
-  } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
-});
+// --- 6. Routes ---
 
-// --- 7. Master Data & Options ---
+// Master Data
 app.get('/api/vendors', async (req, res) => {
   try {
     const result = await pool.query('SELECT vendor_id, vendor_name FROM vendors ORDER BY vendor_id ASC');
@@ -485,17 +466,43 @@ app.get('/api/contract-options', async (req, res) => {
   res.json(result.rows);
 });
 
-// --- 8. Vendor Expenses (Updated for Status Column) ---
+// Authentication
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const clientIp = req.headers['x-forwarded-for'] || req.ip;
+  try {
+    const userResult = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = userResult.rows[0];
+    if (user) {
+      const isMatch = await bcrypt.compare(password, user.password_hash).catch(() => password === user.password_hash);
+      if (isMatch) {
+        await pool.query('UPDATE users SET last_login_ip = $1 WHERE id = $2', [clientIp, user.id]);
+        return res.status(200).json({ userId: user.id, username: user.username, role: user.role, avatar: user.avtr });
+      }
+    }
+    res.status(401).json({ message: 'Invalid credentials' });
+  } catch (err) { res.status(500).json({ error: 'Internal server error' }); }
+});
+
+// --- 7. Vendor Expenses (With Auto-Email) ---
 app.get('/api/vendor-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT ve.*, u.username as submitter_name 
-      FROM vendor_expenses ve 
-      LEFT JOIN users u ON ve.submitter_id = u.id 
-      ORDER BY ve.created_at DESC`);
+    const result = await pool.query(`SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve LEFT JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC`);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+const handleVendorNotify = async (data, primeKey) => {
+  const body = `Record Update Notification:
+Record No: ${primeKey}
+Vendor ID: ${data.vendorId}
+Vendor Name: ${data.vendorName}
+Amount: $${parseFloat(data.chargeAmount || 0).toFixed(2)}
+Status: ${data.status || 'Submitted'}
+
+Link: https://rev-lum-em-tst.vercel.app`;
+  await sendNotificationEmail(data.pmEmail, `Vendor Expense Review: ${data.vendorName}`, body);
+};
 
 app.post('/api/vendor-expenses/new', async (req, res) => {
   const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
@@ -506,101 +513,96 @@ app.post('/api/vendor-expenses/new', async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
       [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
     );
+    await handleVendorNotify(req.body, nextKey);
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.patch('/api/vendor-expenses/:id', async (req, res) => {
   const { id } = req.params;
-  const { vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
+  const data = req.body;
   try {
     const original = await pool.query('SELECT prime_key FROM vendor_expenses WHERE id = $1', [id]);
     if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-
     const nextKey = await getNextVersionedKey('vendor_expenses', original.rows[0].prime_key);
     const result = await pool.query(
       `INSERT INTO vendor_expenses (prime_key, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
+      [nextKey, data.vendorId, data.contractShortName, data.vendorName, data.chargeDate || null, data.chargeAmount || null, data.submittedDate || null, data.pmEmail, data.chargeCode, data.status || 'Submitted', data.notes, data.pdfFilePath, data.userId]
     );
+    await handleVendorNotify(data, nextKey);
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 9. Credit Card Expenses (CRUD) ---
+// --- 8. Credit Card Expenses (With Auto-Email) ---
 app.get('/api/credit-card-expenses', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT cc.*, u.username as submitter_name 
-      FROM credit_card_expenses cc 
-      LEFT JOIN users u ON cc.submitter_id = u.id 
-      ORDER BY cc.created_at DESC`);
+    const result = await pool.query(`SELECT cc.*, u.username as submitter_name FROM credit_card_expenses cc LEFT JOIN users u ON cc.submitter_id = u.id ORDER BY cc.created_at DESC`);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+const handleCCNotify = async (data, primeKey) => {
+  const body = `Record Update Notification:
+Record No: ${primeKey}
+Credit Card: ${data.creditCard}
+Vendor ID: ${data.vendorId}
+Vendor Name: ${data.vendorName}
+Amount: $${parseFloat(data.chargeAmount || 0).toFixed(2)}
+Status: ${data.status || 'Submitted'}
+
+Link: https://rev-lum-em-tst.vercel.app`;
+  await sendNotificationEmail(data.pmEmail, `CC Expense Review: ${data.creditCard}`, body);
+};
+
 app.post('/api/credit-card-expenses/new', async (req, res) => {
-  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
+  const { creditCard, vendorId, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
   try {
     const nextKey = await getNextVersionedKey('credit_card_expenses');
     const result = await pool.query(
-      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      [nextKey, creditCard, vendorId, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
     );
+    await handleCCNotify(req.body, nextKey);
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.patch('/api/credit-card-expenses/:id', async (req, res) => {
   const { id } = req.params;
-  const { creditCard, contractShortName, vendorName, chargeDate, chargeAmount, submittedDate, pmEmail, chargeCode, status, notes, pdfFilePath, userId } = req.body;
+  const data = req.body;
   try {
     const original = await pool.query('SELECT prime_key FROM credit_card_expenses WHERE id = $1', [id]);
     if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-
     const nextKey = await getNextVersionedKey('credit_card_expenses', original.rows[0].prime_key);
     const result = await pool.query(
-      `INSERT INTO credit_card_expenses (prime_key, credit_card, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [nextKey, creditCard, contractShortName, vendorName, chargeDate || null, chargeAmount || null, submittedDate || null, pmEmail, chargeCode, status || 'Submitted', notes, pdfFilePath, userId]
+      `INSERT INTO credit_card_expenses (prime_key, credit_card, vendor_id, contract_short_name, vendor_name, charge_date, charge_amount, submitted_date, pm_email, charge_code, status, notes, pdf_file_path, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      [nextKey, data.creditCard, data.vendorId, data.contractShortName, data.vendorName, data.chargeDate || null, data.chargeAmount || null, data.submittedDate || null, data.pmEmail, data.chargeCode, data.status || 'Submitted', data.notes, data.pdfFilePath, data.userId]
     );
+    await handleCCNotify(data, nextKey);
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 10. Subk & Travel Combined Routes ---
+// --- 9. Subk & Travel ---
 app.get('/api/subk-travel', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT st.*, u.username as submitter_name 
-      FROM subk_travel_expenses st 
-      LEFT JOIN users u ON st.submitter_id = u.id 
-      ORDER BY st.created_at DESC`);
+    const result = await pool.query(`SELECT st.*, u.username as submitter_name FROM subk_travel_expenses st LEFT JOIN users u ON st.submitter_id = u.id ORDER BY st.created_at DESC`);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/subk-travel/new', async (req, res) => {
-  const { 
-    category, contractShortName, projectName, pmName, email, ccRecipients, 
-    chargeAmount, chargeDate, pdfFilePath, notes, status, subkName, 
-    laborCategory, userId 
-  } = req.body;
-  
+  const { category, contractShortName, projectName, pmName, email, ccRecipients, chargeAmount, chargeDate, pdfFilePath, notes, status, subkName, laborCategory, userId } = req.body;
   try {
     const nextKey = await getNextVersionedKey('subk_travel_expenses');
     const result = await pool.query(
-      `INSERT INTO subk_travel_expenses (
-        prime_key, category, contract_short_name, project_name, pm_name, email, 
-        cc_recipients, charge_amount, charge_date, pdf_file_path, notes, 
-        status, subk_name, labor_category, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-      [
-        nextKey, category, contractShortName, projectName, pmName, email, 
-        ccRecipients, chargeAmount || 0, chargeDate || null, pdfFilePath, notes, 
-        status || 'Submitted', subkName, laborCategory, userId
-      ]
+      `INSERT INTO subk_travel_expenses (prime_key, category, contract_short_name, project_name, pm_name, email, cc_recipients, charge_amount, charge_date, pdf_file_path, notes, status, subk_name, labor_category, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [nextKey, category, contractShortName, projectName, pmName, email, ccRecipients, chargeAmount || 0, chargeDate || null, pdfFilePath, notes, status || 'Submitted', subkName, laborCategory, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -612,61 +614,36 @@ app.patch('/api/subk-travel/:id', async (req, res) => {
   try {
     const original = await pool.query('SELECT prime_key FROM subk_travel_expenses WHERE id = $1', [id]);
     if (original.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-
     const nextKey = await getNextVersionedKey('subk_travel_expenses', original.rows[0].prime_key);
     const result = await pool.query(
-      `INSERT INTO subk_travel_expenses (
-        prime_key, category, contract_short_name, project_name, pm_name, email, 
-        cc_recipients, charge_amount, charge_date, pdf_file_path, notes, 
-        status, subk_name, labor_category, submitter_id
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-      [
-        nextKey, data.category, data.contractShortName, data.projectName, data.pmName, 
-        data.email, data.ccRecipients, data.chargeAmount || 0, data.chargeDate || null, 
-        data.pdfFilePath, data.notes, data.status || 'Submitted', data.subkName, 
-        data.laborCategory, data.userId
-      ]
+      `INSERT INTO subk_travel_expenses (prime_key, category, contract_short_name, project_name, pm_name, email, cc_recipients, charge_amount, charge_date, pdf_file_path, notes, status, subk_name, labor_category, submitter_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [nextKey, data.category, data.contractShortName, data.projectName, data.pmName, data.email, data.ccRecipients, data.chargeAmount || 0, data.chargeDate || null, data.pdfFilePath, data.notes, data.status || 'Submitted', data.subkName, data.laborCategory, data.userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- 11. Automated Change Monitor (Updated for Status String) ---
+// --- 10. Automated Change Monitor ---
 const CHECK_INTERVAL = 15 * 60 * 1000;
-
 setInterval(async () => {
   try {
     const fifteenMinutesAgo = new Date(Date.now() - CHECK_INTERVAL);
-    
     const result = await pool.query(`
-      SELECT 'Vendor' as type, prime_key, vendor_name as name, status 
-      FROM vendor_expenses WHERE created_at >= $1
+      SELECT 'Vendor' as type, prime_key, vendor_name as name, status FROM vendor_expenses WHERE created_at >= $1
       UNION ALL
-      SELECT 'Credit Card' as type, prime_key, vendor_name as name, status 
-      FROM credit_card_expenses WHERE created_at >= $1
+      SELECT 'Credit Card' as type, prime_key, vendor_name as name, status FROM credit_card_expenses WHERE created_at >= $1
       UNION ALL
-      SELECT 'Subk/Travel' as type, prime_key, project_name as name, status 
-      FROM subk_travel_expenses WHERE created_at >= $1
+      SELECT 'Subk/Travel' as type, prime_key, project_name as name, status FROM subk_travel_expenses WHERE created_at >= $1
     `, [fifteenMinutesAgo]);
 
     if (result.rows.length > 0) {
-      const client = await getAuthenticatedClient();
-      
-      let reportBody = "The following records were added or updated in the last 15 minutes:\n\n";
+      let reportBody = "Recent Updates (Last 15 Minutes):\n\n";
       result.rows.forEach(row => {
-        reportBody += `[${row.type}] Record: ${row.prime_key} | Item/Vendor: ${row.name} | Status: ${row.status}\n`;
+        reportBody += `[${row.type}] Record: ${row.prime_key} | Name: ${row.name} | Status: ${row.status}\n`;
       });
-      reportBody += `\nView changes here: https://rev-lum-em-tst.vercel.app`;
-
-      const sendMail = {
-        message: {
-          subject: "System Alert: Expense Records Modified",
-          body: { contentType: 'Text', content: reportBody },
-          toRecipients: [{ emailAddress: { address: 'Manas.Lalwani@revolvespl.com' } }],
-        }
-      };
-
-      await client.api(`/users/${process.env.EMAIL_USER}/sendMail`).post(sendMail);
+      reportBody += `\nView: https://rev-lum-em-tst.vercel.app`;
+      await sendNotificationEmail('Manas.Lalwani@revolvespl.com', "System Alert: Expense Records Modified", reportBody);
     }
   } catch (error) {
     console.error("Monitor Error:", error.message);
