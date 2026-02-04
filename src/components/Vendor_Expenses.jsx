@@ -442,7 +442,7 @@ const Vendor_Expenses = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   
-  // ALL FIELDS RESTORED
+  // ALL ORIGINAL FIELDS RESTORED
   const [formData, setFormData] = useState({
     vendorId: '', 
     contractShortName: '',
@@ -459,7 +459,7 @@ const Vendor_Expenses = ({
 
   const pmEmailOptions = ['Manas.Lalwani@revolvespl.com'];
   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses`;
-  const LOGIN_URL = "https://rev-lum-em-tst.vercel.app";
+  const LOGIN_URL = "https://rev-lum-em-tst.vercel.app"; // Hyperlink for the email
 
   const searchableColumns = [
     { key: 'all', name: 'All Fields' },
@@ -514,6 +514,7 @@ const Vendor_Expenses = ({
     setEditingEntry(null);
   };
 
+  // BATCH NOTIFICATION LOGIC: Sends one email per PM with all relevant Record Numbers
   const notifyBatchPM = async () => {
     if (selectedRows.size === 0) return;
     setIsNotifying(true);
@@ -532,7 +533,7 @@ const Vendor_Expenses = ({
         let body = `Hello,\n\nYou have multiple Vendor Expense records awaiting action.\n\n`;
         if (approvedRecords.length > 0) body += `RECORDS TO REVIEW/APPROVE: ${approvedRecords.join(', ')}\n`;
         if (rejectedRecords.length > 0) body += `REJECTED RECORDS: ${rejectedRecords.join(', ')}\n`;
-        body += `\nPlease login here to process them: ${LOGIN_URL}`;
+        body += `\nPlease login here to process them: ${LOGIN_URL}`; // Hyperlink included
 
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
@@ -540,9 +541,9 @@ const Vendor_Expenses = ({
           body: JSON.stringify({ recipient: pmEmail, subject: `Action Required: Multiple Records (${entries.length})`, bodyContent: body }),
         });
       }
-      alert("Notifications sent.");
+      alert("Batch notifications sent successfully.");
       setSelectedRows(new Set());
-    } catch (err) { alert("Error sending mail."); }
+    } catch (err) { alert("Error sending batch mail."); }
     finally { setIsNotifying(false); }
   };
 
@@ -554,7 +555,7 @@ const Vendor_Expenses = ({
     }
 
     const method = editingEntry ? 'PATCH' : 'POST';
-    // FIX: URL pathing for update
+    // FIX: Corrected URL pathing for update to prevent 404
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
     
     try {
@@ -579,7 +580,7 @@ const Vendor_Expenses = ({
         });
       }
       resetForm();
-    } catch (err) { alert("Update failed."); }
+    } catch (err) { alert("Update/Save failed."); }
   };
 
   const startEdit = () => {
@@ -623,7 +624,11 @@ const Vendor_Expenses = ({
             {entry.pdfFilePath ? <a href={entry.pdfFilePath} target="_blank" rel="noreferrer">View PDF</a> : 'N/A'}
         </td>
         <td className="px-6 py-3 whitespace-nowrap text-sm">
-            {entry.isApproved ? <span className="text-green-600 font-bold">Approved</span> : <span className="text-red-600 font-bold">Rejected</span>}
+            {entry.isApproved ? (
+              <span className="flex items-center gap-1 text-green-600 font-bold"><CheckCircle size={16}/> Approved</span>
+            ) : (
+              <span className="flex items-center gap-1 text-red-600 font-bold"><XCircle size={16}/> Rejected</span>
+            )}
         </td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.apvNumber || 'N/A'}</td>
         <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-700">{entry.pmEmail}</td>
@@ -638,7 +643,7 @@ const Vendor_Expenses = ({
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <form onSubmit={(e) => handleSave(e, false)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* RESTORED ALL FORM FIELDS */}
+                  {/* ALL FORM FIELDS RESTORED */}
                   <div>
                     <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
                     <select id="vendorId" className="w-full p-2 border rounded" value={formData.vendorId} onChange={handleInputChange} required>
@@ -685,42 +690,41 @@ const Vendor_Expenses = ({
                     <textarea id="chargeCode" rows="1" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
                   </div>
                   <div className="lg:col-span-2">
-                    <label className="block text-xs font-bold mb-1">REASON / NOTES</label>
-                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : ''}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} />
+                    <label className="block text-xs font-bold mb-1 uppercase">Reason for Rejection / Notes</label>
+                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'border-red-400 bg-red-50' : ''}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} placeholder={!formData.isApproved ? "Mandatory for rejection..." : "Add notes..."} />
                   </div>
 
-                  {/* VISUAL ACTION BOXES */}
+                  {/* VISUAL ACTION BOXES FOR APPROVE/REJECT */}
                   <div className="lg:col-span-4 flex gap-4">
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: true }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${formData.isApproved ? 'bg-green-100 border-green-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>APPROVE</button>
                     <button type="button" onClick={() => setFormData(prev => ({ ...prev, isApproved: false }))} className={`flex-1 p-4 rounded-xl border-2 transition-all ${!formData.isApproved ? 'bg-red-100 border-red-500 font-bold' : 'bg-white border-gray-200 opacity-60'}`}>REJECT</button>
                   </div>
 
                   <div className="lg:col-span-4 flex justify-end gap-3">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2"><Send size={18}/> Save and Notify</button>
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-blue-700"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-purple-700"><Send size={18}/> Save and Notify</button>
                   </div>
                 </form>
               </div>
             )}
 
+            {/* BATCH ACTION BUTTON */}
             <div className="flex gap-3 mb-6">
-                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2"><Plus size={20}/> Add</button>}
-                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Send size={20}/> {isNotifying ? 'Sending Batch...' : 'Notify Selection'}</button>
-                <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50"><Pencil size={20}/> Edit</button>
+                {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600"><Plus size={20}/> Add</button>}
+                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-purple-700"><Send size={20}/> {isNotifying ? 'Sending Batch...' : 'Notify Selection'}</button>
+                <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"><Pencil size={20}/> Edit</button>
             </div>
             
             <div className="overflow-x-auto rounded-lg border">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="p-4 w-12"></th>
+                            <th className="p-4 w-12"><input type="checkbox" onChange={(e) => setSelectedRows(e.target.checked ? new Set(visibleEntryIds) : new Set())} checked={visibleEntryIds.length > 0 && selectedRows.size === visibleEntryIds.length} /></th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Record No</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Vendor ID</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Contract</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Vendor</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">Date</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Amount</th>
-                            <th className="px-6 py-3 text-left font-bold uppercase">PDF</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Status</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">APV No</th>
                             <th className="px-6 py-3 text-left font-bold uppercase">Notify PM</th>
