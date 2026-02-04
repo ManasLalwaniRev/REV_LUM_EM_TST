@@ -651,3 +651,75 @@ setInterval(async () => {
 }, CHECK_INTERVAL);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Example POST route snippet for mapping
+// --- Billing & Invoicing Routes ---
+
+// 1. Fetch all billing records
+app.get('/api/billing', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT b.*, u.username as submitter_name 
+      FROM billing b 
+      LEFT JOIN users u ON b.submitter_id = u.id 
+      ORDER BY b.created_at DESC`);
+    res.json(result.rows);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 2. Helper for Email Formatting
+const handleBillingNotify = async (data, primeKey) => {
+  if (!data.shouldNotify || !data.pmEmail) return;
+  
+  const body = `Invoice Review Required:
+Record No: ${primeKey}
+Project Name: ${data.projectName}
+Contract: ${data.contractShortName}
+Amount: $${parseFloat(data.amount || 0).toFixed(2)}
+Status: ${data.status}
+
+Link: https://rev-lum-em-tst.vercel.app`;
+
+  await sendNotificationEmail(data.pmEmail, `Billing Notification: ${data.projectName}`, body);
+};
+
+// 3. Create New Billing Record
+app.post('/api/billing/new', async (req, res) => {
+  const { projectName, contractShortName, pmEmail, emailCc, invoiceDate, amount, status, notes, pdfFilePath, userId } = req.body;
+  try {
+    const nextKey = await getNextVersionedKey('billing');
+    const result = await pool.query(
+      `INSERT INTO billing (
+        prime_key, project_name, contract_short_name, pm_email, email_cc, 
+        invoice_date, amount, status, notes, pdf_file_path, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [nextKey, projectName, contractShortName, pmEmail, emailCc, invoiceDate || null, amount || 0, status || 'Draft', notes, pdfFilePath, userId]
+    );
+    
+    // Trigger notification if requested
+    await handleBillingNotify(req.body, nextKey);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// 4. Update/Version Billing Record
+app.patch('/api/billing/:id', async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+  try {
+    const original = await pool.query('SELECT prime_key FROM billing WHERE id = $1', [id]);
+    if (original.rows.length === 0) return res.status(404).json({ error: 'Record not found' });
+
+    const nextKey = await getNextVersionedKey('billing', original.rows[0].prime_key);
+    const result = await pool.query(
+      `INSERT INTO billing (
+        prime_key, project_name, contract_short_name, pm_email, email_cc, 
+        invoice_date, amount, status, notes, pdf_file_path, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [nextKey, data.projectName, data.contractShortName, data.pmEmail, data.emailCc, data.invoiceDate || null, data.amount || 0, data.status || 'Draft', data.notes, data.pdfFilePath, data.userId]
+    );
+    
+    await handleBillingNotify(data, nextKey);
+    res.status(201).json(result.rows[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});

@@ -250,7 +250,10 @@
 
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Search, LogOut, X, Save, Send, CheckCircle, XCircle, Clock, FileText } from 'lucide-react';
+import { 
+  ChevronDown, ChevronRight, Plus, Pencil, Search, 
+  LogOut, X, Save, Send, FileText, Layout 
+} from 'lucide-react';
 
 const BillingPage = ({ 
   dataEntries, isLoading, userName = 'User', userAvatar, handleLogout, 
@@ -265,6 +268,7 @@ const BillingPage = ({
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
 
+  // Persistence Key
   const CACHE_KEY = `billing_form_cache_${currentUserId}`;
 
   const pmEmailOptions = [
@@ -274,23 +278,29 @@ const BillingPage = ({
     'jony.rodrigues@revolvespl.com'
   ];
 
+  const searchableColumns = [
+    { key: 'all', name: 'All Fields' },
+    { key: 'projectName', name: 'Project Name' },
+    { key: 'contractShortName', name: 'Contract' },
+    { key: 'status', name: 'Status' },
+  ];
+
   const [formData, setFormData] = useState({
     projectName: '', contractShortName: '', pmEmail: '', emailCc: '',
     invoiceDate: '', amount: '', status: 'Draft', notes: '', pdfFilePath: '',
   });
 
-  // 1. Restore from Cache on mount
+  // 1. Initial Load & Cache Restoration
   useEffect(() => {
-    const savedCache = localStorage.getItem(CACHE_KEY);
-    if (savedCache) {
-      setFormData(JSON.parse(savedCache));
-      // If there was cached data, automatically show the form
-      setIsAdding(true);
-    }
     setLocalEntries(dataEntries || []);
+    const savedCache = localStorage.getItem(CACHE_KEY);
+    if (savedCache && !editingEntry) {
+      setFormData(JSON.parse(savedCache));
+      setIsAdding(true); // Re-open form if they had unsaved work
+    }
   }, [dataEntries]);
 
-  // 2. Save to Cache whenever formData changes
+  // 2. Continuous Cache Save
   useEffect(() => {
     if (isAdding || editingEntry) {
       localStorage.setItem(CACHE_KEY, JSON.stringify(formData));
@@ -304,6 +314,7 @@ const BillingPage = ({
 
   const setStatus = (newStatus) => {
     const adminStatuses = ['Approved', 'Rejected', 'Paid'];
+    // HARDCODED PERMISSION: Only user "Revolve" can Approve, Reject, or mark Paid
     if (adminStatuses.includes(newStatus) && userName !== 'Revolve') {
       alert("Permission Denied: Only user 'Revolve' can set Approved, Rejected, or Paid status.");
       return;
@@ -316,7 +327,7 @@ const BillingPage = ({
       projectName: '', contractShortName: '', pmEmail: '', emailCc: '',
       invoiceDate: '', amount: '', status: 'Draft', notes: '', pdfFilePath: ''
     });
-    localStorage.removeItem(CACHE_KEY); // Clear cache on reset
+    localStorage.removeItem(CACHE_KEY);
     setIsAdding(false);
     setEditingEntry(null);
   };
@@ -327,7 +338,7 @@ const BillingPage = ({
     if (entry) {
       setEditingEntry(entry);
       setIsAdding(false);
-      const editData = {
+      setFormData({
         projectName: entry.project_name || entry.projectName || '',
         contractShortName: entry.contract_short_name || entry.contractShortName || '',
         pmEmail: entry.pm_email || entry.pmEmail || '',
@@ -337,15 +348,16 @@ const BillingPage = ({
         status: entry.status || 'Draft',
         notes: entry.notes || '',
         pdfFilePath: entry.pdf_file_path || entry.pdfFilePath || '',
-      };
-      setFormData(editData);
+      });
     }
   };
 
   const handleSave = async (e, shouldNotify = false) => {
     if (e) e.preventDefault();
+    
+    // Validation
     if (formData.status === 'Rejected' && !formData.notes) {
-      return alert("Notes (Reason for rejection) are mandatory.");
+      return alert("Reason for rejection is required in the Notes field.");
     }
 
     try {
@@ -353,17 +365,22 @@ const BillingPage = ({
         ? `${import.meta.env.VITE_API_BASE_URL}/billing/${editingEntry.id}`
         : `${import.meta.env.VITE_API_BASE_URL}/billing/new`;
 
-      await fetch(url, {
+      const response = await fetch(url, {
         method: editingEntry ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, userId: currentUserId, shouldNotify }),
       });
-      if (onDataChanged) onDataChanged();
-      resetForm(); // This also clears localStorage
-    } catch (err) { alert("Save error"); }
+
+      if (response.ok) {
+        if (onDataChanged) onDataChanged();
+        resetForm();
+      } else {
+        alert("Server error during save.");
+      }
+    } catch (err) { alert("Save error: " + err.message); }
   };
 
-  // --- Search & Table Logic ---
+  // --- Search & History Logic ---
   const groupedEntries = useMemo(() => {
     const groups = localEntries.reduce((acc, entry) => {
       const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
@@ -372,10 +389,16 @@ const BillingPage = ({
       acc[baseKey].push(entry);
       return acc;
     }, {});
+
+    for (const key in groups) {
+      groups[key].sort((a, b) => parseFloat(b.prime_key || b.primeKey || 0) - parseFloat(a.prime_key || a.primeKey || 0));
+    }
+
     let filteredGroups = Object.values(groups);
     if (searchValue) {
+      const lowVal = searchValue.toLowerCase();
       filteredGroups = filteredGroups.filter(group =>
-        group.some(e => String(Object.values(e)).toLowerCase().includes(searchValue.toLowerCase()))
+        group.some(e => Object.values(e).some(v => String(v).toLowerCase().includes(lowVal)))
       );
     }
     return showOnlyLatest ? filteredGroups.map(g => [g[0]]) : filteredGroups;
@@ -386,25 +409,30 @@ const BillingPage = ({
       <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-extrabold text-blue-900 uppercase tracking-tighter flex items-center gap-2">
-            <FileText size={32}/> Billing & Invoicing
+          <h1 className="text-3xl font-black text-blue-900 uppercase tracking-tighter flex items-center gap-2">
+            <FileText size={32} className="text-blue-600"/> Billing & Invoicing
           </h1>
           <div className="flex items-center gap-4">
-            <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2">
+            <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2 border">
               <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-8 h-8 rounded-full" />
               <span className="text-sm font-bold">{userName}</span>
             </div>
-            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"><LogOut/></button>
+            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition">
+              <LogOut size={20}/>
+            </button>
           </div>
         </div>
 
-        {/* Form Section */}
+        {/* Persistence Banner */}
         {(isAdding || editingEntry) && (
-          <div className="mb-8 p-6 border-2 border-purple-300 rounded-xl bg-purple-50 relative z-30 shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-               <span className="text-xs font-bold text-purple-600 uppercase">Local Form Cache Enabled</span>
-               <button onClick={resetForm} className="text-gray-400 hover:text-red-500"><X size={20}/></button>
-            </div>
+          <div className="mb-2 text-[10px] font-bold text-purple-500 uppercase animate-pulse">
+            Local Form Cache Active
+          </div>
+        )}
+
+        {/* Input Form */}
+        {(isAdding || editingEntry) && (
+          <div className="mb-8 p-6 border-2 border-purple-200 rounded-xl bg-purple-50 relative z-30 shadow-xl">
             <form onSubmit={(e) => handleSave(e, false)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div><label className="block text-xs font-bold mb-1">PROJECT NAME *</label><input id="projectName" className="w-full p-2 border rounded bg-white" value={formData.projectName} onChange={handleInputChange} required /></div>
@@ -420,73 +448,128 @@ const BillingPage = ({
                     {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
                   </select>
                 </div>
-                <div><label className="block text-xs font-bold mb-1">EMAIL CC</label><input id="emailCc" type="email" className="w-full p-2 border rounded bg-white" value={formData.emailCc} onChange={handleInputChange} /></div>
+                <div><label className="block text-xs font-bold mb-1">EMAIL CC</label><input id="emailCc" type="email" className="w-full p-2 border rounded bg-white" value={formData.emailCc} onChange={handleInputChange} placeholder="Optional" /></div>
                 <div><label className="block text-xs font-bold mb-1 uppercase">Amount *</label><input id="amount" type="number" step="0.01" className="w-full p-2 border rounded bg-white" value={formData.amount} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1 uppercase">Date *</label><input id="invoiceDate" type="date" className="w-full p-2 border rounded bg-white" value={formData.invoiceDate} onChange={handleInputChange} required /></div>
+                <div><label className="block text-xs font-bold mb-1 uppercase">Invoice Date *</label><input id="invoiceDate" type="date" className="w-full p-2 border rounded bg-white" value={formData.invoiceDate} onChange={handleInputChange} required /></div>
                 <div className="lg:col-span-2"><label className="block text-xs font-bold mb-1 uppercase">PDF Path / Link *</label><input id="pdfFilePath" type="text" className="w-full p-2 border rounded bg-white" value={formData.pdfFilePath} onChange={handleInputChange} required /></div>
               </div>
 
-              <div><label className="block text-xs font-bold mb-1 uppercase text-gray-500">Notes</label>
-                <textarea id="notes" rows="1" className={`w-full p-2 border rounded bg-white ${formData.status === 'Rejected' ? 'border-red-500' : ''}`} value={formData.notes} onChange={handleInputChange} />
+              <div>
+                <label className="block text-xs font-bold mb-1 uppercase text-gray-500">
+                  Notes {formData.status === 'Rejected' && <span className="text-red-600">(Reason Required)</span>}
+                </label>
+                <textarea id="notes" rows="1" className={`w-full p-2 border rounded bg-white ${formData.status === 'Rejected' ? 'border-red-500 border-2' : ''}`} value={formData.notes} onChange={handleInputChange} />
               </div>
 
-              {/* Status Bar */}
+              {/* Status & Actions */}
               <div className="p-4 bg-white border-2 border-dashed rounded-lg flex flex-wrap items-center justify-between gap-4">
                 <div className="flex gap-2">
                   {['Draft', 'Submitted'].map(st => (
-                    <button key={st} type="button" onClick={() => setStatus(st)} className={`px-4 py-2 rounded font-bold text-xs ${formData.status === st ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>{st.toUpperCase()}</button>
+                    <button key={st} type="button" onClick={() => setStatus(st)} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === st ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'}`}>{st.toUpperCase()}</button>
                   ))}
-                  <div className="w-[1px] bg-gray-200 h-8 mx-2" />
+                  <div className="w-[2px] bg-gray-200 h-8 mx-2" />
                   {['Approved', 'Rejected', 'Paid'].map(st => (
-                    <button key={st} type="button" onClick={() => setStatus(st)} className={`px-4 py-2 rounded font-bold text-xs ${formData.status === st ? (st === 'Approved' ? 'bg-green-600 text-white' : st === 'Rejected' ? 'bg-red-600 text-white' : 'bg-emerald-700 text-white') : 'bg-gray-100 text-gray-400'} ${userName !== 'Revolve' ? 'opacity-30' : ''}`}>{st.toUpperCase()}</button>
+                    <button key={st} type="button" onClick={() => setStatus(st)} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === st ? (st === 'Approved' ? 'bg-green-600 text-white' : st === 'Rejected' ? 'bg-red-600 text-white' : 'bg-emerald-700 text-white shadow-lg') : 'bg-gray-100 text-gray-400'} ${userName !== 'Revolve' ? 'opacity-20 cursor-not-allowed' : 'hover:scale-105'}`}>{st.toUpperCase()}</button>
                   ))}
                 </div>
                 <div className="flex gap-2">
-                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg flex items-center gap-2"><Save size={18}/> SAVE</button>
-                   <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded font-bold shadow-lg flex items-center gap-2"><Send size={18}/> SAVE & NOTIFY</button>
+                   <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs hover:bg-gray-300">CANCEL</button>
+                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><Save size={18}/> SAVE</button>
+                   {userName !== 'Revolve' && (
+                     <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-purple-700 transition flex items-center gap-2"><Send size={18}/> SAVE & NOTIFY</button>
+                   )}
                 </div>
               </div>
             </form>
           </div>
         )}
 
-        {/* Action Bar */}
-        <div className="flex gap-3 mb-6">
-          {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> ADD BILL</button>}
-          <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 font-bold transition"><Pencil size={20}/> EDIT</button>
+        {/* Toolbar */}
+        <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
+            <div className="flex gap-3">
+                {!isAdding && !editingEntry && (
+                  <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> ADD BILL</button>
+                )}
+                <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 font-bold transition hover:bg-gray-700 shadow-md"><Pencil size={20}/> EDIT</button>
+            </div>
+            <div className="flex items-center border rounded-lg bg-white flex-grow max-w-xl">
+                <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
+                    {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
+                </select>
+                <input type="text" placeholder="Search invoices..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm outline-none" />
+                <Search size={18} className="text-gray-400 mr-3" />
+            </div>
+            <label className="flex items-center cursor-pointer gap-2 text-xs font-bold uppercase text-gray-500">
+                Latest Only
+                <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="w-4 h-4" />
+            </label>
         </div>
 
-        {/* Table Rendering... */}
+        {/* Table Content */}
+        
         <div className="overflow-x-auto border rounded-lg shadow-sm">
           <table className="min-w-full divide-y text-sm">
-            <thead className="bg-gray-50 uppercase font-bold text-gray-600">
+            <thead className="bg-gray-50 uppercase font-bold text-gray-500 text-xs">
               <tr>
-                <th className="p-4 w-12"></th>
+                <th className="p-4 w-12 text-center"></th>
                 <th className="px-6 py-3 text-left">Record No</th>
                 <th className="px-6 py-3 text-left">Project Name</th>
                 <th className="px-6 py-3 text-left">Status</th>
                 <th className="px-6 py-3 text-left">Amount</th>
+                <th className="px-6 py-3 text-left">Date</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y">
-              {groupedEntries.map(group => (
-                <tr key={group[0].id} onClick={() => { const s = new Set(); s.add(group[0].id); setSelectedRows(s); }} className={`hover:bg-blue-50 cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}>
-                  <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(group[0].id)} readOnly /></td>
-                  <td className="px-6 py-3 font-bold">{group[0].prime_key || group[0].primeKey}</td>
-                  <td className="px-6 py-3">{group[0].project_name || group[0].projectName}</td>
-                  <td className="px-6 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
-                      group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : 
-                      group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 
-                      group[0].status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
-                      group[0].status === 'Submitted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {group[0].status || 'Draft'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 font-black text-blue-900">${parseFloat(group[0].amount || 0).toFixed(2)}</td>
-                </tr>
-              ))}
+              {groupedEntries.map(group => {
+                const baseKey = String(group[0].prime_key || group[0].primeKey).split('.')[0];
+                const hasHistory = group.length > 1;
+                const entry = group[0];
+                
+                return (
+                  <React.Fragment key={entry.id}>
+                    <tr onClick={() => { const s = new Set(); s.add(entry.id); setSelectedRows(s); }} className={`hover:bg-blue-50 cursor-pointer transition-colors ${selectedRows.has(entry.id) ? 'bg-blue-50 border-l-4 border-blue-600' : ''}`}>
+                      <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(entry.id)} readOnly /></td>
+                      <td className="px-6 py-3 font-bold">
+                        {hasHistory && (
+                          <button onClick={(e) => { e.stopPropagation(); const next = new Set(expandedRows); next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey); setExpandedRows(next); }} className="mr-2">
+                            {expandedRows.has(baseKey) ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+                          </button>
+                        )}
+                        {entry.prime_key || entry.primeKey}
+                      </td>
+                      <td className="px-6 py-3 font-medium">{entry.project_name || entry.projectName}</td>
+                      <td className="px-6 py-3">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase ${
+                          entry.status === 'Approved' ? 'bg-green-100 text-green-700' : 
+                          entry.status === 'Rejected' ? 'bg-red-100 text-red-700' : 
+                          entry.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' :
+                          entry.status === 'Submitted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {entry.status || 'Draft'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 font-black text-blue-900">
+                        ${parseFloat(entry.amount || entry.chargeAmount || 0).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-3 text-gray-500">
+                        {(entry.invoice_date || entry.invoiceDate || entry.chargeDate)?.split('T')[0]}
+                      </td>
+                    </tr>
+                    
+                    {/* Version History Expansion */}
+                    {expandedRows.has(baseKey) && group.slice(1).map(hEntry => (
+                      <tr key={hEntry.id} className="bg-gray-50 italic text-gray-400 border-l-4 border-yellow-400 text-xs">
+                        <td className="p-4"></td>
+                        <td className="px-6 py-2 pl-12 font-bold">{hEntry.prime_key || hEntry.primeKey}</td>
+                        <td className="px-6 py-2">{hEntry.project_name || hEntry.projectName}</td>
+                        <td className="px-6 py-2 uppercase font-bold">{hEntry.status}</td>
+                        <td className="px-6 py-2">${parseFloat(hEntry.amount || 0).toFixed(2)}</td>
+                        <td className="px-6 py-2">{(hEntry.invoice_date || hEntry.invoiceDate)?.split('T')[0]}</td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
