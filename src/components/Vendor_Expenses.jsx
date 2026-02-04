@@ -419,7 +419,7 @@ const Vendor_Expenses = ({
   userName = 'User', 
   userAvatar, 
   handleLogout, 
-  currentUserRole, // 'Admin' or 'User'
+  currentUserRole, 
   currentUserId,
   onDataChanged,
   contractOptions = [],
@@ -437,7 +437,6 @@ const Vendor_Expenses = ({
 
   useEffect(() => {
     setLocalEntries(dataEntries || []);
-    // Fetch Master Vendors
     fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
       .then(res => res.json())
       .then(data => setVendorOptions(data))
@@ -505,13 +504,10 @@ const Vendor_Expenses = ({
       acc[baseKey].push(entry);
       return acc;
     }, {});
-
     for (const key in groups) {
       groups[key].sort((a, b) => parseFloat(b.prime_key || b.primeKey) - parseFloat(a.prime_key || a.primeKey));
     }
-
     let filteredGroups = Object.values(groups);
-
     if (searchValue) {
       const lowercasedValue = searchValue.toLowerCase();
       filteredGroups = filteredGroups.filter(group =>
@@ -531,7 +527,11 @@ const Vendor_Expenses = ({
 
   const handleSave = async (e, shouldNotify = false) => {
     if (e) e.preventDefault();
-    if (!formData.isApproved && !formData.notes) return alert("Reason for rejection is required.");
+    
+    // FIX: Only require notes if Admin is rejecting. Users don't need to provide notes to save.
+    if (currentUserRole === 'Admin' && !formData.isApproved && !formData.notes) {
+        return alert("Admin: A reason for rejection is required in the notes.");
+    }
 
     const method = editingEntry ? 'PATCH' : 'POST';
     const url = editingEntry ? `${API_BASE_URL}/${editingEntry.id}` : `${API_BASE_URL}/new`;
@@ -548,13 +548,13 @@ const Vendor_Expenses = ({
       if (shouldNotify) {
         const savedData = await response.json();
         const body = formData.isApproved 
-          ? `A record requires review: ${savedData.prime_key || 'New'}\nLogin here: ${LOGIN_URL}`
-          : `Record ${savedData.prime_key || 'New'} was REJECTED: ${formData.notes}\nLogin here: ${LOGIN_URL}`;
+          ? `Action Required: Review record ${savedData.prime_key || 'New'}\nLogin here: ${LOGIN_URL}`
+          : `Update: Record ${savedData.prime_key || 'New'} has status: Rejected\nNotes: ${formData.notes || 'N/A'}\nLogin here: ${LOGIN_URL}`;
         
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Notification`, bodyContent: body }),
+          body: JSON.stringify({ recipient: formData.pmEmail, subject: `Vendor Expense Action Item`, bodyContent: body }),
         });
       }
       resetForm();
@@ -574,16 +574,15 @@ const Vendor_Expenses = ({
 
     try {
       for (const [pmEmail, entries] of Object.entries(pmGroups)) {
-        const approved = entries.filter(e => e.is_approved || e.isApproved).map(e => e.prime_key || e.primeKey);
-        const rejected = entries.filter(e => !(e.is_approved || e.isApproved)).map(e => `${e.prime_key || e.primeKey} (${e.notes})`);
-        let body = `Multiple records require action.\nApproved: ${approved.join(', ')}\nRejected: ${rejected.join(', ')}\n\nLogin: ${LOGIN_URL}`;
+        const pks = entries.map(e => e.prime_key || e.primeKey).join(', ');
+        let body = `Hello PM,\n\nThe following vendor expense records require your review/approval:\n\nRecords: ${pks}\n\nLogin to the system here: ${LOGIN_URL}`;
         await fetch(`${import.meta.env.VITE_API_BASE_URL}/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ recipient: pmEmail, subject: `Batch Record Notification`, bodyContent: body }),
+          body: JSON.stringify({ recipient: pmEmail, subject: `Multiple Records Awaiting Approval`, bodyContent: body }),
         });
       }
-      alert("Notifications sent.");
+      alert("PMs notified successfully.");
       setSelectedRows(new Set());
     } catch (err) { alert("Email error."); }
     finally { setIsNotifying(false); }
@@ -613,7 +612,7 @@ const Vendor_Expenses = ({
 
   const Row = ({ entry, isHistory = false }) => {
     const baseKey = String(entry.prime_key || entry.primeKey).split('.')[0];
-    const hasHistory = !isHistory && groupedEntries.find(g => String(g[0].prime_key || g[0].primeKey).split('.')[0] === baseKey)?.length > 1;
+    const hasHistory = !isHistory && groupedEntries.find(g => String(g[0].prime_key || g[0].prime_key).split('.')[0] === baseKey)?.length > 1;
     return (
       <React.Fragment>
           <td className="p-4 text-center">
@@ -640,8 +639,8 @@ const Vendor_Expenses = ({
           <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.vendor_name || entry.vendorName}</td>
           <td className="px-6 py-3 whitespace-nowrap text-sm">{formatDateForDisplay(entry.charge_date || entry.chargeDate)}</td>
           <td className="px-6 py-3 whitespace-nowrap text-sm">${parseFloat(entry.charge_amount || entry.chargeAmount || 0).toFixed(2)}</td>
-          <td className="px-6 py-3 whitespace-nowrap text-sm">
-              {(entry.is_approved || entry.isApproved) ? <span className="text-green-600 font-bold">Approved</span> : <span className="text-red-600 font-bold">Rejected</span>}
+          <td className="px-6 py-3 whitespace-nowrap text-sm font-bold">
+              {(entry.is_approved || entry.isApproved) ? <span className="text-green-600">Approved</span> : <span className="text-red-600">Rejected</span>}
           </td>
           <td className="px-6 py-3 whitespace-nowrap text-sm">{entry.pm_email || entry.pmEmail}</td>
       </React.Fragment>
@@ -651,18 +650,16 @@ const Vendor_Expenses = ({
   return (
     <div className="min-h-screen bg-gray-900 p-6">
         <div className="bg-white p-6 rounded-xl shadow-2xl w-full text-gray-800">
-            {/* Header Section */}
+            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b pb-4">
                 <h1 className="text-3xl font-extrabold text-lime-800 uppercase">Vendor Expenses</h1>
                 <div className="flex items-center gap-4">
                     <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
                     <div className="flex items-center gap-3 bg-gray-100 p-2 rounded-lg">
                         <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-10 h-10 rounded-full border" />
-                        <span className="font-medium text-gray-700">Welcome, {userName}</span>
+                        <span className="font-medium text-gray-700">{userName} ({currentUserRole})</span>
                     </div>
-                    <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200" title="Logout">
-                      <LogOut size={20}/>
-                    </button>
+                    <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"><LogOut size={20}/></button>
                 </div>
             </div>
 
@@ -670,20 +667,20 @@ const Vendor_Expenses = ({
             {(isAdding || editingEntry) && (
               <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-blue-900">{editingEntry ? 'Edit Record' : 'Add New Record'}</h2>
+                  <h2 className="text-xl font-bold text-blue-900">{editingEntry ? 'Edit' : 'Add'} Record</h2>
                   <button onClick={resetForm} className="text-gray-500 hover:text-red-500"><X /></button>
                 </div>
                 <form onSubmit={(e) => handleSave(e)} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-bold mb-1">VENDOR ID *</label>
                     <select className="w-full p-2 border rounded" value={formData.vendorId} onChange={handleVendorChange} required>
-                      <option value="">Select Vendor ID</option>
+                      <option value="">Select Vendor</option>
                       {vendorOptions.map(v => <option key={v.vendor_id} value={v.vendor_id}>{v.vendor_id}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1 uppercase text-gray-400">Vendor Name (Auto)</label>
-                    <input className="w-full p-2 border rounded bg-gray-100 text-gray-500" value={formData.vendorName} readOnly />
+                    <label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME (AUTO)</label>
+                    <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">CONTRACT *</label>
@@ -693,7 +690,7 @@ const Vendor_Expenses = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold mb-1 text-blue-700 uppercase">Notify PM *</label>
+                    <label className="block text-xs font-bold mb-1 text-blue-700">NOTIFY PM *</label>
                     <select id="pmEmail" className="w-full p-2 border rounded" value={formData.pmEmail} onChange={handleInputChange} required>
                       <option value="">Select PM</option>
                       {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
@@ -711,55 +708,63 @@ const Vendor_Expenses = ({
                     <label className="block text-xs font-bold mb-1">PDF PATH *</label>
                     <input id="pdfFilePath" type="text" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} required />
                   </div>
-                  <div className="lg:col-span-1">
+                  <div>
                     <label className="block text-xs font-bold mb-1">CHARGE CODE *</label>
                     <input id="chargeCode" type="text" className="w-full p-2 border rounded" value={formData.chargeCode} onChange={handleInputChange} required />
                   </div>
+                  
                   <div className="lg:col-span-4">
-                    <label className="block text-xs font-bold mb-1 uppercase">Notes / Rejection Reason</label>
-                    <textarea id="notes" rows="1" className={`w-full p-2 border rounded ${!formData.isApproved ? 'bg-red-50 border-red-400' : 'bg-white border-gray-300'}`} value={formData.notes} onChange={handleInputChange} required={!formData.isApproved} placeholder={!formData.isApproved ? "Mandatory for rejection..." : "Add notes..."} />
+                    <label className="block text-xs font-bold mb-1 uppercase">Notes / Reason</label>
+                    <textarea 
+                        id="notes" 
+                        rows="1" 
+                        className={`w-full p-2 border rounded ${currentUserRole === 'Admin' && !formData.isApproved ? 'bg-red-50 border-red-400' : 'bg-white'}`} 
+                        value={formData.notes} 
+                        onChange={handleInputChange} 
+                        required={currentUserRole === 'Admin' && !formData.isApproved} 
+                        placeholder={currentUserRole === 'Admin' && !formData.isApproved ? "Mandatory for rejection..." : "Add notes here..."}
+                    />
                   </div>
 
-                  {/* Role-Based Action Buttons (Shortened) */}
+                  {/* Status Buttons - Restricted to Admin */}
                   <div className="lg:col-span-4 flex gap-4">
                     <button 
                       type="button" 
                       disabled={currentUserRole !== 'Admin'}
                       onClick={() => setFormData(p => ({ ...p, isApproved: true }))} 
-                      className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 transition-all w-fit font-bold ${
+                      className={`px-6 py-2 rounded-lg border-2 w-fit font-bold transition-all ${
                         formData.isApproved ? 'bg-green-100 border-green-500' : 'bg-white border-gray-200'
                       } ${currentUserRole !== 'Admin' ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:shadow-md'}`}
                     >
-                      <CheckCircle size={18} /> APPROVE
+                      <CheckCircle size={18} className="inline mr-2"/> APPROVE
                     </button>
-                    
                     <button 
                       type="button" 
                       disabled={currentUserRole !== 'Admin'}
                       onClick={() => setFormData(p => ({ ...p, isApproved: false }))} 
-                      className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg border-2 transition-all w-fit font-bold ${
+                      className={`px-6 py-2 rounded-lg border-2 w-fit font-bold transition-all ${
                         !formData.isApproved ? 'bg-red-100 border-red-500' : 'bg-white border-gray-200'
                       } ${currentUserRole !== 'Admin' ? 'opacity-40 cursor-not-allowed grayscale' : 'hover:shadow-md'}`}
                     >
-                      <XCircle size={18} /> REJECT
+                      <XCircle size={18} className="inline mr-2"/> REJECT
                     </button>
                   </div>
 
                   <div className="lg:col-span-4 flex justify-end gap-3 mt-4 border-t pt-4">
-                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
-                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition"><Send size={18}/> Save & Notify</button>
+                    <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-blue-700"><Save size={18}/> {editingEntry ? 'Update' : 'Save'}</button>
+                    <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded-lg flex items-center gap-2 transition hover:bg-purple-700"><Send size={18}/> Save & Notify</button>
                   </div>
                 </form>
               </div>
             )}
 
-            {/* Search Section */}
+            {/* Search */}
             <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
                 <div className="flex items-center border rounded-lg bg-white flex-grow">
                     <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
                         {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
                     </select>
-                    <input type="text" placeholder="Search entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
+                    <input type="text" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm focus:outline-none" />
                     <Search size={18} className="text-gray-400 mr-3" />
                 </div>
                 <label className="flex items-center cursor-pointer gap-3 text-sm font-medium">
@@ -768,14 +773,14 @@ const Vendor_Expenses = ({
                 </label>
             </div>
 
-            {/* Main Action Buttons */}
+            {/* Actions */}
             <div className="flex gap-3 mb-6">
                 {!isAdding && !editingEntry && <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 transition hover:bg-yellow-600"><Plus size={20}/> Add</button>}
-                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-purple-700"><Send size={20}/> {isNotifying ? 'Sending...' : 'Notify Selection'}</button>
+                <button onClick={notifyBatchPM} disabled={selectedRows.size === 0 || isNotifying} className="bg-purple-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-purple-700"><Send size={20}/> {isNotifying ? 'Sending...' : 'Notify PM'}</button>
                 <button onClick={startEdit} disabled={selectedRows.size !== 1} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 transition hover:bg-gray-700"><Pencil size={20}/> Edit</button>
             </div>
             
-            {/* Table Section */}
+            {/* Table */}
             <div className="overflow-x-auto border rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                     <thead className="bg-gray-50 font-bold uppercase text-gray-600">
@@ -796,13 +801,9 @@ const Vendor_Expenses = ({
                     <tbody className="bg-white divide-y">
                         {groupedEntries.map((group) => (
                             <React.Fragment key={group[0].id}>
-                                <tr className="hover:bg-blue-50 transition-colors">
-                                    <Row entry={group[0]} />
-                                </tr>
+                                <tr className="hover:bg-blue-50 transition-colors"><Row entry={group[0]} /></tr>
                                 {expandedRows.has(String(group[0].prime_key || group[0].primeKey).split('.')[0]) && group.slice(1).map(hEntry => (
-                                    <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-yellow-400 italic text-gray-500">
-                                        <Row entry={hEntry} isHistory={true} />
-                                    </tr>
+                                    <tr key={hEntry.id} className="bg-gray-50 border-l-4 border-yellow-400 italic text-gray-500"><Row entry={hEntry} isHistory={true} /></tr>
                                 ))}
                             </React.Fragment>
                         ))}
