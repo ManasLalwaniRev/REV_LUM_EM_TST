@@ -316,7 +316,7 @@ const BillingPage = ({
     const adminStatuses = ['Approved', 'Rejected', 'Paid'];
     // HARDCODED PERMISSION: Only user "Revolve" can Approve, Reject, or mark Paid
     if (adminStatuses.includes(newStatus) && userName !== 'Revolve') {
-      alert("Permission Denied: Only user 'Revolve' can set Approved, Rejected, or Paid status.");
+      alert("Permission Denied: Only Admins can set Approved, Rejected, or Paid status.");
       return;
     }
     setFormData(prev => ({ ...prev, status: newStatus }));
@@ -410,7 +410,7 @@ const BillingPage = ({
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h1 className="text-3xl font-black text-blue-900 uppercase tracking-tighter flex items-center gap-2">
-            <FileText size={32} className="text-blue-600"/> Billing & Invoicing
+            <FileText size={32} className="text-blue-600"/> Billing
           </h1>
           <div className="flex items-center gap-4">
             <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2 border">
