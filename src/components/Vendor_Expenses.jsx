@@ -463,7 +463,6 @@ const Vendor_Expenses = ({
   };
 
   const setStatus = (newStatus) => {
-    // HARDCODED PERMISSION: Only username "Revolve" can change status
     if (userName !== 'Revolve') {
       alert("Permission Denied: Only Admins can Approve or Reject records.");
       return;
@@ -502,7 +501,7 @@ const Vendor_Expenses = ({
     }
   };
 
-  const handleSave = async (e) => {
+  const handleSave = async (e, shouldNotify = false) => {
     if (e) e.preventDefault();
     if (userName === 'Revolve' && formData.status === 'Rejected' && !formData.notes) {
       return alert("Notes are required for rejection.");
@@ -516,7 +515,7 @@ const Vendor_Expenses = ({
       await fetch(url, {
         method: editingEntry ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: currentUserId }),
+        body: JSON.stringify({ ...formData, userId: currentUserId, shouldNotify }),
       });
       if (onDataChanged) onDataChanged();
       resetForm();
@@ -565,7 +564,7 @@ const Vendor_Expenses = ({
         {/* Form with ALL FIELDS restored */}
         {(isAdding || editingEntry) && (
           <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 relative z-30 shadow-xl">
-            <form onSubmit={handleSave} className="space-y-6">
+            <form onSubmit={(e) => handleSave(e, false)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div><label className="block text-xs font-bold mb-1">VENDOR ID *</label>
                   <select className="w-full p-2 border rounded bg-white" value={formData.vendorId} onChange={handleVendorChange} required>
@@ -607,7 +606,10 @@ const Vendor_Expenses = ({
                 </div>
                 <div className="flex gap-2">
                    <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs">CANCEL</button>
-                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-blue-700 transition"><Save size={18}/> SAVE RECORD</button>
+                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><Save size={18}/> SAVE RECORD</button>
+                   {userName !== 'Revolve' && (
+                     <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-purple-700 transition flex items-center gap-2"><Send size={18}/> SAVE & NOTIFY</button>
+                   )}
                 </div>
               </div>
             </form>
@@ -643,6 +645,7 @@ const Vendor_Expenses = ({
                 <th className="p-4 w-12 text-center"></th>
                 <th className="px-6 py-3 text-left">Record No</th>
                 <th className="px-6 py-3 text-left">Vendor ID</th>
+                <th className="px-6 py-3 text-left">Vendor Name</th>
                 <th className="px-6 py-3 text-left">Status</th>
                 <th className="px-6 py-3 text-left">Amount</th>
                 <th className="px-6 py-3 text-left">PM Email</th>
@@ -665,10 +668,10 @@ const Vendor_Expenses = ({
                         {group[0].prime_key || group[0].primeKey}
                       </td>
                       <td className="px-6 py-3">{group[0].vendor_id || group[0].vendorId}</td>
+                      <td className="px-6 py-3">{group[0].vendor_name || group[0].vendorName}</td>
                       <td className="px-6 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
                       </td>
-                      {/* <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || 0).toFixed(2)}</td> */}
                       <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || group[0].chargeAmount || 0).toFixed(2)}</td>
                       <td className="px-6 py-3 text-gray-500">{group[0].pm_email || group[0].pmEmail}</td>
                     </tr>
@@ -677,8 +680,9 @@ const Vendor_Expenses = ({
                         <td className="p-4"></td>
                         <td className="px-6 py-3 pl-12">{hEntry.prime_key || hEntry.primeKey}</td>
                         <td className="px-6 py-3">{hEntry.vendor_id || hEntry.vendorId}</td>
+                        <td className="px-6 py-3">{hEntry.vendor_name || hEntry.vendorName}</td>
                         <td className="px-6 py-3"><span className="text-xs">{hEntry.status || 'Submitted'}</span></td>
-                        <td className="px-6 py-3">${parseFloat(hEntry.charge_amount || 0).toFixed(2)}</td>
+                        <td className="px-6 py-3">${parseFloat(hEntry.charge_amount || hEntry.chargeAmount || 0).toFixed(2)}</td>
                         <td className="px-6 py-3">{hEntry.pm_email || hEntry.pmEmail}</td>
                       </tr>
                     ))}
