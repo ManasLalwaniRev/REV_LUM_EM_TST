@@ -189,6 +189,17 @@ const App = () => {
       case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
       case 'about': return <AboutPage setCurrentPage={setCurrentPage} handleLogout={handleLogout} />;
       case 'emails': return <EmailRecords {...commonProps} />;
+      case 'subk-travel':
+      return <Subk_Travel_Combined 
+                dataEntries={subkTravelData} // Ensure you are fetching this data
+                userName={user.username}
+                userAvatar={user.avatar}
+                handleLogout={handleLogout}
+                currentUserRole={user.role}
+                currentUserId={user.userId}
+                onDataChanged={fetchSubkTravelData}
+                contractOptions={contractOptions}
+             />;
       default: return <Vendor_Expenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
     }
   };
