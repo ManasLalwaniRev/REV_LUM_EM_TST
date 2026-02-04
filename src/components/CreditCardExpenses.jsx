@@ -682,7 +682,9 @@ const CreditCardExpenses = ({
                       <td className="px-6 py-3">
                         <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
                       </td>
-                      <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || 0).toFixed(2)}</td>
+                      {/* <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || 0).toFixed(2)}</td> */}
+                      <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || group[0].chargeAmount || 0).toFixed(2)}</td>
+
                     </tr>
                     {/* History Rows Logic */}
                     {expandedRows.has(baseKey) && group.slice(1).map(hEntry => (
