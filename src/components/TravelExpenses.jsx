@@ -370,11 +370,8 @@
 // export default TravelExpenses;
 
 
-
-import React, { useState, useMemo } from 'react';
-import { 
-  Plane, Save, LogOut, Info, FileText, Pencil, Plus, ChevronRight, CheckCircle 
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Pencil, Save, CheckCircle, LogOut, Info } from 'lucide-react';
 
 const TravelExpenses = ({ contractOptions = [], userName, handleLogout }) => {
   // Dropdown Options
@@ -413,165 +410,180 @@ const TravelExpenses = ({ contractOptions = [], userName, handleLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 text-slate-800 font-sans">
-      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-40px)]">
+    <div className="min-h-screen bg-slate-100 p-4 text-slate-800 font-sans">
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-40px)]">
         
-        {/* --- LEFT PANEL: REFINED DATA ENTRY --- */}
-        <div className="w-full lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-y-auto p-6">
+        {/* --- LEFT PANEL: DATA ENTRY --- */}
+        <div className="w-full lg:w-1/3 bg-white rounded-xl shadow-lg overflow-y-auto p-6 border-t-4 border-blue-600">
           <div className="flex items-center gap-3 mb-6 border-b pb-4">
-            <div className="bg-blue-600 p-2 rounded-lg text-white"><Pencil size={20}/></div>
-            <h2 className="text-xl font-bold text-slate-800 uppercase tracking-tight">Expense Entry</h2>
+            <Pencil className="text-blue-600" size={24}/>
+            <h2 className="text-xl font-black text-slate-800 uppercase">Expense Entry</h2>
           </div>
           
-          <div className="space-y-5">
-             <section className="space-y-3">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">General Info</label>
-                <select id="employeeId" className="w-full p-2.5 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500" value={formData.employeeId} onChange={handleEmployeeChange}>
-                  <option value="">Select Employee</option>
+          <div className="space-y-4">
+             <section className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Employee & Project Selection</label>
+                <select id="employeeId" className="w-full p-2 border rounded-lg bg-slate-50 text-sm" value={formData.employeeId} onChange={handleEmployeeChange}>
+                  <option value="">Select Employee ID / Name</option>
                   {employeeOptions.map(emp => <option key={emp.id} value={emp.id}>{emp.id} - {emp.name}</option>)}
                 </select>
-                <select id="purpose" className="w-full p-2.5 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500" value={formData.purpose} onChange={handleInputChange}>
+                <select id="purpose" className="w-full p-2 border rounded-lg bg-slate-50 text-sm" value={formData.purpose} onChange={handleInputChange}>
                   <option value="">Select Purpose of Trip</option>
                   {purposeOptions.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
-                <select id="projectName" className="w-full p-2.5 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500" value={formData.projectName} onChange={handleInputChange}>
-                  <option value="">Select Project</option>
+                <select id="projectName" className="w-full p-2 border rounded-lg bg-slate-50 text-sm" value={formData.projectName} onChange={handleInputChange}>
+                  <option value="">Select Project Name</option>
                   {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
                 </select>
              </section>
 
-             <section className="space-y-3 pt-4 border-t">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Travel Timeline</label>
-                <div className="grid grid-cols-2 gap-3">
-                   <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500">FROM</span>
-                      <input id="travelFrom" type="date" className="w-full p-2 border rounded-lg text-sm" onChange={handleInputChange}/>
-                   </div>
-                   <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-slate-500">TO</span>
-                      <input id="travelTo" type="date" className="w-full p-2 border rounded-lg text-sm" onChange={handleInputChange}/>
-                   </div>
+             <section className="space-y-2 pt-4 border-t">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expense Details</label>
+                <div className="grid grid-cols-2 gap-2">
+                   <input id="personalMiles" type="number" placeholder="Personal Auto Miles" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="transportCost" type="number" placeholder="Transport Cost" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="lodgingActual" type="number" placeholder="Lodging Room" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="lodgingTaxes" type="number" placeholder="Lodging Taxes" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
                 </div>
              </section>
 
-             <section className="space-y-3 pt-4 border-t">
-                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Expense Details</label>
-                <div className="grid grid-cols-2 gap-3">
-                   <input id="personalMiles" type="number" placeholder="Auto Miles" className="p-2 border rounded-lg text-sm" onChange={handleInputChange}/>
-                   <input id="transportCost" type="number" placeholder="Transport Cost" className="p-2 border rounded-lg text-sm" onChange={handleInputChange}/>
-                   <input id="lodgingActual" type="number" placeholder="Lodging Room" className="p-2 border rounded-lg text-sm" onChange={handleInputChange}/>
-                   <input id="lodgingTaxes" type="number" placeholder="Lodging Taxes" className="p-2 border rounded-lg text-sm" onChange={handleInputChange}/>
-                </div>
-             </section>
-
-             <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 mt-6">
-               <CheckCircle size={20}/> SUBMIT STATEMENT
+             <button className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all mt-4">
+               <CheckCircle size={18}/> SUBMIT STATEMENT
              </button>
           </div>
         </div>
 
-        {/* --- RIGHT PANEL: LIGHT BLUE PROFESSIONAL PREVIEW --- */}
-        <div className="w-full lg:w-2/3 bg-white rounded-2xl shadow-xl overflow-y-auto p-10 border border-slate-200">
-          <div className="max-w-4xl mx-auto border-[1px] border-blue-200 p-8 rounded-sm shadow-sm bg-white">
+        {/* --- RIGHT PANEL: HIGH-FIDELITY STATEMENT PREVIEW --- */}
+        <div className="w-full lg:w-2/3 bg-white rounded-xl shadow-inner overflow-y-auto p-12 border border-slate-200">
+          <div className="max-w-4xl mx-auto border-[1px] border-slate-300 p-8 shadow-sm">
             
-            {/* Logo/Header Area */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-black text-blue-800 uppercase tracking-tighter border-b-2 border-blue-800 pb-2 inline-block">
-                Infotrend Inc - Travel Expense Statement 
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-black text-blue-700 uppercase tracking-tight">
+                Infotrend Inc Travel Expense Statement
               </h1>
             </div>
 
-            {/* Top Grid: Employee info [cite: 1, 5, 6] */}
-            <div className="grid grid-cols-3 gap-y-4 gap-x-8 text-[11px] mb-8 bg-blue-50/50 p-4 rounded-lg border border-blue-100">
-              <div className="flex flex-col border-b border-blue-200 pb-1">
-                <span className="font-black text-blue-900 mb-1">Employee [cite: 1]</span>
-                <span className="text-slate-700 font-bold uppercase">{formData.employeeName || '---'}</span>
+            {/* Header Data */}
+            <div className="grid grid-cols-4 gap-x-4 gap-y-2 text-[11px] mb-4">
+              <div className="col-span-2 border-b border-slate-300 pb-1 flex gap-2">
+                <span className="font-bold text-blue-800">Employee:</span>
+                <span className="text-slate-800 uppercase">{formData.employeeName}</span>
               </div>
-              <div className="flex flex-col border-b border-blue-200 pb-1">
-                <span className="font-black text-blue-900 mb-1">Employee # [cite: 5]</span>
-                <span className="text-slate-700 font-bold">{formData.employeeId || '---'}</span>
+              <div className="border-b border-slate-300 pb-1 flex gap-2">
+                <span className="font-bold text-blue-800 whitespace-nowrap">Employee #:</span>
+                <span className="text-slate-800">{formData.employeeId}</span>
               </div>
-              <div className="flex flex-col border-b border-blue-200 pb-1">
-                <span className="font-black text-blue-900 mb-1">Date Prepared [cite: 6]</span>
-                <span className="text-slate-700 font-bold">{formData.datePrepared}</span>
+              <div className="border-b border-slate-300 pb-1 flex gap-2">
+                <span className="font-bold text-blue-800 whitespace-nowrap">Date Prepared :</span>
+                <span className="text-slate-800">{formData.datePrepared}</span>
               </div>
-              <div className="col-span-3 flex flex-col border-b border-blue-200 pb-1">
-                <span className="font-black text-blue-900 mb-1">Purpose of Trip [cite: 2]</span>
-                <span className="text-slate-700 font-bold uppercase tracking-wide">{formData.purpose || '---'}</span>
+              <div className="col-span-4 border-b border-slate-300 pb-1 flex gap-2 mt-1">
+                <span className="font-bold text-blue-800">Purpose of Trip:</span>
+                <span className="text-slate-800 uppercase">{formData.purpose}</span>
               </div>
             </div>
 
-            {/* The Main Expense Table  */}
-            <table className="w-full border-collapse border border-blue-200 text-[10px]">
-              <thead>
-                <tr className="bg-blue-800 text-white uppercase tracking-wider text-[9px]">
-                  <th className="border border-blue-200 p-2 text-left w-1/3">Description </th>
-                  <th className="border border-blue-200 p-2 text-center w-16">Ref No</th>
-                  <th className="border border-blue-200 p-2 text-center">Breakout Detail</th>
-                  <th className="border border-blue-200 p-2 text-right w-28">Total Paid </th>
-                </tr>
-              </thead>
-              <tbody className="text-slate-700">
-                {/* Fixed Layout Sections from image */}
-                <tr className="bg-blue-50/30">
-                  <td className="border border-blue-200 p-2 font-bold text-blue-900">Travel Period </td>
-                  <td className="border border-blue-200 p-2" colSpan="2">{formData.travelFrom} To {formData.travelTo}</td>
-                  <td className="border border-blue-100 p-2 bg-slate-50 text-center" rowSpan="3">
-                    <div className="text-blue-800 font-black mb-1 border-b border-blue-100 pb-1">Receipts </div>
-                    <div className="text-[8px] leading-tight text-slate-500">Required for all items (excluding M&IE/Mileage) </div>
+            {/* Form Table */}
+            <table className="w-full border-collapse border border-slate-400 text-[10px]">
+              <tbody>
+                <tr className="bg-blue-50/50 text-blue-900 font-bold uppercase">
+                  <td className="border border-slate-400 p-1 w-1/4">Date</td>
+                  <td className="border border-slate-400 p-1" colSpan="6"></td>
+                  <td className="border border-slate-400 p-2 w-[220px] text-center" rowSpan="5">
+                    <div className="font-black border-b border-blue-200 mb-1 pb-1">Receipt Requirements:</div>
+                    <div className="font-normal normal-case leading-tight text-slate-500">
+                      * Receipts are required for all items (excluding M&IE perdiems & mileage charges)
+                    </div>
+                    <div className="mt-2 font-normal normal-case leading-tight text-slate-500">
+                      ** Receipts are required for full amount
+                    </div>
                   </td>
                 </tr>
                 <tr>
-                  <td className="border border-blue-200 p-2 font-bold text-blue-900 italic">Project Name </td>
-                  <td className="border border-blue-200 p-2" colSpan="2">{formData.projectName}</td>
-                </tr>
-                
-                {/* Dynamic Entry Rows  */}
-                <tr>
-                  <td className="border border-blue-200 p-2">Mileage (0.655 cents/mile) </td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2 text-center italic">{formData.personalMiles} Miles</td>
-                  <td className="border border-blue-200 p-2 text-right font-bold text-blue-900">${(formData.personalMiles * 0.655).toFixed(2)}</td>
+                  <td className="border border-slate-400 p-1 font-bold text-blue-800">Travel From:</td>
+                  <td className="border border-slate-400 p-1" colSpan="6">{formData.travelFrom}</td>
                 </tr>
                 <tr>
-                  <td className="border border-blue-200 p-2">Transport (Airline/Train)** </td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2 text-right font-bold text-blue-900">${parseFloat(formData.transportCost || 0).toFixed(2)}</td>
+                  <td className="border border-slate-400 p-1 font-bold text-blue-800">Travel To:</td>
+                  <td className="border border-slate-400 p-1" colSpan="6">{formData.travelTo}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-400 p-1 font-bold text-blue-800">Per Diem: Lodging</td>
+                  <td className="border border-slate-400 p-1 text-center bg-slate-100 italic">Input</td>
+                  <td className="border border-slate-400 p-1 text-center" colSpan="5">0</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-400 p-1 font-bold text-blue-800">Per Diem: M&IE</td>
+                  <td className="border border-slate-400 p-1 text-center bg-slate-100 italic">Input</td>
+                  <td className="border border-slate-400 p-1 text-center" colSpan="5">0</td>
                 </tr>
 
-                {/* Shaded Area Rows 18-20  */}
-                <tr className="bg-orange-100/60 font-bold italic text-orange-900">
-                   <td className="border border-blue-200 p-3" colSpan="3">
-                     Please do not enter any values in the shaded boxes (Rows 18-20) 
+                {/* Shaded Header Section */}
+                <tr className="bg-slate-100 text-[9px] font-black text-blue-900 text-center uppercase tracking-tighter">
+                   <td className="border border-slate-400 p-1 text-left">Project Name :</td>
+                   <td className="border border-slate-400 p-1">Ref. No</td>
+                   <td className="border border-slate-400 p-1" colSpan="5">Total Paid by Employee</td>
+                   <td className="border border-slate-400 p-1">Cost in Excess of FAR</td>
+                   <td className="border border-slate-400 p-1">Comments</td>
+                </tr>
+
+                {/* Expense Rows */}
+                <tr className="bg-white">
+                  <td className="border border-slate-400 p-1">Personal Auto Miles</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-right" colSpan="5">$ -</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-center text-blue-600 italic">To / From Airport</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-400 p-1 font-medium">Mileage ( 0.655 cents / mile)</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-right font-bold text-blue-900" colSpan="5">${(formData.personalMiles * 0.655).toFixed(2)}</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-center text-slate-400">No receipts are required</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-400 p-1">Transport (Airline/Train) **</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-right" colSpan="5">${parseFloat(formData.transportCost || 0).toFixed(2)}</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1"></td>
+                </tr>
+
+                {/* ORANGE SHADED ROWS (MANDATORY DISPLAY) */}
+                <tr className="bg-[#B87333]/30 text-slate-800">
+                  <td className="border border-slate-400 p-1">Lodging room (actuals) **</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-right" colSpan="5">${parseFloat(formData.lodgingActual || 0).toFixed(2)}</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1"></td>
+                </tr>
+                <tr className="bg-[#B87333]/30">
+                  <td className="border border-slate-400 p-1">Lodging taxes (actuals) **</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1 text-right" colSpan="5">${parseFloat(formData.lodgingTaxes || 0).toFixed(2)}</td>
+                  <td className="border border-slate-400 p-1"></td>
+                  <td className="border border-slate-400 p-1"></td>
+                </tr>
+                <tr className="bg-[#B87333]/30 text-[9px] font-black italic">
+                   <td className="border border-slate-400 p-2" colSpan="8">
+                     Please do not enter any values in the shaded boxes (Rows 18-20)
                    </td>
-                   <td className="border border-blue-200 p-3 bg-orange-100"></td>
+                   <td className="border border-slate-400 p-2 text-center text-blue-700 uppercase">Unallowable Expenses</td>
                 </tr>
 
-                <tr>
-                  <td className="border border-blue-200 p-2">Lodging Room (Actuals)** </td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2 text-right font-bold text-blue-900">${parseFloat(formData.lodgingActual || 0).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td className="border border-blue-200 p-2">Lodging Taxes (Actuals)** </td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2"></td>
-                  <td className="border border-blue-200 p-2 text-right font-bold text-blue-900">${parseFloat(formData.lodgingTaxes || 0).toFixed(2)}</td>
-                </tr>
-
-                {/* Grand Total  */}
-                <tr className="bg-blue-800 text-white font-black text-[12px]">
-                  <td className="border border-blue-800 p-3 text-right uppercase tracking-widest" colSpan="3">Amount Due Employee </td>
-                  <td className="border border-blue-800 p-3 text-right underline underline-offset-4 decoration-white">${calculateTotal().toFixed(2)} </td>
+                {/* Summary Section */}
+                <tr className="bg-blue-600 text-white font-black text-xs">
+                  <td className="border border-slate-400 p-3 text-right uppercase tracking-wider" colSpan="7">Amount Due Employee</td>
+                  <td className="border border-slate-400 p-3 text-right text-lg">${calculateTotal().toFixed(2)}</td>
+                  <td className="border border-slate-400 p-3"></td>
                 </tr>
               </tbody>
             </table>
-            
-            {/* Certifications footer  */}
-            <div className="mt-8 text-[9px] text-slate-400 italic leading-relaxed text-center px-10">
-              I certify this statement is accurate and prepared in accordance with FAR Section 31 cost principles and all unallowable costs have been identified on this report. 
+
+            {/* Verification Footer */}
+            <div className="mt-4 text-[9px] text-slate-500 italic leading-tight border-b border-slate-200 pb-10">
+              I certify this statement is accurate and prepared in accordance with FAR Section 31 cost principles and all unallowable costs have been identified on this report.
             </div>
           </div>
         </div>
