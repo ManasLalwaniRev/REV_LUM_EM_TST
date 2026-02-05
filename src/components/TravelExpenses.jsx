@@ -371,198 +371,194 @@
 
 
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  Plane, Bed, Utensils, Car, LogOut, Plus, 
-  Save, Info, X, FileText, ChevronRight 
+  Plane, Save, LogOut, Info, FileText, ExternalLink 
 } from 'lucide-react';
 
 const TravelExpenses = ({ 
-  dataEntries, userName, userAvatar, handleLogout, 
-  currentUserRole, currentUserId, onDataChanged, contractOptions = [] 
+  contractOptions = [], userName, handleLogout, currentUserId 
 }) => {
-  const [activeTab, setActiveTab] = useState('Airfare');
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
+  const [activeTab, setActiveTab] = useState('Report');
 
-  // --- Static Options for Dropdowns ---
-  const employeeOptions = [
-    { id: 'EMP001', name: 'Manas Lalwani' },
-    { id: 'EMP002', name: 'Nilesh Peswani' },
-    { id: 'EMP003', name: 'Abdul Shaikh' }
-  ];
-
-  const purposeOptions = ['Client Meeting', 'Site Visit', 'Conference', 'Relocation', 'Other'];
-
-  // --- State for the Report Form ---
+  // Form State mapped to the Infotrend Statement rows
   const [formData, setFormData] = useState({
-    employeeId: '',
     employeeName: '',
+    employeeNum: '',
     purpose: '',
+    datePrepared: '',
     travelFrom: '',
     travelTo: '',
+    perDiemLodging: 0,
+    perDiemMIE: 0,
     projectName: '',
     personalMiles: 0,
-    mileageRate: 0.655,
     transportCost: 0,
-    mealsPerDiem: 0,
+    miePerDiem: 0,
     lodgingActual: 0,
     lodgingTaxes: 0,
     rentalTaxi: 0,
     parkingTolls: 0,
     otherSpecify: '',
-    otherCost: 0,
-    status: 'Draft'
+    otherCost: 0
   });
-
-  const travelTabs = [
-    { id: 'Airfare', icon: <Plane size={16}/> },
-    { id: 'Hotel', icon: <Bed size={16}/> },
-    { id: 'Meals', icon: <Utensils size={16}/> },
-    { id: 'Rental', icon: <Car size={16}/> },
-    { id: 'Report', icon: <FileText size={16}/> }
-  ];
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleEmployeeChange = (e) => {
-    const emp = employeeOptions.find(opt => opt.id === e.target.value);
-    setFormData(prev => ({ ...prev, employeeId: e.target.value, employeeName: emp ? emp.name : '' }));
-  };
-
   const calculateTotal = () => {
-    const mileageTotal = parseFloat(formData.personalMiles || 0) * parseFloat(formData.mileageRate || 0);
-    return (
-      mileageTotal +
-      parseFloat(formData.transportCost || 0) +
-      parseFloat(formData.mealsPerDiem || 0) +
-      parseFloat(formData.lodgingActual || 0) +
-      parseFloat(formData.lodgingTaxes || 0) +
-      parseFloat(formData.rentalTaxi || 0) +
-      parseFloat(formData.parkingTolls || 0) +
-      parseFloat(formData.otherCost || 0)
-    );
+    const mileage = parseFloat(formData.personalMiles || 0) * 0.655;
+    const costs = [
+      formData.transportCost, formData.miePerDiem, formData.lodgingActual,
+      formData.lodgingTaxes, formData.rentalTaxi, formData.parkingTolls, formData.otherCost
+    ];
+    return mileage + costs.reduce((sum, val) => sum + parseFloat(val || 0), 0);
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 text-gray-800">
-      <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-2xl font-black text-orange-600 uppercase flex items-center gap-2">
-            <Plane size={28}/> Travel Management
-          </h1>
-          <div className="flex items-center gap-3">
-            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition"><LogOut size={20}/></button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-900 p-4 text-gray-800">
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-40px)]">
+        
+        {/* LEFT SIDE: INPUT FORM */}
+        <div className="w-full lg:w-1/3 bg-white rounded-xl shadow-xl overflow-y-auto p-6 border-t-4 border-orange-500">
+          <h2 className="text-lg font-black text-blue-900 mb-4 uppercase flex items-center gap-2">
+            <Pencil size={20}/> Data Entry
+          </h2>
+          
+          <div className="space-y-4">
+            <section>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Employee Details</label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <input id="employeeName" placeholder="Employee Name" className="p-2 border rounded text-sm w-full" onChange={handleInputChange}/>
+                <input id="employeeNum" placeholder="Employee #" className="p-2 border rounded text-sm w-full" onChange={handleInputChange}/>
+              </div>
+            </section>
 
-        {/* Tab Switcher */}
-        <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-orange-100">
-          {travelTabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-sm border border-orange-200' : 'text-gray-400 hover:text-gray-600'}`}>
-              {tab.icon} {tab.id.toUpperCase()}
+            <section>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Trip Information</label>
+              <input id="purpose" placeholder="Purpose of Trip" className="p-2 border rounded text-sm w-full mt-1" onChange={handleInputChange}/>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <input id="travelFrom" placeholder="Travel From" className="p-2 border rounded text-sm w-full" onChange={handleInputChange}/>
+                <input id="travelTo" placeholder="Travel To" className="p-2 border rounded text-sm w-full" onChange={handleInputChange}/>
+              </div>
+            </section>
+
+            <section className="pt-2 border-t">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Per Diem & Project</label>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <input id="perDiemLodging" type="number" placeholder="Lodging Rate" className="p-2 border rounded text-sm w-full" onChange={handleInputChange}/>
+                <input id="perDiemMIE" type="number" placeholder="M&IE Rate" className="p-2 border rounded text-sm w-full" onChange={handleInputChange}/>
+              </div>
+              <select id="projectName" className="w-full p-2 border rounded text-sm mt-2" onChange={handleInputChange}>
+                <option value="">Select Project</option>
+                {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
+              </select>
+            </section>
+
+            <section className="pt-2 border-t space-y-2">
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Expenses</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input id="personalMiles" type="number" placeholder="Personal Auto Miles" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                <input id="transportCost" type="number" placeholder="Transport (Air/Train)" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                <input id="miePerDiem" type="number" placeholder="M&IE (Per Diem Only)" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                <input id="lodgingActual" type="number" placeholder="Lodging Room" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                <input id="lodgingTaxes" type="number" placeholder="Lodging Taxes" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                <input id="rentalTaxi" type="number" placeholder="Rental/Taxis" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                <input id="parkingTolls" type="number" placeholder="Parking/Tolls" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+              </div>
+            </section>
+
+            <button className="w-full bg-blue-900 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-800 transition shadow-lg mt-4">
+              <Save size={18}/> SAVE REPORT
             </button>
-          ))}
+          </div>
         </div>
 
-        {activeTab === 'Report' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* LEFT: INPUT FORM */}
-            <div className="bg-gray-50 p-6 rounded-xl border space-y-4">
-              <h2 className="font-bold text-blue-900 uppercase text-sm border-b pb-2">Entry Form</h2>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500">EMPLOYEE</label>
-                  <select id="employeeId" className="w-full p-2 border rounded bg-white text-sm" value={formData.employeeId} onChange={handleEmployeeChange}>
-                    <option value="">Select Employee</option>
-                    {employeeOptions.map(emp => <option key={emp.id} value={emp.id}>{emp.id} - {emp.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500">PURPOSE</label>
-                  <select id="purpose" className="w-full p-2 border rounded bg-white text-sm" value={formData.purpose} onChange={handleInputChange}>
-                    <option value="">Select Purpose</option>
-                    {purposeOptions.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500">TRAVEL FROM</label>
-                  <input id="travelFrom" type="date" className="w-full p-2 border rounded text-sm" value={formData.travelFrom} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-500">TRAVEL TO</label>
-                  <input id="travelTo" type="date" className="w-full p-2 border rounded text-sm" value={formData.travelTo} onChange={handleInputChange} />
-                </div>
+        {/* RIGHT SIDE: INFOTREND FORM PREVIEW */}
+        <div className="w-full lg:w-2/3 bg-black p-8 rounded-xl overflow-y-auto border border-gray-700">
+          <div className="bg-black text-cyan-400 font-sans mx-auto max-w-4xl">
+            {/* Form Header  */}
+            <h1 className="text-center text-xl font-bold border-b border-cyan-400 pb-2 mb-4">
+              Infotrend Inc Travel Expense Statement
+            </h1>
+
+            {/* Employee/Date Row [cite: 1, 5, 6] */}
+            <div className="grid grid-cols-3 gap-4 mb-4 text-[11px]">
+              <div className="border-b border-gray-600 pb-1 flex justify-between">
+                <span className="text-cyan-400 font-bold">Employee:</span> {formData.employeeName}
               </div>
-
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                <div><label className="block text-[10px] font-bold text-gray-500">PROJECT NAME</label>
-                  <select id="projectName" className="w-full p-2 border rounded bg-white text-sm" value={formData.projectName} onChange={handleInputChange}>
-                    <option value="">Select Project</option>
-                    {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
-                  </select>
-                </div>
-                <div><label className="block text-[10px] font-bold text-gray-500">AUTO MILES</label><input id="personalMiles" type="number" className="w-full p-2 border rounded text-sm" value={formData.personalMiles} onChange={handleInputChange} /></div>
-                <div><label className="block text-[10px] font-bold text-gray-500">TRANSPORT (AIR/TRAIN)</label><input id="transportCost" type="number" className="w-full p-2 border rounded text-sm" value={formData.transportCost} onChange={handleInputChange} /></div>
-                <div><label className="block text-[10px] font-bold text-gray-500">M&IE PER DIEM</label><input id="mealsPerDiem" type="number" className="w-full p-2 border rounded text-sm" value={formData.mealsPerDiem} onChange={handleInputChange} /></div>
-                <div><label className="block text-[10px] font-bold text-gray-500">LODGING (ACTUAL)</label><input id="lodgingActual" type="number" className="w-full p-2 border rounded text-sm" value={formData.lodgingActual} onChange={handleInputChange} /></div>
-                <div><label className="block text-[10px] font-bold text-gray-500">LODGING TAXES</label><input id="lodgingTaxes" type="number" className="w-full p-2 border rounded text-sm" value={formData.lodgingTaxes} onChange={handleInputChange} /></div>
-                <div><label className="block text-[10px] font-bold text-gray-500">CAR RENTAL / TAXIS</label><input id="rentalTaxi" type="number" className="w-full p-2 border rounded text-sm" value={formData.rentalTaxi} onChange={handleInputChange} /></div>
-                <div><label className="block text-[10px] font-bold text-gray-500">PARKING / TOLLS</label><input id="parkingTolls" type="number" className="w-full p-2 border rounded text-sm" value={formData.parkingTolls} onChange={handleInputChange} /></div>
+              <div className="border-b border-gray-600 pb-1 flex justify-between">
+                <span className="text-cyan-400 font-bold">Employee #:</span> {formData.employeeNum}
               </div>
-              
-              <div className="pt-2 border-t flex gap-2">
-                <input id="otherSpecify" placeholder="Other (Specify)" className="flex-grow p-2 border rounded text-sm" value={formData.otherSpecify} onChange={handleInputChange} />
-                <input id="otherCost" type="number" placeholder="Amount" className="w-32 p-2 border rounded text-sm" value={formData.otherCost} onChange={handleInputChange} />
-              </div>
-
-              <button className="w-full bg-blue-900 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-800 transition shadow-lg mt-4">
-                <Save size={18}/> SUBMIT EXPENSE REPORT
-              </button>
-            </div>
-
-            {/* RIGHT: LIVE PREVIEW (MATCHING IMAGE) */}
-            <div className="border rounded-xl bg-white shadow-sm overflow-hidden text-[10px]">
-              <div className="bg-[#0070C0] p-2 text-center text-white font-black uppercase tracking-widest">Travel Expense Statement</div>
-              <div className="p-4 space-y-4">
-                <div className="grid grid-cols-2 border-b pb-2">
-                  <div><span className="font-bold text-blue-900">Employee:</span> {formData.employeeName}</div>
-                  <div><span className="font-bold text-blue-900">Project:</span> {formData.projectName}</div>
-                </div>
-
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead className="bg-gray-100 font-bold text-blue-900">
-                    <tr>
-                      <td className="border border-gray-300 p-1">Description</td>
-                      <td className="border border-gray-300 p-1 text-right">Amount</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td className="border border-gray-300 p-1 italic">Mileage (0.655 c/m)</td><td className="border border-gray-300 p-1 text-right">${(formData.personalMiles * formData.mileageRate).toFixed(2)}</td></tr>
-                    <tr><td className="border border-gray-300 p-1">Transport (Airline/Train)</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.transportCost || 0).toFixed(2)}</td></tr>
-                    <tr><td className="border border-gray-300 p-1">M&IE (Per Diem Only)</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.mealsPerDiem || 0).toFixed(2)}</td></tr>
-                    <tr><td className="border border-gray-300 p-1">Lodging (Actuals + Taxes)</td><td className="border border-gray-300 p-1 text-right">${(parseFloat(formData.lodgingActual || 0) + parseFloat(formData.lodgingTaxes || 0)).toFixed(2)}</td></tr>
-                    <tr><td className="border border-gray-300 p-1">Car Rental, Taxis</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.rentalTaxi || 0).toFixed(2)}</td></tr>
-                    <tr><td className="border border-gray-300 p-1">Parking, Tolls</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.parkingTolls || 0).toFixed(2)}</td></tr>
-                    <tr><td className="border border-gray-300 p-1">{formData.otherSpecify || 'Other'}</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.otherCost || 0).toFixed(2)}</td></tr>
-                    <tr className="bg-blue-50 font-black text-blue-900 text-sm">
-                      <td className="border border-gray-300 p-2 uppercase">Amount Due Employee</td>
-                      <td className="border border-gray-300 p-2 text-right">${calculateTotal().toFixed(2)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div className="border-b border-gray-600 pb-1 flex justify-between">
+                <span className="text-cyan-400 font-bold">Date Prepared:</span> {new Date().toLocaleDateString()}
               </div>
             </div>
+
+            {/* Travel Details [cite: 2, 3] */}
+            <div className="text-[11px] mb-4 space-y-1">
+               <div className="flex gap-2">
+                 <span className="text-cyan-400 font-bold w-32">Purpose of Trip:</span> 
+                 <span className="border-b border-gray-600 flex-grow">{formData.purpose}</span>
+               </div>
+               <div className="flex gap-2">
+                 <span className="text-cyan-400 font-bold w-32">Travel From/To:</span> 
+                 <span className="border-b border-gray-600 flex-grow">{formData.travelFrom} - {formData.travelTo}</span>
+               </div>
+               <div className="flex gap-2">
+                 <span className="text-cyan-400 font-bold w-32">Project Name:</span> 
+                 <span className="border-b border-gray-600 flex-grow">{formData.projectName}</span>
+               </div>
+            </div>
+
+            {/* Main Table  */}
+            <table className="w-full border-collapse border border-cyan-900 text-[10px] text-white">
+              <thead className="text-cyan-400 font-bold">
+                <tr>
+                  <th className="border border-cyan-900 p-1 text-left">Description</th>
+                  <th className="border border-cyan-900 p-1">Ref No</th>
+                  <th className="border border-cyan-900 p-1 text-right w-24">Total Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-cyan-900 p-1">Personal Auto Miles ({formData.personalMiles})</td>
+                  <td className="border border-cyan-900 p-1 text-center"></td>
+                  <td className="border border-cyan-900 p-1 text-right text-orange-400">${(formData.personalMiles * 0.655).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-cyan-900 p-1">Transport (Airline/Train)**</td>
+                  <td className="border border-cyan-900 p-1 text-center"></td>
+                  <td className="border border-cyan-900 p-1 text-right text-orange-400">${parseFloat(formData.transportCost || 0).toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-cyan-900 p-1">M&IE (Per Diem Only)</td>
+                  <td className="border border-cyan-900 p-1 text-center"></td>
+                  <td className="border border-cyan-900 p-1 text-right text-orange-400">${parseFloat(formData.miePerDiem || 0).toFixed(2)}</td>
+                </tr>
+                {/* Shaded Restriction Zone  */}
+                <tr className="bg-[#5C3317]">
+                  <td colSpan="3" className="p-1 text-center font-bold text-[9px] uppercase">
+                    Please do not enter any values in the shaded boxes (Rows 18-20)
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-cyan-900 p-1">Lodging (Room + Taxes)</td>
+                  <td className="border border-cyan-900 p-1 text-center"></td>
+                  <td className="border border-cyan-900 p-1 text-right text-orange-400">
+                    ${(parseFloat(formData.lodgingActual || 0) + parseFloat(formData.lodgingTaxes || 0)).toFixed(2)}
+                  </td>
+                </tr>
+                <tr className="bg-gray-900 font-bold">
+                  <td className="border border-cyan-900 p-2 text-right uppercase text-cyan-400" colSpan="2">Amount Due Employee</td>
+                  <td className="border border-cyan-900 p-2 text-right text-sm text-white">${calculateTotal().toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <div className="text-gray-400 italic text-center py-20">Select the Report tab to use the dynamic Expense Statement form.</div>
-        )}
+        </div>
       </div>
     </div>
   );
