@@ -402,299 +402,230 @@
 
 // export default Vendor_Expenses;
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Plus, Pencil, Search, LogOut, X, Save, Send, CheckCircle, XCircle, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { Pencil, Save, CheckCircle, LogOut, FileText, Printer } from 'lucide-react';
 
-const Vendor_Expenses = ({ 
-  dataEntries, isLoading, userName = 'User', userAvatar, handleLogout, 
-  currentUserRole, currentUserId, onDataChanged, contractOptions = []
-}) => {
-  const [vendorOptions, setVendorOptions] = useState([]);
-  const [searchColumn, setSearchColumn] = useState('all');
-  const [searchValue, setSearchValue] = useState('');
-  const [showOnlyLatest, setShowOnlyLatest] = useState(false);
-  const [expandedRows, setExpandedRows] = useState(new Set());
-  const [selectedRows, setSelectedRows] = useState(new Set());
-  const [localEntries, setLocalEntries] = useState([]);
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingEntry, setEditingEntry] = useState(null);
-
-  const searchableColumns = [
-    { key: 'all', name: 'All Fields' },
-    { key: 'vendorId', name: 'Vendor ID' },
-    { key: 'contractShortName', name: 'Contract' },
-    { key: 'vendorName', name: 'Vendor' },
-    { key: 'pmEmail', name: 'PM Email' },
+const TravelExpenses = ({ contractOptions = [], userName, handleLogout }) => {
+  // Dropdowns
+  const employeeOptions = [
+    { id: 'EMP001', name: 'Manas Lalwani' },
+    { id: 'EMP002', name: 'Nilesh Peswani' },
+    { id: 'EMP003', name: 'Abdul Shaikh' }
   ];
-
-  const pmEmailOptions = [
-    'Manas.Lalwani@revolvespl.com',
-    'Nilesh.Peswani@revolvespl.com',
-    'abdulraees.shaikh@revolvespl.com',
-    'jony.rodrigues@revolvespl.com'
-  ];
+  const purposeOptions = ['Client Meeting', 'Site Visit', 'Conference', 'Relocation', 'Internal Audit'];
 
   const [formData, setFormData] = useState({
-    vendorId: '', contractShortName: '', vendorName: '', chargeDate: '',
-    chargeAmount: '', pmEmail: '', chargeCode: '',
-    status: 'Submitted', notes: '', pdfFilePath: '',
+    employeeName: '', employeeId: '', datePrepared: new Date().toISOString().split('T')[0],
+    purpose: '', travelFrom: '', travelTo: '', perDiemLodging: 0, perDiemMIE: 0,
+    projectName: '', personalMiles: 0, transportCost: 0, miePerDiem: 0,
+    lodgingActual: 0, lodgingTaxes: 0, rentalTaxi: 0, parkingTolls: 0,
+    otherSpecify: '', otherCost: 0, travelAdvance: 0
   });
-
-  useEffect(() => {
-    setLocalEntries(dataEntries || []);
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
-      .then(res => res.json())
-      .then(data => setVendorOptions(data))
-      .catch(err => console.error("Error fetching vendors:", err));
-  }, [dataEntries]);
-
-  // --- Logic ---
-  const handleVendorChange = (e) => {
-    const selectedId = e.target.value;
-    const selectedVendor = vendorOptions.find(v => v.vendor_id === selectedId);
-    setFormData(prev => ({
-      ...prev, vendorId: selectedId, vendorName: selectedVendor ? selectedVendor.vendor_name : ''
-    }));
-  };
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const setStatus = (newStatus) => {
-    if (userName !== 'Revolve') {
-      alert("Permission Denied: Only Admins can Approve or Reject records.");
-      return;
-    }
-    setFormData(prev => ({ ...prev, status: newStatus }));
+  const handleEmployeeChange = (e) => {
+    const emp = employeeOptions.find(opt => opt.id === e.target.value);
+    setFormData(prev => ({ ...prev, employeeId: e.target.value, employeeName: emp ? emp.name : '' }));
   };
 
-  const resetForm = () => {
-    setFormData({
-      vendorId: '', contractShortName: '', vendorName: '', chargeDate: '',
-      chargeAmount: '', pmEmail: '', chargeCode: '',
-      status: 'Submitted', notes: '', pdfFilePath: ''
-    });
-    setIsAdding(false);
-    setEditingEntry(null);
+  const calculateTotal = () => {
+    const mileage = parseFloat(formData.personalMiles || 0) * 0.655;
+    const costs = [
+      formData.transportCost, formData.miePerDiem, formData.lodgingActual,
+      formData.lodgingTaxes, formData.rentalTaxi, formData.parkingTolls, formData.otherCost
+    ];
+    return mileage + costs.reduce((sum, val) => sum + parseFloat(val || 0), 0);
   };
 
-  const startEdit = () => {
-    const entryId = Array.from(selectedRows)[0];
-    const entry = localEntries.find(e => e.id === entryId);
-    if (entry) {
-      setEditingEntry(entry);
-      setIsAdding(false);
-      setFormData({
-        vendorId: entry.vendor_id || entry.vendorId || '',
-        contractShortName: entry.contract_short_name || entry.contractShortName || '',
-        vendorName: entry.vendor_name || entry.vendorName || '',
-        chargeDate: (entry.charge_date || entry.chargeDate)?.split('T')[0] || '',
-        chargeAmount: entry.charge_amount || entry.chargeAmount || '',
-        pmEmail: entry.pm_email || entry.pmEmail || '',
-        chargeCode: entry.charge_code || entry.chargeCode || '',
-        status: entry.status || 'Submitted',
-        notes: entry.notes || '',
-        pdfFilePath: entry.pdf_file_path || entry.pdfFilePath || '',
-      });
-    }
-  };
-
-  const handleSave = async (e, shouldNotify = false) => {
-    if (e) e.preventDefault();
-    if (userName === 'Revolve' && formData.status === 'Rejected' && !formData.notes) {
-      return alert("Notes are required for rejection.");
-    }
-
-    try {
-      const url = editingEntry 
-        ? `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses/${editingEntry.id}`
-        : `${import.meta.env.VITE_API_BASE_URL}/vendor-expenses/new`;
-
-      await fetch(url, {
-        method: editingEntry ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, userId: currentUserId, shouldNotify }),
-      });
-      if (onDataChanged) onDataChanged();
-      resetForm();
-    } catch (err) { alert("Save error"); }
-  };
-
-  const groupedEntries = useMemo(() => {
-    const groups = localEntries.reduce((acc, entry) => {
-      const baseKey = String(entry.prime_key || entry.primeKey || '').split('.')[0];
-      if (!baseKey) return acc;
-      if (!acc[baseKey]) acc[baseKey] = [];
-      acc[baseKey].push(entry);
-      return acc;
-    }, {});
-    for (const key in groups) {
-      groups[key].sort((a, b) => parseFloat(b.prime_key || b.primeKey || 0) - parseFloat(a.prime_key || a.primeKey || 0));
-    }
-    let filteredGroups = Object.values(groups);
-    if (searchValue) {
-      const lowVal = searchValue.toLowerCase();
-      filteredGroups = filteredGroups.filter(group =>
-        group.some(e => {
-          if (searchColumn === 'all') return Object.values(e).some(v => String(v).toLowerCase().includes(lowVal));
-          return String(e[searchColumn] || '').toLowerCase().includes(lowVal);
-        })
-      );
-    }
-    return showOnlyLatest ? filteredGroups.map(g => [g[0]]) : filteredGroups;
-  }, [localEntries, searchColumn, searchValue, showOnlyLatest]);
+  const amountDue = calculateTotal() - parseFloat(formData.travelAdvance || 0);
 
   return (
-    <div className="min-h-screen bg-gray-900 p-6 text-gray-800">
-      <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-extrabold text-lime-800 uppercase tracking-tighter">Vendor Expenses</h1>
-          <div className="flex items-center gap-4">
-            <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2">
-              <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-8 h-8 rounded-full" />
-              <span className="text-sm font-bold">{userName}</span>
+    <div className="min-h-screen bg-slate-100 p-4 text-slate-800 font-sans">
+      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-40px)]">
+        
+        {/* --- LEFT PANEL: DATA ENTRY (ALL FIELDS) --- */}
+        <div className="w-full lg:w-1/3 bg-white rounded-xl shadow-lg overflow-y-auto p-6 border-t-4 border-blue-600">
+          <div className="flex items-center justify-between mb-6 border-b pb-4">
+            <div className="flex items-center gap-3">
+              <Pencil className="text-blue-600" size={24}/>
+              <h2 className="text-xl font-black text-slate-800 uppercase">Expense Entry</h2>
             </div>
-            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200"><LogOut/></button>
           </div>
-        </div>
-
-        {/* Form with ALL FIELDS restored */}
-        {(isAdding || editingEntry) && (
-          <div className="mb-8 p-6 border-2 border-blue-200 rounded-xl bg-blue-50 relative z-30 shadow-xl">
-            <form onSubmit={(e) => handleSave(e, false)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div><label className="block text-xs font-bold mb-1">VENDOR ID *</label>
-                  <select className="w-full p-2 border rounded bg-white" value={formData.vendorId} onChange={handleVendorChange} required>
-                    <option value="">Select Vendor</option>
-                    {vendorOptions.map(v => <option key={v.vendor_id} value={v.vendor_id}>{v.vendor_id}</option>)}
-                  </select>
-                </div>
-                <div><label className="block text-xs font-bold mb-1 text-gray-400">VENDOR NAME (AUTO)</label>
-                  <input className="w-full p-2 border rounded bg-gray-100" value={formData.vendorName} readOnly />
-                </div>
-                <div><label className="block text-xs font-bold mb-1">CONTRACT *</label>
-                  <select className="w-full p-2 border rounded bg-white" value={formData.contractShortName} onChange={(e) => setFormData({...formData, contractShortName: e.target.value})} required>
-                    <option value="">Select Contract</option>
-                    {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
-                  </select>
-                </div>
-                <div><label className="block text-xs font-bold mb-1 text-blue-700 ">NOTIFY PM *</label>
-                  <select className="w-full p-2 border rounded bg-white" value={formData.pmEmail} onChange={(e) => setFormData({...formData, pmEmail: e.target.value})} required>
-                    <option value="">Select PM</option>
-                    {pmEmailOptions.map(e => <option key={e} value={e}>{e}</option>)}
-                  </select>
-                </div>
-                <div><label className="block text-xs font-bold mb-1">AMOUNT *</label><input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded bg-white" value={formData.chargeAmount} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1">DATE *</label><input id="chargeDate" type="date" className="w-full p-2 border rounded bg-white" value={formData.chargeDate} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1">PDF PATH *</label><input id="pdfFilePath" type="text" className="w-full p-2 border rounded bg-white" value={formData.pdfFilePath} onChange={handleInputChange} required /></div>
-                <div><label className="block text-xs font-bold mb-1">CHARGE CODE *</label><input id="chargeCode" type="text" className="w-full p-2 border rounded bg-white" value={formData.chargeCode} onChange={handleInputChange} required /></div>
-              </div>
-
-              <div><label className="block text-xs font-bold mb-1">NOTES / REJECTION REASON</label>
-                <textarea id="notes" rows="1" className={`w-full p-2 border rounded bg-white ${userName === 'Revolve' && formData.status === 'Rejected' ? 'border-red-500' : ''}`} value={formData.notes} onChange={handleInputChange} />
-              </div>
-
-              {/* Status Section - Hardcoded Permission */}
-              <div className="p-4 bg-white border-2 border-dashed rounded-lg flex flex-wrap items-center justify-between gap-4">
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setStatus('Submitted')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Submitted' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-400'}`}>SUBMITTED</button>
-                  <button type="button" onClick={() => setStatus('Approved')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Approved' ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'} ${userName !== 'Revolve' ? 'opacity-30' : ''}`}>APPROVE</button>
-                  <button type="button" onClick={() => setStatus('Rejected')} className={`px-4 py-2 rounded font-bold text-xs transition-all ${formData.status === 'Rejected' ? 'bg-red-600 text-white shadow-md' : 'bg-gray-100 text-gray-400'} ${userName !== 'Revolve' ? 'opacity-30' : ''}`}>REJECT</button>
-                </div>
-                <div className="flex gap-2">
-                   <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs">CANCEL</button>
-                   <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-blue-700 transition flex items-center gap-2"><Save size={18}/> SAVE RECORD</button>
-                   {userName !== 'Revolve' && (
-                     <button type="button" onClick={(e) => handleSave(e, true)} className="bg-purple-600 text-white px-8 py-2 rounded font-bold shadow-lg hover:bg-purple-700 transition flex items-center gap-2"><Send size={18}/> SAVE & NOTIFY</button>
-                   )}
-                </div>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Search Bar Restored */}
-        <div className="flex flex-col md:flex-row justify-between items-center bg-gray-100 p-4 rounded-lg mb-6 gap-3">
-            <div className="flex items-center border rounded-lg bg-white flex-grow">
-                <select value={searchColumn} onChange={(e) => setSearchColumn(e.target.value)} className="p-2 bg-transparent border-r text-sm">
-                    {searchableColumns.map(col => <option key={col.key} value={col.key}>{col.name}</option>)}
+          
+          <div className="space-y-4">
+             <section className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Header Information</label>
+                <select id="employeeId" className="w-full p-2 border rounded-lg bg-slate-50 text-sm" value={formData.employeeId} onChange={handleEmployeeChange}>
+                  <option value="">Select Employee ID / Name</option>
+                  {employeeOptions.map(emp => <option key={emp.id} value={emp.id}>{emp.id} - {emp.name}</option>)}
                 </select>
-                <input type="text" placeholder="Search entries..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} className="w-full p-2 text-sm outline-none" />
-                <Search size={18} className="text-gray-400 mr-3" />
+                <select id="purpose" className="w-full p-2 border rounded-lg bg-slate-50 text-sm" value={formData.purpose} onChange={handleInputChange}>
+                  <option value="">Select Purpose of Trip</option>
+                  {purposeOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <select id="projectName" className="w-full p-2 border rounded-lg bg-slate-50 text-sm" value={formData.projectName} onChange={handleInputChange}>
+                  <option value="">Select Project Name</option>
+                  {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
+                </select>
+             </section>
+
+             <section className="space-y-2 pt-4 border-t">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Dates & Per Diems</label>
+                <div className="grid grid-cols-2 gap-2">
+                   <input id="travelFrom" placeholder="Travel From" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="travelTo" placeholder="Travel To" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="perDiemLodging" type="number" placeholder="Per Diem: Lodging" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="perDiemMIE" type="number" placeholder="Per Diem: M&IE" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                </div>
+             </section>
+
+             <section className="space-y-2 pt-4 border-t">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Expense Rows</label>
+                <div className="grid grid-cols-2 gap-2">
+                   <input id="personalMiles" type="number" placeholder="Auto Miles" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="transportCost" type="number" placeholder="Transport Cost" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="miePerDiem" type="number" placeholder="M&IE (Per Diem Only)" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="lodgingActual" type="number" placeholder="Lodging Room" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="lodgingTaxes" type="number" placeholder="Lodging Taxes" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="rentalTaxi" type="number" placeholder="Rental/Taxis" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="parkingTolls" type="number" placeholder="Parking/Tolls" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="otherCost" type="number" placeholder="Other Amount" className="p-2 border rounded text-sm" onChange={handleInputChange}/>
+                   <input id="travelAdvance" type="number" placeholder="Less Travel Advance" className="p-2 border rounded text-sm col-span-2" onChange={handleInputChange}/>
+                </div>
+             </section>
+
+             <button className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg shadow-lg flex items-center justify-center gap-2 transition-all mt-4">
+               <CheckCircle size={18}/> SUBMIT STATEMENT
+             </button>
+          </div>
+        </div>
+
+        {/* --- RIGHT PANEL: EXACT STATEMENT REPLICATION --- */}
+        <div className="w-full lg:w-2/3 bg-white rounded-xl shadow-inner overflow-y-auto p-12 border border-slate-200" id="printable-report">
+          <div className="max-w-5xl mx-auto border-[1px] border-slate-400 p-8 shadow-sm text-blue-900">
+            
+            <div className="text-center mb-6">
+              <h1 className="text-2xl font-black uppercase tracking-tight">Infotrend Inc Travel Expense Statement</h1>
             </div>
-            <label className="flex items-center cursor-pointer gap-2 text-sm font-bold">
-                Latest Only
-                <input type="checkbox" checked={showOnlyLatest} onChange={(e) => setShowOnlyLatest(e.target.checked)} className="w-4 h-4" />
-            </label>
-        </div>
 
-        {/* Action Buttons Restored */}
-        <div className="flex gap-3 mb-6">
-            {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> ADD</button>}
-            <button onClick={() => alert("Batch Notify triggered")} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Send size={20}/> NOTIFY SELECTION</button>
-            <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 font-bold transition"><Pencil size={20}/> EDIT</button>
-        </div>
+            {/* Header */}
+            <div className="grid grid-cols-4 gap-x-4 text-[11px] mb-4">
+              <div className="col-span-2 border-b border-slate-400 pb-1 flex gap-2">
+                <span className="font-bold">Employee:</span> <span className="text-slate-800 uppercase">{formData.employeeName}</span>
+              </div>
+              <div className="border-b border-slate-400 pb-1 flex gap-2">
+                <span className="font-bold">Employee #:</span> <span className="text-slate-800">{formData.employeeId}</span>
+              </div>
+              <div className="border-b border-slate-400 pb-1 flex gap-2">
+                <span className="font-bold">Date Prepared :</span> <span className="text-slate-800">{formData.datePrepared}</span>
+              </div>
+              <div className="col-span-4 border-b border-slate-400 pb-1 flex gap-2 mt-2">
+                <span className="font-bold">Purpose of Trip:</span> <span className="text-slate-800 uppercase">{formData.purpose}</span>
+              </div>
+            </div>
 
-        <div className="overflow-x-auto border rounded-lg">
-          <table className="min-w-full divide-y text-sm">
-            <thead className="bg-gray-50 uppercase font-bold text-gray-600">
-              <tr>
-                <th className="p-4 w-12 text-center"></th>
-                <th className="px-6 py-3 text-left">Record No</th>
-                <th className="px-6 py-3 text-left">Vendor ID</th>
-                <th className="px-6 py-3 text-left">Vendor Name</th>
-                <th className="px-6 py-3 text-left">Status</th>
-                <th className="px-6 py-3 text-left">Amount</th>
-                <th className="px-6 py-3 text-left">PM Email</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y">
-              {groupedEntries.map(group => {
-                const baseKey = String(group[0].prime_key || group[0].primeKey).split('.')[0];
-                const hasHistory = group.length > 1;
-                return (
-                  <React.Fragment key={group[0].id}>
-                    <tr onClick={() => { const s = new Set(); s.add(group[0].id); setSelectedRows(s); }} className={`hover:bg-blue-50 cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}>
-                      <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(group[0].id)} readOnly /></td>
-                      <td className="px-6 py-3 font-bold">
-                        {hasHistory && (
-                          <button onClick={(e) => { e.stopPropagation(); const next = new Set(expandedRows); next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey); setExpandedRows(next); }} className="mr-2">
-                            {expandedRows.has(baseKey) ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
-                          </button>
-                        )}
-                        {group[0].prime_key || group[0].primeKey}
-                      </td>
-                      <td className="px-6 py-3">{group[0].vendor_id || group[0].vendorId}</td>
-                      <td className="px-6 py-3">{group[0].vendor_name || group[0].vendorName}</td>
-                      <td className="px-6 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${group[0].status === 'Approved' ? 'bg-green-100 text-green-700' : group[0].status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>{group[0].status || 'Submitted'}</span>
-                      </td>
-                      <td className="px-6 py-3 font-black">${parseFloat(group[0].charge_amount || group[0].chargeAmount || 0).toFixed(2)}</td>
-                      <td className="px-6 py-3 text-gray-500">{group[0].pm_email || group[0].pmEmail}</td>
-                    </tr>
-                    {expandedRows.has(baseKey) && group.slice(1).map(hEntry => (
-                      <tr key={hEntry.id} className="bg-gray-50 italic text-gray-400 border-l-4 border-yellow-400">
-                        <td className="p-4"></td>
-                        <td className="px-6 py-3 pl-12">{hEntry.prime_key || hEntry.primeKey}</td>
-                        <td className="px-6 py-3">{hEntry.vendor_id || hEntry.vendorId}</td>
-                        <td className="px-6 py-3">{hEntry.vendor_name || hEntry.vendorName}</td>
-                        <td className="px-6 py-3"><span className="text-xs">{hEntry.status || 'Submitted'}</span></td>
-                        <td className="px-6 py-3">${parseFloat(hEntry.charge_amount || hEntry.chargeAmount || 0).toFixed(2)}</td>
-                        <td className="px-6 py-3">{hEntry.pm_email || hEntry.pmEmail}</td>
-                      </tr>
-                    ))}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+            {/* Table Header Section */}
+            <table className="w-full border-collapse border border-slate-500 text-[10px]">
+              <tbody>
+                <tr className="bg-blue-50/50 font-bold uppercase">
+                  <td className="border border-slate-500 p-1 w-1/4">Date</td>
+                  <td className="border border-slate-500 p-1" colSpan="6"></td>
+                  <td className="border border-slate-500 p-2 w-[220px] text-center" rowSpan="6">
+                    <div className="font-black border-b border-blue-200 mb-1 pb-1 text-blue-800 text-[11px]">Receipt Requirements:</div>
+                    <div className="font-normal normal-case leading-tight text-slate-500 text-[9px]">
+                      * Receipts are required for all items (excluding M&IE perdiems & mileage charges)
+                    </div>
+                    <div className="mt-2 font-normal normal-case leading-tight text-slate-500 text-[9px]">
+                      ** Receipts are required for full amount
+                    </div>
+                  </td>
+                </tr>
+                <tr><td className="border border-slate-500 p-1 font-bold">Travel From:</td><td className="border border-slate-500 p-1" colSpan="6">{formData.travelFrom}</td></tr>
+                <tr><td className="border border-slate-500 p-1 font-bold">Travel To:</td><td className="border border-slate-500 p-1" colSpan="6">{formData.travelTo}</td></tr>
+                <tr>
+                  <td className="border border-slate-500 p-1 font-bold">Per Diem: Lodging</td>
+                  <td className="border border-slate-500 p-1 text-center bg-slate-100 italic">Input</td>
+                  <td className="border border-slate-500 p-1 text-center font-bold" colSpan="5">{formData.perDiemLodging || 0}</td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-500 p-1 font-bold">Per Diem: M&IE</td>
+                  <td className="border border-slate-500 p-1 text-center bg-slate-100 italic">Input</td>
+                  <td className="border border-slate-500 p-1 text-center font-bold" colSpan="5">{formData.perDiemMIE || 0}</td>
+                </tr>
+                <tr><td className="border border-slate-500 p-1 font-bold">Project Name :</td><td className="border border-slate-500 p-1 uppercase" colSpan="6">{formData.projectName}</td></tr>
+
+                {/* Main Table Column Names */}
+                <tr className="bg-slate-100 text-[9px] font-black text-center uppercase">
+                   <td className="border border-slate-500 p-1 text-left">Description</td>
+                   <td className="border border-slate-500 p-1">Ref. No</td>
+                   <td className="border border-slate-500 p-1" colSpan="5">Total Paid by Employee</td>
+                   <td className="border border-slate-500 p-1">Cost in Excess of FAR</td>
+                   <td className="border border-slate-500 p-1">Comments</td>
+                </tr>
+
+                {/* Rows matching image exactly */}
+                <tr><td className="border border-slate-500 p-1">Personal Auto Miles</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-center" colSpan="5">{formData.personalMiles || 0}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-center italic text-slate-400">To / From Airport</td></tr>
+                <tr><td className="border border-slate-500 p-1 font-medium">Mileage ( 0.655 cents / mile)</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right font-bold" colSpan="5">${(formData.personalMiles * 0.655).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-center text-slate-400">No receipts are required</td></tr>
+                <tr><td className="border border-slate-500 p-1 font-medium">Transport (Airline/Train) **</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.transportCost || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1"></td></tr>
+                <tr><td className="border border-slate-500 p-1 font-medium">M&IE (Per Diem only)</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.miePerDiem || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-center text-slate-400 font-bold">No receipts are required</td></tr>
+
+                {/* ORANGE SECTION (MANDATORY) */}
+                <tr className="bg-[#B87333]/30 font-bold text-slate-900">
+                  <td className="border border-slate-500 p-1">Lodging room (actuals) **</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.lodgingActual || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1"></td>
+                </tr>
+                <tr className="bg-[#B87333]/30 font-bold text-slate-900">
+                  <td className="border border-slate-500 p-1">Lodging taxes (actuals) **</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.lodgingTaxes || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1"></td>
+                </tr>
+                <tr className="bg-[#B87333]/30 font-bold text-slate-900">
+                  <td className="border border-slate-500 p-1">Allowable Lodging Charges</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">$ -</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-center text-blue-800 uppercase text-[8px]">Allowable Expenses</td>
+                </tr>
+                <tr className="bg-[#B87333]/30 font-black italic text-[9px]">
+                  <td className="border border-slate-500 p-2" colSpan="8">Please do not enter any values in the shaded boxes (Rows 18-20)</td>
+                  <td className="border border-slate-500 p-2 text-center text-blue-800 uppercase text-[8px]">Unallowable Expenses</td>
+                </tr>
+
+                {/* Remaining Rows */}
+                <tr><td className="border border-slate-500 p-1">Car Rental, Taxis *</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.rentalTaxi || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1"></td></tr>
+                <tr><td className="border border-slate-500 p-1">Parking, Tolls *</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.parkingTolls || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1"></td></tr>
+                <tr><td className="border border-slate-500 p-1">Other (specify) *</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1 text-right" colSpan="5">${parseFloat(formData.otherCost || 0).toFixed(2)}</td><td className="border border-slate-500 p-1"></td><td className="border border-slate-500 p-1"></td></tr>
+
+                {/* Grand Total */}
+                <tr className="bg-blue-600 text-white font-black">
+                  <td className="border border-slate-500 p-3 text-right uppercase tracking-widest text-[11px]" colSpan="7">Total Expenses Paid</td>
+                  <td className="border border-slate-500 p-3 text-right text-sm font-black">${calculateTotal().toFixed(2)}</td>
+                  <td className="border border-slate-500 p-3 text-right">$ -</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Verification & Footer */}
+            <div className="mt-4 text-[9px] text-slate-500 italic leading-tight mb-8">
+              I certify this statement is accurate and prepared in accordance with FAR Section 31 cost principles and all unallowable costs have been identified on this report.
+            </div>
+
+            <div className="grid grid-cols-2 gap-10 text-[10px]">
+               <div className="space-y-6">
+                 <div className="border-b border-slate-400 pb-1 flex justify-between"><span>Employee Signature</span><span>Date</span></div>
+                 <div className="border-b border-slate-400 pb-1"><span>Supervisor Signature</span></div>
+               </div>
+               <div className="space-y-2 text-right">
+                  <div className="flex justify-between border-b border-slate-200"><span>Total Expenses Paid</span><span className="font-bold">${calculateTotal().toFixed(2)}</span></div>
+                  <div className="flex justify-between border-b border-slate-200"><span>Less Travel Advance</span><span className="font-bold">(${parseFloat(formData.travelAdvance || 0).toFixed(2)})</span></div>
+                  <div className="flex justify-between pt-2 border-t-2 border-blue-600">
+                    <span className="font-black text-blue-700 uppercase">Amount Due Employee</span>
+                    <span className="text-xl font-black text-slate-900">${amountDue.toFixed(2)}</span>
+                  </div>
+               </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default Vendor_Expenses;
+export default TravelExpenses;
