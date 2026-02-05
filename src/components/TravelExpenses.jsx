@@ -374,132 +374,46 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Plane, Bed, Utensils, Car, LogOut, Plus, 
-  Save, Info, X, ExternalLink, FileText 
+  Save, Info, X, FileText, ChevronRight 
 } from 'lucide-react';
 
-// --- 1. Instructions Modal Component ---
-const InstructionsModal = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
-
-  const instructions = [
-    "Please enter expenses for each day of travel separately.",
-    <>On Row 8 - enter the lodging perdiem rate. Ref: <a href="https://www.gsa.gov/travel/plan-book/per-diem-rates" target="_blank" rel="noreferrer" className="text-blue-600 underline">GSA Rates</a></>,
-    "On Row - 9 enter the M & IE perdiem rate. First & last day of travel equals 75% of total M&IE.",
-    "Row 10 - Enter the project name.",
-    "Rows 12-13 - Enter the actual expenses.",
-    "Row 14 - Enter M&IE per diem as per the rates.",
-    "Rows 16 & 17 - Enter actual lodging charges & taxes.",
-    "Rows 18 - 20 - DO NOT enter any information.",
-    "Rows 22-24 - Enter actual expenses.",
-    "Row 33 - Complete the information."
-  ];
-
-  return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200">
-        <div className="bg-blue-900 p-4 flex justify-between items-center">
-          <h2 className="text-white font-bold uppercase text-sm tracking-widest flex items-center gap-2">
-            <Info size={18}/> Help & Instructions
-          </h2>
-          <button onClick={onClose} className="text-white/80 hover:text-white"><X size={20}/></button>
-        </div>
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
-          <ul className="space-y-3">
-            {instructions.map((text, i) => (
-              <li key={i} className="flex gap-3 text-sm text-gray-700">
-                <span className="font-bold text-blue-600">{i + 1}.</span>
-                <span>{text}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="p-4 bg-gray-50 border-t flex justify-end">
-          <button onClick={onClose} className="bg-blue-900 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase hover:bg-blue-800 transition">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- 2. Travel Report View (Statement Layout) ---
-const TravelReportView = ({ entries }) => {
-  const totalAmount = entries.reduce((sum, e) => sum + parseFloat(e.chargeAmount || e.charge_amount || 0), 0);
-
-  return (
-    <div className="mt-4 bg-white border border-gray-300 rounded-lg overflow-hidden shadow-lg">
-      <div className="bg-[#0070C0] p-4 text-center">
-        <h2 className="text-xl font-black text-white uppercase tracking-widest">Infotrend Inc - Travel Expense Statement</h2>
-      </div>
-      
-      <div className="p-4 overflow-x-auto">
-        <table className="min-w-full border-collapse border border-gray-400 text-[11px]">
-          <tbody>
-            <tr className="bg-gray-50">
-              <td className="border border-gray-400 p-2 font-bold text-blue-900" colSpan="2">Employee:</td>
-              <td className="border border-gray-400 p-2" colSpan="2"></td>
-              <td className="border border-gray-400 p-2 font-bold text-blue-900">Employee #:</td>
-              <td className="border border-gray-400 p-2"></td>
-              <td className="border border-gray-400 p-2 font-bold text-blue-900">Date Prepared:</td>
-              <td className="border border-gray-400 p-2"></td>
-            </tr>
-            <tr>
-              <td className="border border-gray-400 p-2 font-bold text-blue-900" colSpan="2">Purpose of Trip:</td>
-              <td className="border border-gray-400 p-2" colSpan="6"></td>
-            </tr>
-            <tr className="bg-gray-100 text-center font-bold text-blue-900">
-              <td className="border border-gray-400 p-2" colSpan="2">Description</td>
-              <td className="border border-gray-400 p-2">Ref No.</td>
-              <td className="border border-gray-400 p-2" colSpan="4">Daily Breakout</td>
-              <td className="border border-gray-400 p-2 text-right">Total Paid</td>
-            </tr>
-            {/* Lodging & M&IE Calculation Rows */}
-            <tr>
-              <td className="border border-gray-400 p-2 font-bold" colSpan="2">Per Diem: Lodging (Rate)</td>
-              <td className="border border-gray-400 p-2 bg-blue-50 text-center font-bold">Input</td>
-              <td className="border border-gray-400 p-2 text-right font-black" colSpan="5">$0.00</td>
-            </tr>
-            <tr>
-              <td className="border border-gray-400 p-2 font-bold" colSpan="2">Per Diem: M&IE (Rate)</td>
-              <td className="border border-gray-400 p-2 bg-blue-50 text-center font-bold">Input</td>
-              <td className="border border-gray-400 p-2 text-right font-black" colSpan="5">$0.00</td>
-            </tr>
-            {/* Shaded Restriction Zone */}
-            <tr className="bg-[#5C3317] text-white font-bold text-center">
-              <td className="border border-gray-400 p-1" colSpan="8 italic">Please do not enter any values in the shaded boxes (Rows 18-20)</td>
-            </tr>
-            {/* Summary Totals */}
-            <tr className="bg-gray-100 font-black text-blue-900">
-              <td className="border border-gray-400 p-2 text-right uppercase" colSpan="7">Grand Total</td>
-              <td className="border border-gray-400 p-2 text-right text-lg">${totalAmount.toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="mt-4 p-4 border-t-2 border-dashed flex justify-between items-end">
-           <div className="text-[10px] text-gray-500 max-w-md">
-             I certify this statement is accurate and prepared in accordance with FAR Section 31 cost principles and all unallowable costs have been identified.
-           </div>
-           <div className="text-right">
-             <span className="block text-xs font-bold text-gray-400">AMOUNT DUE EMPLOYEE</span>
-             <span className="text-2xl font-black text-blue-700">${totalAmount.toFixed(2)}</span>
-           </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- 3. Main TravelExpenses Component ---
 const TravelExpenses = ({ 
   dataEntries, userName, userAvatar, handleLogout, 
   currentUserRole, currentUserId, onDataChanged, contractOptions = [] 
 }) => {
   const [activeTab, setActiveTab] = useState('Airfare');
   const [showInstructions, setShowInstructions] = useState(false);
-  const [selectedRows, setSelectedRows] = useState(new Set());
   const [isAdding, setIsAdding] = useState(false);
-  const [editingEntry, setEditingEntry] = useState(null);
+
+  // --- Static Options for Dropdowns ---
+  const employeeOptions = [
+    { id: 'EMP001', name: 'Manas Lalwani' },
+    { id: 'EMP002', name: 'Nilesh Peswani' },
+    { id: 'EMP003', name: 'Abdul Shaikh' }
+  ];
+
+  const purposeOptions = ['Client Meeting', 'Site Visit', 'Conference', 'Relocation', 'Other'];
+
+  // --- State for the Report Form ---
+  const [formData, setFormData] = useState({
+    employeeId: '',
+    employeeName: '',
+    purpose: '',
+    travelFrom: '',
+    travelTo: '',
+    projectName: '',
+    personalMiles: 0,
+    mileageRate: 0.655,
+    transportCost: 0,
+    mealsPerDiem: 0,
+    lodgingActual: 0,
+    lodgingTaxes: 0,
+    rentalTaxi: 0,
+    parkingTolls: 0,
+    otherSpecify: '',
+    otherCost: 0,
+    status: 'Draft'
+  });
 
   const travelTabs = [
     { id: 'Airfare', icon: <Plane size={16}/> },
@@ -509,79 +423,47 @@ const TravelExpenses = ({
     { id: 'Report', icon: <FileText size={16}/> }
   ];
 
-  const [formData, setFormData] = useState({
-    contractShortName: '', projectName: '', subkName: '', travelType: 'Airfare',
-    chargeAmount: '', chargeDate: '', status: 'Submitted', notes: '', pdfFilePath: ''
-  });
-
-  const resetForm = () => {
-    setFormData({
-      contractShortName: '', projectName: '', subkName: '', travelType: activeTab,
-      chargeAmount: '', chargeDate: '', status: 'Submitted', notes: '', pdfFilePath: ''
-    });
-    setIsAdding(false);
-    setEditingEntry(null);
-  };
-
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setFormData(prev => ({ ...prev, [id]: value }));
   };
 
-  const handleSave = async (e) => {
-    if (e) e.preventDefault();
-    const url = editingEntry 
-      ? `${import.meta.env.VITE_API_BASE_URL}/subk-travel/${editingEntry.id}`
-      : `${import.meta.env.VITE_API_BASE_URL}/subk-travel/new`;
-
-    try {
-      await fetch(url, {
-        method: editingEntry ? 'PATCH' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          ...formData, 
-          category: 'Travel', 
-          travelType: activeTab, 
-          userId: currentUserId 
-        }),
-      });
-      if (onDataChanged) onDataChanged();
-      resetForm();
-    } catch (err) { alert("Save error"); }
+  const handleEmployeeChange = (e) => {
+    const emp = employeeOptions.find(opt => opt.id === e.target.value);
+    setFormData(prev => ({ ...prev, employeeId: e.target.value, employeeName: emp ? emp.name : '' }));
   };
 
-  const filteredEntries = useMemo(() => 
-    (dataEntries || []).filter(e => (e.travel_type || e.travelType) === activeTab),
-    [dataEntries, activeTab]
-  );
+  const calculateTotal = () => {
+    const mileageTotal = parseFloat(formData.personalMiles || 0) * parseFloat(formData.mileageRate || 0);
+    return (
+      mileageTotal +
+      parseFloat(formData.transportCost || 0) +
+      parseFloat(formData.mealsPerDiem || 0) +
+      parseFloat(formData.lodgingActual || 0) +
+      parseFloat(formData.lodgingTaxes || 0) +
+      parseFloat(formData.rentalTaxi || 0) +
+      parseFloat(formData.parkingTolls || 0) +
+      parseFloat(formData.otherCost || 0)
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 p-6 text-gray-800">
-      <InstructionsModal isOpen={showInstructions} onClose={() => setShowInstructions(false)} />
-      
       <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-2xl font-black text-orange-600 uppercase flex items-center gap-2 tracking-tighter">
-            <Plane size={28}/> Travel Expenses
+          <h1 className="text-2xl font-black text-orange-600 uppercase flex items-center gap-2">
+            <Plane size={28}/> Travel Management
           </h1>
           <div className="flex items-center gap-3">
-            <button 
-              onClick={() => setShowInstructions(true)}
-              className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100"
-            >
-              <Info size={24} />
-            </button>
-            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition">
-              <LogOut size={20}/>
-            </button>
+            <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full hover:bg-red-200 transition"><LogOut size={20}/></button>
           </div>
         </div>
 
         {/* Tab Switcher */}
         <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-orange-100">
           {travelTabs.map(tab => (
-            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setIsAdding(false); }}
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-orange-600 shadow-sm border border-orange-200' : 'text-gray-400 hover:text-gray-600'}`}>
               {tab.icon} {tab.id.toUpperCase()}
             </button>
@@ -589,68 +471,97 @@ const TravelExpenses = ({
         </div>
 
         {activeTab === 'Report' ? (
-          <TravelReportView entries={(dataEntries || []).filter(e => e.category === 'Travel')} />
-        ) : (
-          <>
-            {/* Input Form */}
-            {(isAdding || editingEntry) && (
-              <div className="mb-8 p-6 border-2 border-orange-200 rounded-xl bg-orange-50 relative z-30 shadow-xl">
-                <form onSubmit={handleSave} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div><label className="block text-xs font-bold mb-1">CONTRACT *</label>
-                      <select id="contractShortName" className="w-full p-2 border rounded bg-white" value={formData.contractShortName} onChange={handleInputChange} required>
-                        <option value="">Select Contract</option>
-                        {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
-                      </select>
-                    </div>
-                    <div><label className="block text-xs font-bold mb-1">PROJECT NAME *</label><input id="projectName" className="w-full p-2 border rounded" value={formData.projectName} onChange={handleInputChange} required /></div>
-                    <div><label className="block text-xs font-bold mb-1 text-orange-700">TRAVELER NAME</label><input id="subkName" className="w-full p-2 border-orange-300 rounded" value={formData.subkName} onChange={handleInputChange} /></div>
-                    <div><label className="block text-xs font-bold mb-1">AMOUNT *</label><input id="chargeAmount" type="number" step="0.01" className="w-full p-2 border rounded" value={formData.chargeAmount} onChange={handleInputChange} required /></div>
-                    <div><label className="block text-xs font-bold mb-1">DATE *</label><input id="chargeDate" type="date" className="w-full p-2 border rounded" value={formData.chargeDate} onChange={handleInputChange} required /></div>
-                    <div className="lg:col-span-3"><label className="block text-xs font-bold mb-1">PDF / RECEIPT PATH</label><input id="pdfFilePath" className="w-full p-2 border rounded" value={formData.pdfFilePath} onChange={handleInputChange} /></div>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                     <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 rounded font-bold text-xs uppercase">Cancel</button>
-                     <button type="submit" className="bg-orange-600 text-white px-8 py-2 rounded font-bold shadow-lg flex items-center gap-2 uppercase text-xs"><Save size={16}/> Save {activeTab}</button>
-                  </div>
-                </form>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* LEFT: INPUT FORM */}
+            <div className="bg-gray-50 p-6 rounded-xl border space-y-4">
+              <h2 className="font-bold text-blue-900 uppercase text-sm border-b pb-2">Entry Form</h2>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500">EMPLOYEE</label>
+                  <select id="employeeId" className="w-full p-2 border rounded bg-white text-sm" value={formData.employeeId} onChange={handleEmployeeChange}>
+                    <option value="">Select Employee</option>
+                    {employeeOptions.map(emp => <option key={emp.id} value={emp.id}>{emp.id} - {emp.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500">PURPOSE</label>
+                  <select id="purpose" className="w-full p-2 border rounded bg-white text-sm" value={formData.purpose} onChange={handleInputChange}>
+                    <option value="">Select Purpose</option>
+                    {purposeOptions.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500">TRAVEL FROM</label>
+                  <input id="travelFrom" type="date" className="w-full p-2 border rounded text-sm" value={formData.travelFrom} onChange={handleInputChange} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-500">TRAVEL TO</label>
+                  <input id="travelTo" type="date" className="w-full p-2 border rounded text-sm" value={formData.travelTo} onChange={handleInputChange} />
+                </div>
               </div>
-            )}
 
-            <button onClick={() => setIsAdding(true)} className="bg-orange-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold mb-6 shadow-md transition hover:bg-orange-600">
-              <Plus size={20}/> ADD {activeTab.toUpperCase()} EXPENSE
-            </button>
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                <div><label className="block text-[10px] font-bold text-gray-500">PROJECT NAME</label>
+                  <select id="projectName" className="w-full p-2 border rounded bg-white text-sm" value={formData.projectName} onChange={handleInputChange}>
+                    <option value="">Select Project</option>
+                    {contractOptions.map(opt => <option key={opt.id} value={opt.name}>{opt.name}</option>)}
+                  </select>
+                </div>
+                <div><label className="block text-[10px] font-bold text-gray-500">AUTO MILES</label><input id="personalMiles" type="number" className="w-full p-2 border rounded text-sm" value={formData.personalMiles} onChange={handleInputChange} /></div>
+                <div><label className="block text-[10px] font-bold text-gray-500">TRANSPORT (AIR/TRAIN)</label><input id="transportCost" type="number" className="w-full p-2 border rounded text-sm" value={formData.transportCost} onChange={handleInputChange} /></div>
+                <div><label className="block text-[10px] font-bold text-gray-500">M&IE PER DIEM</label><input id="mealsPerDiem" type="number" className="w-full p-2 border rounded text-sm" value={formData.mealsPerDiem} onChange={handleInputChange} /></div>
+                <div><label className="block text-[10px] font-bold text-gray-500">LODGING (ACTUAL)</label><input id="lodgingActual" type="number" className="w-full p-2 border rounded text-sm" value={formData.lodgingActual} onChange={handleInputChange} /></div>
+                <div><label className="block text-[10px] font-bold text-gray-500">LODGING TAXES</label><input id="lodgingTaxes" type="number" className="w-full p-2 border rounded text-sm" value={formData.lodgingTaxes} onChange={handleInputChange} /></div>
+                <div><label className="block text-[10px] font-bold text-gray-500">CAR RENTAL / TAXIS</label><input id="rentalTaxi" type="number" className="w-full p-2 border rounded text-sm" value={formData.rentalTaxi} onChange={handleInputChange} /></div>
+                <div><label className="block text-[10px] font-bold text-gray-500">PARKING / TOLLS</label><input id="parkingTolls" type="number" className="w-full p-2 border rounded text-sm" value={formData.parkingTolls} onChange={handleInputChange} /></div>
+              </div>
+              
+              <div className="pt-2 border-t flex gap-2">
+                <input id="otherSpecify" placeholder="Other (Specify)" className="flex-grow p-2 border rounded text-sm" value={formData.otherSpecify} onChange={handleInputChange} />
+                <input id="otherCost" type="number" placeholder="Amount" className="w-32 p-2 border rounded text-sm" value={formData.otherCost} onChange={handleInputChange} />
+              </div>
 
-            <div className="overflow-x-auto border rounded-lg shadow-sm">
-              <table className="min-w-full divide-y text-sm">
-                <thead className="bg-gray-50 uppercase font-black text-gray-500 text-[10px]">
-                  <tr>
-                    <th className="px-6 py-3 text-left">Record No</th>
-                    <th className="px-6 py-3 text-left">Traveler</th>
-                    <th className="px-6 py-3 text-left">Project</th>
-                    <th className="px-6 py-3 text-left">Amount</th>
-                    <th className="px-6 py-3 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y">
-                  {filteredEntries.map(entry => (
-                    <tr key={entry.id} className="hover:bg-orange-50 transition-colors">
-                      <td className="px-6 py-3 font-bold">{entry.prime_key || entry.primeKey}</td>
-                      <td className="px-6 py-3">{entry.subk_name || entry.subkName}</td>
-                      <td className="px-6 py-3 text-gray-500">{entry.project_name || entry.projectName}</td>
-                      <td className="px-6 py-3 font-black text-orange-700">${parseFloat(entry.charge_amount || entry.chargeAmount || 0).toFixed(2)}</td>
-                      <td className="px-6 py-3">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-[10px] font-bold uppercase">{entry.status || 'Submitted'}</span>
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredEntries.length === 0 && (
-                    <tr><td colSpan="5" className="px-6 py-10 text-center text-gray-400 italic">No {activeTab} expenses found.</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <button className="w-full bg-blue-900 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-800 transition shadow-lg mt-4">
+                <Save size={18}/> SUBMIT EXPENSE REPORT
+              </button>
             </div>
-          </>
+
+            {/* RIGHT: LIVE PREVIEW (MATCHING IMAGE) */}
+            <div className="border rounded-xl bg-white shadow-sm overflow-hidden text-[10px]">
+              <div className="bg-[#0070C0] p-2 text-center text-white font-black uppercase tracking-widest">Travel Expense Statement</div>
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-2 border-b pb-2">
+                  <div><span className="font-bold text-blue-900">Employee:</span> {formData.employeeName}</div>
+                  <div><span className="font-bold text-blue-900">Project:</span> {formData.projectName}</div>
+                </div>
+
+                <table className="w-full border-collapse border border-gray-300">
+                  <thead className="bg-gray-100 font-bold text-blue-900">
+                    <tr>
+                      <td className="border border-gray-300 p-1">Description</td>
+                      <td className="border border-gray-300 p-1 text-right">Amount</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr><td className="border border-gray-300 p-1 italic">Mileage (0.655 c/m)</td><td className="border border-gray-300 p-1 text-right">${(formData.personalMiles * formData.mileageRate).toFixed(2)}</td></tr>
+                    <tr><td className="border border-gray-300 p-1">Transport (Airline/Train)</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.transportCost || 0).toFixed(2)}</td></tr>
+                    <tr><td className="border border-gray-300 p-1">M&IE (Per Diem Only)</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.mealsPerDiem || 0).toFixed(2)}</td></tr>
+                    <tr><td className="border border-gray-300 p-1">Lodging (Actuals + Taxes)</td><td className="border border-gray-300 p-1 text-right">${(parseFloat(formData.lodgingActual || 0) + parseFloat(formData.lodgingTaxes || 0)).toFixed(2)}</td></tr>
+                    <tr><td className="border border-gray-300 p-1">Car Rental, Taxis</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.rentalTaxi || 0).toFixed(2)}</td></tr>
+                    <tr><td className="border border-gray-300 p-1">Parking, Tolls</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.parkingTolls || 0).toFixed(2)}</td></tr>
+                    <tr><td className="border border-gray-300 p-1">{formData.otherSpecify || 'Other'}</td><td className="border border-gray-300 p-1 text-right">${parseFloat(formData.otherCost || 0).toFixed(2)}</td></tr>
+                    <tr className="bg-blue-50 font-black text-blue-900 text-sm">
+                      <td className="border border-gray-300 p-2 uppercase">Amount Due Employee</td>
+                      <td className="border border-gray-300 p-2 text-right">${calculateTotal().toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-gray-400 italic text-center py-20">Select the Report tab to use the dynamic Expense Statement form.</div>
         )}
       </div>
     </div>
