@@ -294,6 +294,20 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
     },
     { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+
+    { 
+    page: 'subcontractor-assignments', 
+    label: 'SubK Assignments', 
+    icon: <Layout className="h-5 w-5" />, 
+    roles: ['user', 'admin', 'accountant'] 
+    },
+    { 
+      page: 'travel-expenses', 
+      label: 'Travel Expenses', 
+      icon: <Plane className="h-5 w-5" />, 
+      roles: ['user', 'admin', 'accountant'] 
+    },
+
   ];
 
   return (

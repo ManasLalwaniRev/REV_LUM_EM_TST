@@ -255,6 +255,11 @@ import Vendor_Expenses from '@/components/Vendor_Expenses.jsx';
 import SLA from '@/components/SLA.jsx';
 import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
 import BillingPage from '@/components/BillingPage.jsx';
+import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
+import TravelExpenses from '@/components/TravelExpenses.jsx';
+// You can remove Subk_Travel_Combined if you are no longer using the shared view
+
+
 
 const DEFAULT_AVATAR = 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scott';
 
@@ -373,8 +378,12 @@ const App = () => {
     if (isLoggedIn && currentUserId) {
       fetchEntries();
       fetchOptions();
-      fetchSubkTravelData(); // Load the combined data
+      if (currentPage === 'subcontractor-assignments' || currentPage === 'travel-expenses') {
+      fetchSubkTravelData();
+    } // Load the combined data
+      
     }
+    
   }, [isLoggedIn, currentUserId, currentPage]);
 
   // --- 5. Handlers ---
@@ -416,19 +425,47 @@ const App = () => {
       case 'credit-card-expenses': 
         return <CreditCardExpenses {...commonProps} openAddDataModal={() => setShowAddDataModal(true)} />;
 
-      case 'subk-travel':
-        return (
-          <Subk_Travel_Combined 
-            dataEntries={subkTravelData}
-            userName={currentUsername}
-            userAvatar={currentUserAvatar}
-            handleLogout={handleLogout}
-            currentUserRole={currentUserRole}
-            currentUserId={currentUserId}
-            onDataChanged={fetchSubkTravelData}
-            contractOptions={contractOptions}
-          />
-        );
+      // case 'subk-travel':
+      //   return (
+      //     <Subk_Travel_Combined 
+      //       dataEntries={subkTravelData}
+      //       userName={currentUsername}
+      //       userAvatar={currentUserAvatar}
+      //       handleLogout={handleLogout}
+      //       currentUserRole={currentUserRole}
+      //       currentUserId={currentUserId}
+      //       onDataChanged={fetchSubkTravelData}
+      //       contractOptions={contractOptions}
+      //     />
+      //   );
+
+      case 'subcontractor-assignments':
+      return (
+        <SubcontractorAssignments 
+          dataEntries={subkTravelData.filter(e => e.category === 'Subk')}
+          userName={currentUsername}
+          userAvatar={currentUserAvatar}
+          handleLogout={handleLogout}
+          currentUserRole={currentUserRole}
+          currentUserId={currentUserId}
+          onDataChanged={fetchSubkTravelData}
+          contractOptions={contractOptions}
+        />
+      );
+
+       case 'travel-expenses':
+      return (
+        <TravelExpenses 
+          dataEntries={subkTravelData.filter(e => e.category === 'Travel')}
+          userName={currentUsername}
+          userAvatar={currentUserAvatar}
+          handleLogout={handleLogout}
+          currentUserRole={currentUserRole}
+          currentUserId={currentUserId}
+          onDataChanged={fetchSubkTravelData}
+          contractOptions={contractOptions}
+        />
+      );
 
       case 'bill': return <BillingPage {...commonProps} />;  
       case 'dashboard': return <FinancialDashboard {...commonProps} />;
