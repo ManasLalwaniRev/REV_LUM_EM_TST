@@ -374,8 +374,17 @@
 import React, { useState, useMemo } from 'react';
 import { Plane, Bed, Utensils, Car, LogOut, Plus, Save } from 'lucide-react';
 
-const TravelExpenses = ({ dataEntries, userName, handleLogout, currentUserRole, currentUserId, onDataChanged, contractOptions }) => {
+const TravelExpenses = ({ 
+  dataEntries, userName, userAvatar, handleLogout, 
+  currentUserRole, currentUserId, onDataChanged, contractOptions = [] 
+}) => {
   const [activeTab, setActiveTab] = useState('Airfare');
+  const [isAdding, setIsAdding] = useState(false);
+  const [formData, setFormData] = useState({
+    contractShortName: '', projectName: '', subkName: '', travelType: 'Airfare',
+    chargeAmount: '', chargeDate: '', status: 'Submitted', notes: ''
+  });
+
   const travelTabs = [
     { id: 'Airfare', icon: <Plane size={16}/> },
     { id: 'Hotel', icon: <Bed size={16}/> },
@@ -384,7 +393,7 @@ const TravelExpenses = ({ dataEntries, userName, handleLogout, currentUserRole, 
   ];
 
   const filteredEntries = useMemo(() => 
-    (dataEntries || []).filter(e => e.category === 'Travel' && (e.travel_type === activeTab || e.travelType === activeTab)),
+    (dataEntries || []).filter(e => (e.travel_type || e.travelType) === activeTab),
     [dataEntries, activeTab]
   );
 
@@ -398,7 +407,6 @@ const TravelExpenses = ({ dataEntries, userName, handleLogout, currentUserRole, 
           <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full"><LogOut/></button>
         </div>
 
-        {/* Tab Switcher */}
         <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-orange-100">
           {travelTabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -408,9 +416,37 @@ const TravelExpenses = ({ dataEntries, userName, handleLogout, currentUserRole, 
           ))}
         </div>
 
-        {/* Form and Table Logic filtered by activeTab */}
+        <button onClick={() => setIsAdding(true)} className="bg-orange-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold mb-6">
+          <Plus size={20}/> ADD {activeTab.toUpperCase()}
+        </button>
+
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="min-w-full divide-y text-sm">
+            <thead className="bg-gray-50 font-bold text-gray-600 uppercase">
+              <tr>
+                <th className="px-6 py-3 text-left">Traveler</th>
+                <th className="px-6 py-3 text-left">Type</th>
+                <th className="px-6 py-3 text-left">Amount</th>
+                <th className="px-6 py-3 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y">
+              {filteredEntries.map(entry => (
+                <tr key={entry.id}>
+                  <td className="px-6 py-3 font-medium">{entry.subk_name || entry.subkName}</td>
+                  <td className="px-6 py-3 text-xs">{activeTab}</td>
+                  <td className="px-6 py-3 font-bold">${parseFloat(entry.charge_amount || 0).toFixed(2)}</td>
+                  <td className="px-6 py-3">
+                    <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-bold">{entry.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 };
+
 export default TravelExpenses;

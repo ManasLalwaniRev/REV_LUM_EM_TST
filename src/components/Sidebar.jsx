@@ -248,7 +248,8 @@ import {
   Info,
   Book,
   LayoutDashboard,
-  ShieldCheck // Icon for SLA
+  ShieldCheck,
+  Layout // Icon for SLA
 } from "lucide-react";
 
 const SidebarItem = ({ icon, text, page, currentPage, setCurrentPage, isCollapsed }) => (

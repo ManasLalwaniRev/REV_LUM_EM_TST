@@ -400,20 +400,47 @@
 // export default SubcontractorAssignments;
 
 
-import React, { useState, useMemo } from 'react';
-import { Plus, Pencil, Save, LogOut, Layout } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Layout, Plus, Pencil, Save, LogOut } from 'lucide-react';
 
-const SubcontractorAssignments = ({ dataEntries, userName, handleLogout, currentUserRole, currentUserId, onDataChanged, contractOptions }) => {
+const SubcontractorAssignments = ({ 
+  dataEntries, userName, userAvatar, handleLogout, 
+  currentUserRole, currentUserId, onDataChanged, contractOptions = [] 
+}) => {
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [isAdding, setIsAdding] = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
+
   const [formData, setFormData] = useState({
     contractShortName: '', projectName: '', subkName: '', laborCategory: '',
     chargeAmount: '', chargeDate: '', status: 'Submitted', notes: ''
   });
 
-  const filteredEntries = useMemo(() => 
-    (dataEntries || []).filter(e => e.category === 'Subk'), [dataEntries]
-  );
+  const resetForm = () => {
+    setFormData({
+      contractShortName: '', projectName: '', subkName: '', laborCategory: '',
+      chargeAmount: '', chargeDate: '', status: 'Submitted', notes: ''
+    });
+    setIsAdding(false);
+    setEditingEntry(null);
+  };
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault();
+    const url = editingEntry 
+      ? `${import.meta.env.VITE_API_BASE_URL}/subk-travel/${editingEntry.id}`
+      : `${import.meta.env.VITE_API_BASE_URL}/subk-travel/new`;
+
+    try {
+      await fetch(url, {
+        method: editingEntry ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, category: 'Subk', userId: currentUserId }),
+      });
+      if (onDataChanged) onDataChanged();
+      resetForm();
+    } catch (err) { alert("Save error"); }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 p-6">
@@ -424,11 +451,39 @@ const SubcontractorAssignments = ({ dataEntries, userName, handleLogout, current
           </h1>
           <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full"><LogOut/></button>
         </div>
-        
-        {/* Render Form and Table similar to previous logic, filtering only for 'Subk' */}
-        {/* ... (Use the SubK specific fields here) ... */}
+
+        {/* Form and Table logic filtered for Category === 'Subk' */}
+        <button onClick={() => setIsAdding(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold mb-6">
+          <Plus size={20}/> ADD ASSIGNMENT
+        </button>
+
+        <div className="overflow-x-auto border rounded-lg">
+          <table className="min-w-full divide-y text-sm">
+            <thead className="bg-gray-50 uppercase font-bold text-gray-600">
+              <tr>
+                <th className="px-6 py-3 text-left">Project</th>
+                <th className="px-6 py-3 text-left">Subk Name</th>
+                <th className="px-6 py-3 text-left">Amount</th>
+                <th className="px-6 py-3 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y">
+              {dataEntries.map(entry => (
+                <tr key={entry.id} className="hover:bg-blue-50">
+                  <td className="px-6 py-3">{entry.project_name || entry.projectName}</td>
+                  <td className="px-6 py-3 font-bold">{entry.subk_name || entry.subkName}</td>
+                  <td className="px-6 py-3">${parseFloat(entry.charge_amount || entry.chargeAmount || 0).toFixed(2)}</td>
+                  <td className="px-6 py-3">
+                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">{entry.status}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 };
+
 export default SubcontractorAssignments;
