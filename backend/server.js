@@ -595,17 +595,51 @@ app.get('/api/subk-travel', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// app.post('/api/subk-travel/new', async (req, res) => {
+//   const { category, contractShortName, projectName, pmName, email, ccRecipients, chargeAmount, chargeDate, pdfFilePath, notes, status, subkName, laborCategory, userId } = req.body;
+//   try {
+//     const nextKey = await getNextVersionedKey('subk_travel_expenses');
+//     const result = await pool.query(
+//       `INSERT INTO subk_travel_expenses (prime_key, category, contract_short_name, project_name, pm_name, email, cc_recipients, charge_amount, charge_date, pdf_file_path, notes, status, subk_name, labor_category, submitter_id)
+//        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+//       [nextKey, category, contractShortName, projectName, pmName, email, ccRecipients, chargeAmount || 0, chargeDate || null, pdfFilePath, notes, status || 'Submitted', subkName, laborCategory, userId]
+//     );
+//     res.status(201).json(result.rows[0]);
+//   } catch (err) { res.status(500).json({ error: err.message }); }
+// });
+
 app.post('/api/subk-travel/new', async (req, res) => {
-  const { category, contractShortName, projectName, pmName, email, ccRecipients, chargeAmount, chargeDate, pdfFilePath, notes, status, subkName, laborCategory, userId } = req.body;
+  const { 
+    category, employeeId, employeeName, purpose, travelFrom, travelTo,
+    projectName, contractShortName, personalMiles, transportCost, 
+    miePerDiem, lodgingActual, lodgingTaxes, rentalTaxi, 
+    parkingTolls, otherCost, otherSpecify, travelAdvance, userId 
+  } = req.body;
+
   try {
     const nextKey = await getNextVersionedKey('subk_travel_expenses');
-    const result = await pool.query(
-      `INSERT INTO subk_travel_expenses (prime_key, category, contract_short_name, project_name, pm_name, email, cc_recipients, charge_amount, charge_date, pdf_file_path, notes, status, subk_name, labor_category, submitter_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
-      [nextKey, category, contractShortName, projectName, pmName, email, ccRecipients, chargeAmount || 0, chargeDate || null, pdfFilePath, notes, status || 'Submitted', subkName, laborCategory, userId]
-    );
+    const query = `
+      INSERT INTO subk_travel_expenses (
+        prime_key, category, employee_id, employee_name, purpose_of_trip, 
+        travel_from, travel_to, project_name, contract_short_name, 
+        personal_miles, transport_cost, mie_per_diem, lodging_actual, 
+        lodging_taxes, rental_taxi_cost, parking_tolls, other_cost, 
+        other_specify, travel_advance, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      RETURNING *`;
+
+    const values = [
+      nextKey, category, employeeId, employeeName, purpose, travelFrom, travelTo,
+      projectName, contractShortName, personalMiles || 0, transportCost || 0, 
+      miePerDiem || 0, lodgingActual || 0, lodgingTaxes || 0, rentalTaxi || 0, 
+      parkingTolls || 0, otherCost || 0, otherSpecify, travelAdvance || 0, userId
+    ];
+
+    const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.patch('/api/subk-travel/:id', async (req, res) => {
