@@ -285,7 +285,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { 
-  Save, Search, LogOut, Mail, FileText, Book, AlertCircle, CheckCircle2, Loader, Clock, Plus
+  Save, Search, LogOut, Mail, FileText, Book, AlertCircle, CheckCircle2, Loader, Clock
 } from 'lucide-react';
 
 // --- EXPANDED DATASET ---
@@ -370,102 +370,101 @@ const SLA = () => {
 
   const simulateSave = () => {
     setIsSaving(true);
-    setTimeout(() => { setIsSaving(false); alert("Records saved locally."); }, 600);
+    setTimeout(() => { setIsSaving(false); alert("Records updated successfully!"); }, 600);
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-2 sm:p-4 lg:p-6 text-gray-800 flex justify-center items-start">
-      {/* Container set to max-w-none for full size */}
-      <div className="bg-white rounded-xl shadow-lg w-full max-w-none border border-slate-200 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
+      {/* Full width container */}
+      <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-none text-gray-800">
         
-        {/* Header Section */}
-        <div className="bg-blue-800 p-6 flex flex-col md:flex-row justify-between items-center gap-4 text-white">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
-              <Clock className="text-blue-300" /> SLA Performance Monitor
-            </h1>
-            <p className="text-blue-100 text-sm mt-1">Real-time status tracking for accounting workflows</p>
+        {/* Header - Restored Design */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+          <div className="flex items-center gap-4">
+            <h1 className="text-3xl font-black text-blue-800 tracking-tighter">SLA Monitoring</h1>
           </div>
-          <div className="flex items-center gap-4 bg-blue-900/50 px-4 py-2 rounded-lg border border-blue-700">
-             <div className="text-right">
-                <p className="text-xs text-blue-300 uppercase font-bold">Current User</p>
-                <p className="text-sm font-semibold">Lead Accountant</p>
-             </div>
-             <button onClick={() => window.location.reload()} className="bg-red-500 hover:bg-red-600 p-2 rounded-md transition-colors">
-               <LogOut size={18} />
-             </button>
+          <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border-2 border-white shadow-sm">A</div>
+            <span className="text-sm font-bold text-gray-700 leading-tight">Accountant</span>
+            <button onClick={() => window.location.reload()} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={16}/></button>
           </div>
         </div>
 
-        {/* Filters & Actions Bar */}
-        <div className="p-6 bg-white border-b flex flex-col xl:flex-row gap-4 justify-between items-center">
-          <div className="flex bg-slate-100 p-1 rounded-lg w-full xl:w-auto">
-            {Object.entries(tabConfig).map(([key, config]) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex-1 xl:flex-none flex items-center gap-2 px-6 py-2.5 rounded-md font-bold transition-all ${
-                  activeTab === key ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {config.icon} {config.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
-            <div className="relative flex-grow">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Global search..."
-                className="w-full xl:w-80 pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-              />
-            </div>
-            <button onClick={simulateSave} disabled={isSaving} className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors disabled:bg-slate-300">
-              {isSaving ? <Loader className="animate-spin" size={18} /> : <Save size={18} />}
-              {isSaving ? 'Saving...' : 'Save All Changes'}
+        {/* Tab Navigation */}
+        <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+          {Object.entries(tabConfig).map(([key, config]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-all ${
+                activeTab === key ? 'bg-white text-lime-700 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {config.icon} {config.label}
             </button>
-          </div>
+          ))}
         </div>
 
-        {/* Main Table Area */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ref No</th>
+        {/* Global Controls */}
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+          <div className="relative w-full md:max-w-md">
+            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+            <input 
+              type="text" 
+              placeholder={`Search ${tabConfig[activeTab].label}...`}
+              className="w-full pl-10 pr-4 py-3 border-2 border-gray-100 rounded-xl focus:border-lime-500 outline-none transition-all"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+            />
+          </div>
+          
+          <button 
+            onClick={simulateSave} 
+            disabled={isSaving} 
+            className="bg-lime-800 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-lime-900 transition-colors disabled:bg-gray-400 shadow-md"
+          >
+            {isSaving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
+            {isSaving ? 'Saving...' : 'Save All Changes'}
+          </button>
+        </div>
+
+        {/* Data Table */}
+        <div className="overflow-x-auto rounded-2xl border-2 border-gray-100">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Ref No</th>
                 {tabConfig[activeTab].columns.map(col => (
-                  <th key={col} className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">{col}</th>
+                  <th key={col} className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">{col}</th>
                 ))}
-                <th className="px-6 py-4 text-center text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-50/30">SLA Status</th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Accounting Done</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Info Received</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date Processed</th>
+                <th className="px-6 py-4 text-center text-[10px] font-black text-blue-600 uppercase bg-blue-50/50 border-x">SLA Status</th>
+                <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase">Proc.</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase">Info Received</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase">Processed Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredData.map((entry) => {
+            <tbody className="bg-white divide-y divide-gray-100">
+              {filteredData.length === 0 ? (
+                <tr><td colSpan="10" className="p-12 text-center text-gray-400 italic">No records found.</td></tr>
+              ) : filteredData.map((entry) => {
                 const status = getAutoStatus(entry.infoReceivedDate, entry.dateProcessed);
                 return (
-                  <tr key={entry.id} className="hover:bg-blue-50/40 transition-colors group">
-                    <td className="px-6 py-4 whitespace-nowrap font-bold text-slate-900">{entry.pKey}</td>
+                  <tr key={entry.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap font-black text-gray-900 text-sm">{entry.pKey}</td>
                     {tabConfig[activeTab].keys.map(key => (
-                      <td key={key} className="px-6 py-4 text-sm text-slate-600 font-medium">
+                      <td key={key} className="px-6 py-4 text-xs font-bold text-gray-600">
                         {key.includes('Amount') 
-                          ? <span className="text-slate-900 font-bold">${parseFloat(entry[key] || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                          ? `$${parseFloat(entry[key] || 0).toLocaleString(undefined, {minimumFractionDigits:2})}` 
                           : entry[key] || '---'}
                       </td>
                     ))}
                     
-                    {/* Status Cell */}
-                    <td className="px-6 py-4">
-                      <div className={`mx-auto flex items-center justify-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-black uppercase tracking-tight ${status.color} ${status.bg} border border-current/10 w-40`}>
-                        {status.text === 'Before Deadline' && <CheckCircle2 size={14} />}
-                        {status.text === 'On deadline' && <Clock size={14} />}
-                        {status.text === 'Deadline crossed' && <AlertCircle size={14} />}
+                    {/* Visual SLA Status Column */}
+                    <td className={`px-6 py-4 text-center text-[10px] font-black uppercase ${status.color} ${status.bg} border-x`}>
+                      <div className="flex items-center justify-center gap-1.5">
+                        {status.text === 'Before Deadline' && <CheckCircle2 size={12} />}
+                        {status.text === 'On deadline' && <Clock size={12} />}
+                        {status.text === 'Deadline crossed' && <AlertCircle size={12} />}
                         {status.text}
                       </div>
                     </td>
@@ -475,7 +474,7 @@ const SLA = () => {
                         type="checkbox" 
                         checked={entry.accountingProcessed === 'T'}
                         onChange={e => handleLocalEdit(entry.id, 'accountingProcessed', e.target.checked ? 'T' : 'F')}
-                        className="w-5 h-5 rounded accent-blue-600 cursor-pointer"
+                        className="w-4 h-4 rounded accent-lime-600 cursor-pointer"
                       />
                     </td>
                     <td className="px-6 py-4">
@@ -483,7 +482,7 @@ const SLA = () => {
                         type="date" 
                         value={formatDateForInput(entry.infoReceivedDate)}
                         onChange={e => handleLocalEdit(entry.id, 'infoReceivedDate', e.target.value)}
-                        className="text-sm font-medium border border-slate-200 rounded px-2 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none"
+                        className="text-xs font-bold border rounded p-1.5 focus:ring-2 focus:ring-lime-500 outline-none bg-white shadow-sm"
                       />
                     </td>
                     <td className="px-6 py-4">
@@ -491,7 +490,7 @@ const SLA = () => {
                         type="date" 
                         value={formatDateForInput(entry.dateProcessed)}
                         onChange={e => handleLocalEdit(entry.id, 'dateProcessed', e.target.value)}
-                        className="text-sm font-medium border border-slate-200 rounded px-2 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 outline-none"
+                        className="text-xs font-bold border rounded p-1.5 focus:ring-2 focus:ring-lime-500 outline-none bg-white shadow-sm"
                       />
                     </td>
                   </tr>
@@ -501,11 +500,16 @@ const SLA = () => {
           </table>
         </div>
 
-        {/* Footer Summary */}
-        <div className="bg-slate-50 p-4 border-t border-slate-200 text-slate-500 text-xs flex justify-between">
-           <p>Showing {filteredData.length} records</p>
-           <p className="italic">All date calculations are based on UTC standard.</p>
+        {/* Summary Row */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100 flex justify-between items-center text-xs font-bold text-gray-500">
+          <div className="flex gap-4">
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500"></div> Before Deadline</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-500"></div> On Deadline</span>
+            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> Overdue</span>
+          </div>
+          <p>Total {filteredData.length} records in this view</p>
         </div>
+
       </div>
     </div>
   );
