@@ -384,8 +384,8 @@ const SLA = () => {
             <h1 className="text-3xl font-black text-blue-800 tracking-tighter">SLA Monitoring</h1>
           </div>
           <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border-2 border-white shadow-sm">A</div>
-            <span className="text-sm font-bold text-gray-700 leading-tight">Accountant</span>
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold border-2 border-white shadow-sm">R</div>
+            <span className="text-sm font-bold text-gray-700 leading-tight">Revolve</span>
             <button onClick={() => window.location.reload()} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"><LogOut size={16}/></button>
           </div>
         </div>
