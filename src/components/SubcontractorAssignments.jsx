@@ -447,7 +447,7 @@ const SubcontractorAssignments = ({
       <div className="bg-white p-6 rounded-xl shadow-2xl">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h1 className="text-2xl font-black text-blue-900 uppercase flex items-center gap-2">
-            <Layout className="text-blue-800 uppercase tracking-tighter"/> SubK Assignments
+             SubK Assignments
           </h1>
           <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full"><LogOut/></button>
         </div>

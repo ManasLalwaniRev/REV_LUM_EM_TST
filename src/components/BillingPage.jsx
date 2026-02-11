@@ -410,7 +410,7 @@ const BillingPage = ({
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
           <h1 className="text-3xl font-black text-blue-900 uppercase tracking-tighter flex items-center gap-2">
-            <FileText size={32} className="text-blue-600"/> Billing
+             Billing
           </h1>
           <div className="flex items-center gap-4">
             <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2 border">

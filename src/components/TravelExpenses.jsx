@@ -306,7 +306,7 @@ import { Pencil, Save, LogOut, Eye, EyeOff, FileText, CheckCircle } from 'lucide
 const TravelExpenses = ({ 
   dataEntries = [], contractOptions = [], handleLogout, currentUserId, onDataChanged 
 }) => {
-  const [isPreviewOn, setIsPreviewOn] = useState(false);
+  const [isPreviewOn, setIsPreviewOn] = useState(true);
 
   // Dropdown Options
   const employeeOptions = [
@@ -367,7 +367,7 @@ const TravelExpenses = ({
       {/* Header */}
       <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-3">
-          <FileText className="text-blue-600" size={24}/>
+          {/* <FileText className="text-blue-600" size={24}/> */}
           <h2 className="text-lg font-black uppercase tracking-tight text-blue-900">Travel Management System</h2>
         </div>
         <div className="flex items-center gap-2">
