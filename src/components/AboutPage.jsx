@@ -92,7 +92,7 @@ const AboutPage = ({ setCurrentPage, handleLogout }) => {
                 </div>
                 <div className="sm:text-left">
                     <p className="text-gray-500 font-medium">System</p>
-                    <p className="text-gray-800 font-semibold">Infotrend Sandbox</p>
+                    <p className="text-gray-800 font-semibold">Riva Sandbox</p>
                 </div>
             </div>
         </div>
