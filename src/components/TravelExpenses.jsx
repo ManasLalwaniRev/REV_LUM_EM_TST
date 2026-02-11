@@ -368,7 +368,7 @@ const TravelExpenses = ({
       <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-3">
           {/* <FileText className="text-blue-600" size={24}/> */}
-          <h2 className="text-lg font-black  tracking-tight text-blue-900">Travel Management System</h2>
+          <h1 className="text-lg font-black  tracking-tight text-blue-900">Travel Management System</h1>
         </div>
         <div className="flex items-center gap-2">
           <button 
