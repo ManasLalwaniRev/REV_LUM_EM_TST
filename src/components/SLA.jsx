@@ -421,7 +421,7 @@ const SLA = () => {
           <button 
             onClick={simulateSave} 
             disabled={isSaving} 
-            className="bg-lime-800 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-lime-900 transition-colors disabled:bg-gray-400 shadow-md"
+            className="bg-yellow-600 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-lime-900 transition-colors disabled:bg-gray-400 shadow-md"
           >
             {isSaving ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
             {isSaving ? 'Saving...' : 'Save All Changes'}
