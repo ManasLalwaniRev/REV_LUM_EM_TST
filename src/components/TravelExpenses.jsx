@@ -446,7 +446,7 @@ const TravelExpenses = ({
         {isPreviewOn && (
           <div className="w-full lg:w-2/3 bg-white rounded-xl shadow-inner overflow-y-auto p-8 border border-slate-200">
             <div className="max-w-5xl mx-auto border-[1px] border-black p-8 text-blue-900 bg-white">
-              <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
+              <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Riva Inc Travel Expense Statement</h1>
               
               {/* Header Details */}
               <div className="grid grid-cols-4 gap-4 text-[11px] mb-4">
