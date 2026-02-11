@@ -551,7 +551,7 @@ const Vendor_Expenses = ({
       <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-extrabold text-blue-800 uppercase tracking-tighter">Vendor Expenses</h1>
+          <h1 className="text-3xl font-extrabold text-blue-800  tracking-tighter">Vendor Expenses</h1>
           <div className="flex items-center gap-4">
             <div className="bg-gray-100 p-2 rounded-lg flex items-center gap-2">
               <img src={userAvatar || "/default-avatar.png"} alt="Avatar" className="w-8 h-8 rounded-full" />

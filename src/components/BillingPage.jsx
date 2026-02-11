@@ -409,7 +409,7 @@ const BillingPage = ({
       <div className="bg-white p-6 rounded-xl shadow-2xl w-full">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-3xl font-black text-blue-900 uppercase tracking-tighter flex items-center gap-2">
+          <h1 className="text-3xl font-black text-blue-900  tracking-tighter flex items-center gap-2">
              Billing
           </h1>
           <div className="flex items-center gap-4">

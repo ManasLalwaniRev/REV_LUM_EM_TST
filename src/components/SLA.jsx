@@ -148,7 +148,7 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
             {/* <div className="p-3 bg-lime-100 rounded-xl text-lime-700">
               
               </div> */}
-            <h1 className="text-3xl font-black text-blue-800 uppercase tracking-tighter">SLA Monitoring</h1>
+            <h1 className="text-3xl font-black text-blue-800  tracking-tighter">SLA Monitoring</h1>
           </div>
           <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
             <img src={userAvatar} className="w-10 h-10 rounded-full border-2 border-white" alt="avatar" />

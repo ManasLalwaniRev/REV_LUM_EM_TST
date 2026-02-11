@@ -368,7 +368,7 @@ const TravelExpenses = ({
       <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-3">
           {/* <FileText className="text-blue-600" size={24}/> */}
-          <h2 className="text-lg font-black uppercase tracking-tight text-blue-900">Travel Management System</h2>
+          <h2 className="text-lg font-black  tracking-tight text-blue-900">Travel Management System</h2>
         </div>
         <div className="flex items-center gap-2">
           <button 
@@ -436,7 +436,7 @@ const TravelExpenses = ({
                 </div>
              </section>
 
-             <button type="submit" className="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-3 rounded-lg shadow-md flex items-center justify-center gap-2 uppercase tracking-tighter">
+             <button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-800 text-white font-black py-3 rounded-lg shadow-md flex items-center justify-center gap-2 uppercase tracking-tighter">
                <Save size={18}/> Save
              </button>
           </form>

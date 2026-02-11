@@ -446,14 +446,14 @@ const SubcontractorAssignments = ({
     <div className="min-h-screen bg-gray-900 p-6">
       <div className="bg-white p-6 rounded-xl shadow-2xl">
         <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <h1 className="text-2xl font-black text-blue-900 uppercase flex items-center gap-2">
+          <h1 className="text-2xl font-black text-blue-900  flex items-center gap-2">
              SubK Assignments
           </h1>
           <button onClick={handleLogout} className="p-2 bg-red-100 text-red-600 rounded-full"><LogOut/></button>
         </div>
 
         {/* Form and Table logic filtered for Category === 'Subk' */}
-        <button onClick={() => setIsAdding(true)} className="bg-blue-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold mb-6">
+        <button onClick={() => setIsAdding(true)} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold mb-6">
           <Plus size={20}/> ADD ASSIGNMENT
         </button>
 

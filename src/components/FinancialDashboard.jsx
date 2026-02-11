@@ -154,7 +154,7 @@ const FinancialDashboard = ({ userName = 'User', userAvatar, handleLogout }) => 
         
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h1 className="text-3xl font-extrabold text-blue-800 uppercase tracking-tighter">Financial Dashboard</h1>
+          <h1 className="text-3xl font-extrabold text-blue-800  tracking-tighter">Financial Dashboard</h1>
           <div className="flex items-center gap-4">
             <img src="/Lumina_logo.png" alt="Logo" className="h-10 pr-4" />
             <div className="flex items-center gap-3 bg-white p-2 rounded-lg shadow-sm">
