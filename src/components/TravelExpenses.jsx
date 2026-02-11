@@ -373,7 +373,7 @@ const TravelExpenses = ({
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setIsPreviewOn(!isPreviewOn)} 
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isPreviewOn ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isPreviewOn ? 'bg-yellow-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
           >
             {isPreviewOn ? <EyeOff size={14}/> : <Eye size={14}/>} {isPreviewOn ? 'PREVIEW ON' : 'PREVIEW OFF'}
           </button>
