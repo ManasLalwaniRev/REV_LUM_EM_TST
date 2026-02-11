@@ -375,7 +375,7 @@ const TravelExpenses = ({
       {/* Top Header */}
       <div className="flex justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-3">
-          <Pencil className="text-blue-600" size={20}/>
+          <Pencil className="text-2xl font-black text-blue-900 uppercase flex items-center gap-2" size={20}/>
           <h2 className="text-lg text-blue-800 uppercase tracking-tighter">Travel Expense Management</h2>
         </div>
         <div className="flex items-center gap-2">
