@@ -145,9 +145,9 @@ const SLA = ({ dataEntries = [], isLoading, error, fetchEntries, userId, userNam
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-lime-100 rounded-xl text-lime-700">
+            {/* <div className="p-3 bg-lime-100 rounded-xl text-lime-700">
               
-              </div>
+              </div> */}
             <h1 className="text-3xl font-black text-blue-800 uppercase tracking-tighter">SLA Monitoring</h1>
           </div>
           <div className="flex items-center gap-3 bg-gray-50 p-2 pr-4 rounded-full border">
