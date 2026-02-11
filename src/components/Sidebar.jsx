@@ -283,7 +283,7 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
     { page: 'view', label: 'Vendor Expenses', icon: <FileText className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'credit-card-expenses', label: 'Credit Card Expenses', icon: <CreditCard className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     // Combined Page
-    { page: 'subk-travel', label: 'SubK & Travel', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
+    // { page: 'subk-travel', label: 'SubK & Travel', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'bill', label: 'Billing', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     // Moved SLA Above Financial Dashboard
     { page: 'accountant', label: 'SLA', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin', 'accountant'] },
