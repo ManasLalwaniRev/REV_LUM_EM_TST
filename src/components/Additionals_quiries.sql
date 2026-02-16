@@ -114,3 +114,64 @@
 
 
 -- ALTER TABLE email_records ADD COLUMN cc_recipients TEXT;
+
+
+-- CREATE TABLE IF NOT EXISTS misc_expenses (
+--     id SERIAL PRIMARY KEY,
+--     prime_key VARCHAR(50) UNIQUE NOT NULL,
+--     employee_name VARCHAR(100),
+--     office_location VARCHAR(150),
+--     expense_items JSONB,  -- This stores the array of rows (Date, Desc, Vendor, etc.)
+--     total_amount NUMERIC(10, 2),
+--     status VARCHAR(50) DEFAULT 'Submitted',
+--     submitter_id INTEGER, -- Links to users table if needed
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
+
+-- CREATE TABLE IF NOT EXISTS business_meal_expenses (
+--     id SERIAL PRIMARY KEY,
+--     prime_key VARCHAR(50) UNIQUE NOT NULL,
+--     employee_name VARCHAR(100),
+--     expense_items JSONB,  -- Stores rows: Date, Purpose, Location, Attendees, Total, Unallowable
+--     total_expense NUMERIC(10, 2),
+--     total_unallowable NUMERIC(10, 2),
+--     total_allowable NUMERIC(10, 2),
+--     status VARCHAR(50) DEFAULT 'Submitted',
+--     submitter_id INTEGER,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
+
+
+-- CREATE TABLE IF NOT EXISTS subcontractor_actions (
+--     id SERIAL PRIMARY KEY,
+--     prime_key VARCHAR(50) UNIQUE NOT NULL,
+--     program_manager VARCHAR(100),
+--     project_name VARCHAR(100),
+--     company_name VARCHAR(150),
+--     company_address TEXT,
+--     company_poc VARCHAR(100),
+--     poc_phone VARCHAR(50),
+--     poc_email VARCHAR(100),
+--     agreement_type VARCHAR(50), -- FFP, LH, T&M
+--     pop_start DATE,
+--     pop_end DATE,
+--     has_option_periods BOOLEAN,
+--     option_periods_through DATE,
+--     funding_auth_amount NUMERIC(15, 2),
+--     labor_breakout JSONB, -- Stores the array of rows
+--     total_labor NUMERIC(15, 2),
+--     total_travel NUMERIC(15, 2),
+--     total_odc NUMERIC(15, 2),
+--     grand_total NUMERIC(15, 2),
+--     status VARCHAR(50) DEFAULT 'Submitted',
+--     submitter_id INTEGER,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );
+
+
+-- -- Add columns to support Modification requests
+-- ALTER TABLE subcontractor_actions 
+-- ADD COLUMN IF NOT EXISTS request_type VARCHAR(50) DEFAULT 'New', -- 'New' or 'Modification'
+-- ADD COLUMN IF NOT EXISTS subcontract_number VARCHAR(100),        -- For Mods
+-- ADD COLUMN IF NOT EXISTS mod_description TEXT,                   -- "What are you requesting to change?"
+-- ADD COLUMN IF NOT EXISTS scope_changes TEXT;                     -- "Changes to Scope of Work"

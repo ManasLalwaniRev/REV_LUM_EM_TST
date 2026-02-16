@@ -633,14 +633,14 @@ const Vendor_Expenses = ({
 
         {/* Action Buttons Restored */}
         <div className="flex gap-3 mb-6">
-            {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> ADD</button>}
-            <button onClick={() => alert("Batch Notify triggered")} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Send size={20}/> NOTIFY SELECTION</button>
-            <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 font-bold transition"><Pencil size={20}/> EDIT</button>
+            {!isAdding && !editingEntry && <button onClick={() => { resetForm(); setIsAdding(true); }} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Plus size={20}/> Add</button>}
+            <button onClick={() => alert("Batch Notify triggered")} className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 font-bold shadow-md hover:bg-yellow-600 transition"><Send size={20}/> Notify Selection </button>
+            <button disabled={selectedRows.size !== 1} onClick={startEdit} className="bg-gray-600 text-white px-5 py-2.5 rounded-lg flex items-center gap-2 disabled:opacity-50 font-bold transition"><Pencil size={20}/> Edit</button>
         </div>
 
         <div className="overflow-x-auto border rounded-lg">
           <table className="min-w-full divide-y text-sm">
-            <thead className="bg-gray-50 uppercase font-bold text-gray-600">
+            <thead className="bg-gray-50  font-bold text-gray-600">
               <tr>
                 <th className="p-4 w-12 text-center"></th>
                 <th className="px-6 py-3 text-left">Record No</th>

@@ -381,15 +381,62 @@ async function getAuthenticatedClient() {
 }
 
 // --- 3. PostgreSQL Connection Pool ---
-const dbConfig = {
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-};
+// const isProduction = process.env.NODE_ENV === 'production';
 
+// // const dbConfig = {
+// //   connectionString: process.env.DATABASE_URL,
+// //   ssl: { rejectUnauthorized: false }
+// // };
+
+// const dbConfig = {
+//   connectionString: process.env.DATABASE_URL,
+//   // Only use SSL in production, otherwise disable it (false)
+//   ssl: isProduction ? { rejectUnauthorized: false } : false
+// };
+
+// --- 3. PostgreSQL Connection Pool ---
+const isProduction = process.env.NODE_ENV === 'production';
+
+// CONFIGURATION TIP:
+// Cloud databases (Azure, AWS, Neon, Supabase) REQUIRE SSL.
+// Local databases (localhost) usually DO NOT support SSL.
+// We default to TRUE (using SSL) because ECONNRESET usually means SSL is missing.
+const useSSL = true; 
+
+let dbConfig;
+
+if (process.env.DATABASE_URL) {
+  // Scenario A: Connection String
+  dbConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: useSSL ? { rejectUnauthorized: false } : false
+  };
+} else {
+  // Scenario B: Individual Variables
+  dbConfig = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    database: process.env.DB_NAME,
+    ssl: useSSL ? { rejectUnauthorized: false } : false
+  };
+}
+
+console.log("--- DEBUG CREDENTIALS ---");
+console.log("Using DATABASE_URL?", !!process.env.DATABASE_URL);
+console.log("DB_USER:", process.env.DB_USER);
+console.log("DB_PASSWORD Length:", process.env.DB_PASSWORD ? process.env.DB_PASSWORD.length : "Undefined");
+console.log("-------------------------");
 const pool = new Pool(dbConfig);
+
 pool.connect((err) => {
-  if (err) console.error('Database connection error:', err.stack);
-  else console.log('Successfully connected to PostgreSQL database!');
+  if (err) {
+    console.error('Database connection error:', err.message);
+    // If you see "The server does not support SSL connections", change useSSL to false above.
+  } else {
+    console.log('Successfully connected to PostgreSQL database!');
+  }
 });
 
 // --- 4. Helper Function: Versioning ---
@@ -756,4 +803,154 @@ app.patch('/api/billing/:id', async (req, res) => {
     await handleBillingNotify(data, nextKey);
     res.status(201).json(result.rows[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- 11. Miscellaneous Expenses ---
+
+// GET: Fetch all misc reports
+app.get('/api/misc-expenses', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT me.*, u.username as submitter_name 
+      FROM misc_expenses me 
+      LEFT JOIN users u ON me.submitter_id = u.id 
+      ORDER BY me.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) { 
+    res.status(500).json({ error: err.message }); 
+  }
+});
+
+// POST: Create new misc report
+app.post('/api/misc-expenses/new', async (req, res) => {
+  const { employeeName, officeLocation, items, userId } = req.body;
+
+  // 1. Calculate Total Amount server-side for accuracy
+  const totalAmount = items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+
+  try {
+    // 2. Generate Key (e.g., 1, 2, 3...)
+    const nextKey = await getNextVersionedKey('misc_expenses');
+
+    // 3. Insert Data (Store items array as JSON)
+    const result = await pool.query(
+      `INSERT INTO misc_expenses (
+        prime_key, employee_name, office_location, expense_items, total_amount, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        nextKey, 
+        employeeName, 
+        officeLocation, 
+        JSON.stringify(items), // Convert JS Array -> JSON String
+        totalAmount, 
+        userId
+      ]
+    );
+
+    // 4. (Optional) Email Notification
+    // await sendNotificationEmail('Manas.Lalwani@revolvespl.com', `New Misc Report: ${nextKey}`, `Total: $${totalAmount}`);
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Misc Save Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+// --- 12. Business Meal Expenses ---
+
+// GET: Fetch all meal reports
+app.get('/api/business-meals', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT bme.*, u.username as submitter_name 
+      FROM business_meal_expenses bme 
+      LEFT JOIN users u ON bme.submitter_id = u.id 
+      ORDER BY bme.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) { 
+    res.status(500).json({ error: err.message }); 
+  }
+});
+
+// POST: Create new meal report
+app.post('/api/business-meals/new', async (req, res) => {
+  const { employeeName, items, userId } = req.body;
+
+  // 1. Calculate Totals
+  const totalExpense = items.reduce((sum, item) => sum + (parseFloat(item.totalExpense) || 0), 0);
+  const totalUnallowable = items.reduce((sum, item) => sum + (parseFloat(item.unallowable) || 0), 0);
+  const totalAllowable = totalExpense - totalUnallowable;
+
+  try {
+    const nextKey = await getNextVersionedKey('business_meal_expenses');
+
+    const result = await pool.query(
+      `INSERT INTO business_meal_expenses (
+        prime_key, employee_name, expense_items, 
+        total_expense, total_unallowable, total_allowable, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        nextKey, 
+        employeeName, 
+        JSON.stringify(items), 
+        totalExpense, 
+        totalUnallowable, 
+        totalAllowable, 
+        userId
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Meals Save Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST: Create Subcontractor Action (New OR Modification)
+app.post('/api/subcontractor-actions/new', async (req, res) => {
+  const { 
+    requestType, // 'New' or 'Modification'
+    programManager, projectName, 
+    // New Subk Fields
+    companyName, companyAddress, companyPoc, pocPhone, pocEmail, 
+    agreementType, popStart, popEnd, hasOptionPeriods, optionPeriodsThrough, 
+    fundingAuthAmount, 
+    // Mod Fields
+    subcontractNumber, modDescription, scopeChanges,
+    // Shared
+    laborItems, totalLabor, totalTravel, totalOdc, userId 
+  } = req.body;
+
+  // Calculate Grand Total
+  const grandTotal = (parseFloat(totalLabor) || 0) + (parseFloat(totalTravel) || 0) + (parseFloat(totalOdc) || 0);
+
+  try {
+    const nextKey = await getNextVersionedKey('subcontractor_actions');
+
+    const result = await pool.query(
+      `INSERT INTO subcontractor_actions (
+        prime_key, request_type, program_manager, project_name, 
+        company_name, company_address, company_poc, poc_phone, poc_email, 
+        agreement_type, pop_start, pop_end, has_option_periods, option_periods_through, 
+        funding_auth_amount, subcontract_number, mod_description, scope_changes,
+        labor_breakout, total_labor, total_travel, total_odc, grand_total, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) 
+      RETURNING *`,
+      [
+        nextKey, requestType || 'New', programManager, projectName,
+        companyName, companyAddress, companyPoc, pocPhone, pocEmail,
+        agreementType, popStart || null, popEnd || null, hasOptionPeriods === 'Yes', optionPeriodsThrough || null,
+        fundingAuthAmount || 0, subcontractNumber, modDescription, scopeChanges,
+        JSON.stringify(laborItems), totalLabor || 0, totalTravel || 0, totalOdc || 0, grandTotal, userId
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Subk Action Save Error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
