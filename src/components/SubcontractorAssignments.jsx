@@ -566,7 +566,7 @@ const SubcontractorAssignments = ({
               <form onSubmit={handleSaveAction} className="space-y-4">
                   <div className="flex items-center gap-2 mb-2 pb-2 border-b">
                       {activeTab === 'new' ? <UserCheck className="text-blue-600" size={18} /> : <Edit className="text-blue-600" size={18} />}
-                      <h2 className="font-black text-slate-700 uppercase tracking-wide text-sm">{activeTab === 'new' ? 'New Subcontract' : 'Modification'} Request</h2>
+                      <h2 className="font-black text-slate-700  tracking-wide text-sm">{activeTab === 'new' ? 'New Subcontract' : 'Modification'} Request</h2>
                   </div>
                   
                   <input id="programManager" placeholder="Program Manager" className="w-full p-2 border rounded text-sm bg-slate-50" value={actionForm.programManager} onChange={handleActionChange}/>
@@ -605,7 +605,7 @@ const SubcontractorAssignments = ({
                   {/* LABOR BREAKOUT (SHARED) */}
                   <div className="pt-4 border-t space-y-3">
                       <div className="flex justify-between items-center">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Labor Breakout</label>
+                          <label className="text-[10px] font-black text-slate-400  tracking-widest">Labor Breakout</label>
                           <button type="button" onClick={addLaborRow} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded font-bold flex gap-1"><Plus size={12}/> Add</button>
                       </div>
                       {actionForm.laborItems.map((item, idx) => (
@@ -630,7 +630,7 @@ const SubcontractorAssignments = ({
                       <input id="totalOdc" type="number" placeholder="ODC Cost" className="p-2 border rounded text-sm" value={actionForm.totalOdc} onChange={handleActionChange}/>
                   </div>
 
-                  <button disabled={isSaving} className={`w-full text-white font-black py-3 rounded-lg shadow uppercase tracking-tighter text-sm mt-4 ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'}`}>
+                  <button disabled={isSaving} className={`w-full text-white font-black py-3 rounded-lg shadow tracking-tighter text-sm mt-4 ${isSaving ? 'bg-slate-400' : 'bg-green-600 hover:bg-green-700'}`}>
                       {isSaving ? 'Saving...' : `Save ${activeTab === 'new' ? 'New Request' : 'Modification'}`}
                   </button>
               </form>

@@ -1216,15 +1216,15 @@ const ExpenseManagementSystem = ({
       {/* --- HEADER --- */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
         <div className="flex items-center gap-4 w-full md:w-auto">
-           <h1 className="text-lg font-black tracking-tight text-blue-900 hidden md:block uppercase">Expense System</h1>
+           <h1 className="text-lg font-black tracking-tight text-blue-900 hidden md:block ">Expense System</h1>
            <div className="flex bg-slate-100 p-1 rounded-lg w-full md:w-auto justify-center md:justify-start">
-              <button onClick={() => setActiveTab('travel')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'travel' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><Briefcase size={14}/> Travel</button>
-              <button onClick={() => setActiveTab('misc')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'misc' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><FileText size={14}/> Misc</button>
-              <button onClick={() => setActiveTab('meals')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'meals' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><Utensils size={14}/> Meals</button>
+              <button onClick={() => setActiveTab('travel')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs font-black tracking-wider transition-all ${activeTab === 'travel' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><Briefcase size={14}/> Travel</button>
+              <button onClick={() => setActiveTab('misc')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs font-black tracking-wider transition-all ${activeTab === 'misc' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><FileText size={14}/> Misc</button>
+              <button onClick={() => setActiveTab('meals')} className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-md text-xs font-black tracking-wider transition-all ${activeTab === 'meals' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><Utensils size={14}/> Meals</button>
            </div>
         </div>
         <div className="flex items-center gap-2 mt-3 md:mt-0 w-full md:w-auto justify-end">
-          <button onClick={() => setIsPreviewOn(!isPreviewOn)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isPreviewOn ? 'bg-yellow-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>{isPreviewOn ? <EyeOff size={14}/> : <Eye size={14}/>} {isPreviewOn ? 'HIDE PREVIEW' : 'SHOW PREVIEW'}</button>
+          <button onClick={() => setIsPreviewOn(!isPreviewOn)} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${isPreviewOn ? 'bg-yellow-600 text-white' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}>{isPreviewOn ? <EyeOff size={14}/> : <Eye size={14}/>} {isPreviewOn ? 'Hide Preview' : 'Show Preview'}</button>
           <button onClick={handleLogout} className="p-2 bg-red-50 text-red-600 rounded-full hover:bg-red-100"><LogOut size={20}/></button>
         </div>
       </div>
@@ -1300,7 +1300,7 @@ const ExpenseManagementSystem = ({
                  <section className="space-y-3 pt-4 border-t border-slate-100">
                     <div className="flex justify-between items-center">
                        <label className="text-[15px] font-black text-slate-400  tracking-widest">Itemized Expenses</label>
-                       <button type="button" onClick={addMiscRow} className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full hover:bg-blue-100 font-bold flex gap-1 items-center"><Plus size={12}/> ADD ITEM</button>
+                       <button type="button" onClick={addMiscRow} className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full hover:bg-blue-100 font-bold flex gap-1 items-center"><Plus size={12}/> Add Item</button>
                     </div>
                     <div className="space-y-3">
                       {miscForm.items.map((item, index) => (
@@ -1325,7 +1325,7 @@ const ExpenseManagementSystem = ({
             {/* 3. BUSINESS MEALS FORM */}
             {activeTab === 'meals' && (
               <>
-                 <div className="flex items-center gap-2 mb-4 pb-2 border-b"><Utensils className="text-blue-600" size={18} /><h2 className="font-black text-slate-700 uppercase tracking-wide text-sm">Business Meals Details</h2></div>
+                 <div className="flex items-center gap-2 mb-4 pb-2 border-b"><Utensils className="text-blue-600" size={18} /><h2 className="font-black text-slate-700  tracking-wide text-sm">Business Meals Details</h2></div>
                  <section className="space-y-3">
                   <label className="text-[15px] font-black text-slate-400  tracking-widest">Employee Information</label>
                   <select id="employeeName" className="w-full p-2 border rounded-lg text-sm bg-slate-50" value={mealsForm.employeeName} onChange={handleMealsEmployeeChange}>
@@ -1366,7 +1366,7 @@ const ExpenseManagementSystem = ({
               </>
             )}
 
-            <button type="submit" disabled={isSaving} className={`w-full text-white font-black py-4 rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2 uppercase tracking-tighter text-sm mt-6 ${isSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-600'}`}>
+            <button type="submit" disabled={isSaving} className={`w-full text-white font-black py-4 rounded-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2  tracking-tighter text-sm mt-6 ${isSaving ? 'bg-slate-400 cursor-not-allowed' : 'bg-yellow-500 hover:bg-yellow-600'}`}>
               {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18}/>} 
               {isSaving ? 'Saving...' : `Save Report`}
             </button>
