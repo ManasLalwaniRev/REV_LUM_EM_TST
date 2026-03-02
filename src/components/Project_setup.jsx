@@ -204,7 +204,7 @@ const ProjectSetupForm = ({
     
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Project Setup Prerequisite List saved as Draft! (Demo Mode)");
+    alert("Project Setup Form saved as Draft! ");
   };
 
   return (
@@ -217,7 +217,7 @@ const ProjectSetupForm = ({
           <div className="w-1/3">
             <h1 className="text-3xl font-extrabold">
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-800 to-blue-600 leading-tight">
-                Project Setup List
+                Project Setup Form
               </span>
             </h1>
           </div>
@@ -440,7 +440,7 @@ const ProjectSetupForm = ({
                 className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-extrabold rounded-lg shadow-md transform transition-all active:scale-95 text-sm"
               >
                 <Save size={18} />
-                Submit Prerequisite List
+                Submit Project Setup Form
               </button>
           </div>
         </form>
