@@ -257,6 +257,7 @@ import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
 import BillingPage from '@/components/BillingPage.jsx';
 import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
 import TravelExpenses from '@/components/TravelExpenses.jsx';
+import ProjectSetupForm from '@/components/ProjectSetupForm.jsx';
 // You can remove Subk_Travel_Combined if you are no longer using the shared view
 
 
@@ -468,6 +469,17 @@ const App = () => {
       );
 
       case 'bill': return <BillingPage {...commonProps} />;  
+      case 'project-setup': 
+  return (
+    <ProjectSetupForm 
+      {...commonProps} 
+      onDataChanged={() => {
+        fetchEntries();
+        fetchOptions(); // Refreshing options since project setup likely adds new contracts
+      }} 
+    />
+  );
+  
       case 'dashboard': return <FinancialDashboard {...commonProps} />;
       case 'accountant': return <SLA {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} />;
       case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
