@@ -345,6 +345,7 @@ const App = () => {
           'view': 'vendor-expenses',
           'credit-card-expenses': 'credit-card-expenses',
           'bill': 'billing',
+          'project-setup': 'projects',
         };
 
         const currentEndpoint = endpointMap[currentPage] || 'vendor-expenses';
@@ -479,7 +480,7 @@ const App = () => {
       }} 
     />
   );
-  
+
       case 'dashboard': return <FinancialDashboard {...commonProps} />;
       case 'accountant': return <SLA {...commonProps} fetchEntries={fetchEntries} userId={currentUserId} />;
       case 'user-profile': return <SettingsAndProfilePage {...commonProps} setCurrentPage={setCurrentPage} onAvatarChange={setCurrentUserAvatar} />;
