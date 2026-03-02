@@ -248,6 +248,7 @@ import {
   Info,
   Book,
   LayoutDashboard,
+  FolderPlus,
   ShieldCheck,
   Layout // Icon for SLA
 } from "lucide-react";
@@ -286,6 +287,14 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
     // { page: 'subk-travel', label: 'SubK & Travel', icon: <Plane className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'bill', label: 'Billing', icon: <Book className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     // Moved SLA Above Financial Dashboard
+    
+    { 
+  page: 'project-setup', 
+  label: 'Project Setup', 
+  icon: <FolderPlus className="h-5 w-5" />, 
+  roles: ['admin', 'accountant'] // Adjust roles as needed (e.g., add 'user' if they should see it)
+},
+    
     { 
     page: 'subcontractor-assignments', 
     label: 'SubK Assignments', 
