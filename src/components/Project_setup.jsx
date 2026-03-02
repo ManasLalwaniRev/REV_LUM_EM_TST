@@ -224,11 +224,11 @@ const ProjectSetupForm = ({
 
           {/* Center: Logo */}
           <div className="w-1/3 flex justify-center">
-            <img 
+            {/* <img 
               src="/Lumina_logo.png" 
               alt="Lumina Logo" 
               className="h-12 opacity-100"
-            />
+            /> */}
           </div>
 
           {/* Right: User Profile & Logout */}
