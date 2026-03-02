@@ -257,7 +257,7 @@ import CreditCardExpenses from '@/components/CreditCardExpenses.jsx';
 import BillingPage from '@/components/BillingPage.jsx';
 import SubcontractorAssignments from '@/components/SubcontractorAssignments.jsx';
 import TravelExpenses from '@/components/TravelExpenses.jsx';
-import ProjectSetupForm from '@/components/ProjectSetupForm.jsx';
+import ProjectSetupForm from '@/components/Project_setup.jsx';
 // You can remove Subk_Travel_Combined if you are no longer using the shared view
 
 
