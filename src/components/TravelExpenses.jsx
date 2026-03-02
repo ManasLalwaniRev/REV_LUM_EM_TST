@@ -1381,7 +1381,7 @@ const ExpenseManagementSystem = ({
             {activeTab === 'travel' && (
               <div className="max-w-5xl mx-auto border-[1px] border-black p-8 text-blue-900 bg-white shadow-2xl">
                  {/* ... (Kept existing Travel Preview) ... */}
-                 <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Riva Inc Travel Expense Statement</h1>
+                 <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
                  {/* (Rest of Travel Preview Code from previous step) */}
                  <div className="grid grid-cols-4 gap-4 text-[11px] mb-4">
                   <div className="col-span-2 border-b border-black pb-1 flex gap-2"><strong>Employee:</strong> <span className="text-black uppercase">{travelForm.employeeName}</span></div>
