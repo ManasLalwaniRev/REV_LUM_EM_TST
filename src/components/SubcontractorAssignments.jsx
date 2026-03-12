@@ -596,7 +596,7 @@ const SubcontractorAssignments = ({
                       </div>
                   ) : (
                       <div className="space-y-3 pt-2 border-t">
-                          <input id="subcontractNumber" placeholder="Infotrend Subcontract #" className="w-full p-2 border rounded text-sm font-bold text-blue-900" value={actionForm.subcontractNumber} onChange={handleActionChange}/>
+                          <input id="subcontractNumber" placeholder="ABC Subcontract #" className="w-full p-2 border rounded text-sm font-bold text-blue-900" value={actionForm.subcontractNumber} onChange={handleActionChange}/>
                           <textarea id="modDescription" placeholder="What are you requesting to change?" className="w-full p-2 border rounded text-sm h-20" value={actionForm.modDescription} onChange={handleActionChange}/>
                           <textarea id="scopeChanges" placeholder="Changes to Scope of Work (if applicable)" className="w-full p-2 border rounded text-sm h-20" value={actionForm.scopeChanges} onChange={handleActionChange}/>
                       </div>
@@ -663,7 +663,7 @@ const SubcontractorAssignments = ({
                         
                         {activeTab === 'mod' && (
                             <div className="grid grid-cols-[200px_1fr] border-b border-black pb-1 mb-2">
-                                <span className="font-bold">Infotrend Subcontract # issued:</span>
+                                <span className="font-bold">ABC Subcontract # issued:</span>
                                 <span>{actionForm.subcontractNumber}</span>
                             </div>
                         )}
@@ -758,7 +758,7 @@ const SubcontractorAssignments = ({
                                 <li>Documentation of Rate Agreement</li>
                                 <li>Labor Categories</li>
                             </ul>
-                            <div className="mt-4 italic">Process Note: Email this form to jvarnese@infotrend.com</div>
+                            <div className="mt-4 italic">Process Note: Email this form to jvarnese@ABC.com</div>
                         </div>
                    </div>
                </div>

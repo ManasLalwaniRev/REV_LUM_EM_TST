@@ -1440,10 +1440,10 @@ const AddDataModal = ({ onClose, userId, username, contractOptions = [], creditC
 
   // 2. Local variables for dropdowns
   const pmEmailOptions = [
-    'pm.manager1@infotrend.com',
-    'pm.manager2@infotrend.com',
-    'admin.finance@infotrend.com',
-    'operations.lead@infotrend.com'
+    'pm.manager1@ABC.com',
+    'pm.manager2@ABC.com',
+    'admin.finance@ABC.com',
+    'operations.lead@ABC.com'
   ];
 
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
