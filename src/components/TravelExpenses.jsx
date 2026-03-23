@@ -143,7 +143,7 @@
 //           <div className="max-w-5xl mx-auto border-[1px] border-slate-400 p-8 shadow-sm text-blue-900 bg-white">
             
 //             <div className="text-center mb-6">
-//               <h1 className="text-2xl font-black uppercase tracking-tight">ABC Inc Travel Expense Statement</h1>
+//               <h1 className="text-2xl font-black uppercase tracking-tight">Infotrend Inc Travel Expense Statement</h1>
 //             </div>
 
 //             {/* Header */}
@@ -988,7 +988,7 @@
 //             {activeTab === 'misc' && (
 //                <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
 //                   <div className="mb-8">
-//                      <h1 className="text-3xl font-serif font-bold text-black tracking-wide">ABC Inc</h1>
+//                      <h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1>
 //                   </div>
 //                   <div className="text-center mb-10">
 //                      <h2 className="text-xl font-bold uppercase underline tracking-wider">Miscellaneous Expense Report</h2>
@@ -1054,7 +1054,7 @@
 //                      </div>
 //                   </div>
 //                   <div className="absolute bottom-8 left-0 right-0 text-center text-xs text-slate-400">
-//                      ABC Inc Internal Document
+//                      Infotrend Inc Internal Document
 //                   </div>
 //                </div>
 //             )}
@@ -1381,7 +1381,7 @@ const ExpenseManagementSystem = ({
             {activeTab === 'travel' && (
               <div className="max-w-5xl mx-auto border-[1px] border-black p-8 text-blue-900 bg-white shadow-2xl">
                  {/* ... (Kept existing Travel Preview) ... */}
-                 <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">ABC Inc Travel Expense Statement</h1>
+                 <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
                  {/* (Rest of Travel Preview Code from previous step) */}
                  <div className="grid grid-cols-4 gap-4 text-[11px] mb-4">
                   <div className="col-span-2 border-b border-black pb-1 flex gap-2"><strong>Employee:</strong> <span className="text-black uppercase">{travelForm.employeeName}</span></div>
@@ -1443,7 +1443,7 @@ const ExpenseManagementSystem = ({
             {/* MISC PREVIEW */}
             {activeTab === 'misc' && (
                <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
-                  <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">ABC Inc</h1></div>
+                  <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1></div>
                   <div className="text-center mb-10"><h2 className="text-xl font-bold uppercase underline tracking-wider">Miscellaneous Expense Report</h2></div>
                   <div className="grid grid-cols-1 gap-4 mb-8 text-sm max-w-lg">
                      <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Employee Name:</span><span className="border-b border-black uppercase px-2">{miscForm.employeeName}</span></div>
@@ -1487,14 +1487,14 @@ const ExpenseManagementSystem = ({
                      <div className="border-t border-black pt-2"><div className="font-bold">Employee Signature</div></div>
                      <div className="border-t border-black pt-2"><div className="font-bold">Supervisor Signature</div></div>
                   </div>
-                  <div className="absolute bottom-8 left-0 right-0 text-center text-xs text-slate-400">ABC Inc Internal Document</div>
+                  <div className="absolute bottom-8 left-0 right-0 text-center text-xs text-slate-400">Infotrend Inc Internal Document</div>
                </div>
             )}
 
             {/* MEALS PREVIEW */}
             {activeTab === 'meals' && (
               <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
-                  <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">ABC Inc</h1></div>
+                  <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1></div>
                   <div className="text-center mb-10"><h2 className="text-xl font-bold uppercase underline tracking-wider">Business Meal Expense Report</h2></div>
                   
                   <div className="grid grid-cols-[140px_1fr] items-end mb-8 text-sm w-1/2">
@@ -1577,7 +1577,7 @@ const ExpenseManagementSystem = ({
                      <span className="text-2xl font-black underline">${mealsTotalAllowable.toFixed(2)}</span>
                   </div>
 
-                  <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-400">ABC Inc Internal Document</div>
+                  <div className="absolute bottom-4 left-0 right-0 text-center text-xs text-slate-400">Infotrend Inc Internal Document</div>
               </div>
             )}
           </div>

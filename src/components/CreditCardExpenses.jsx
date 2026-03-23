@@ -55,10 +55,10 @@
 //   });
 
 //   const pmEmailOptions = [
-//     'pm.manager1@ABC.com',
-//     'pm.manager2@ABC.com',
-//     'admin.finance@ABC.com',
-//     'operations.lead@ABC.com'
+//     'pm.manager1@Infotrend.com',
+//     'pm.manager2@Infotrend.com',
+//     'admin.finance@Infotrend.com',
+//     'operations.lead@Infotrend.com'
 //   ];
 
 //   const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/credit-card-expenses`;

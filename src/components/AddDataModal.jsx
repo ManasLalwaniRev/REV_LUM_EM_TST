@@ -134,7 +134,7 @@
 //             <input
 //               type="text"
 //               id="contractShortName"
-//               placeholder="e.g., ABC Project"
+//               placeholder="e.g., Infotrend Project"
 //               className="w-full p-3 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-150 ease-in-out bg-gray-800 text-white placeholder-gray-400"
 //               value={formData.contractShortName}
 //               onChange={handleInputChange}
@@ -1440,10 +1440,10 @@ const AddDataModal = ({ onClose, userId, username, contractOptions = [], creditC
 
   // 2. Local variables for dropdowns
   const pmEmailOptions = [
-    'pm.manager1@ABC.com',
-    'pm.manager2@ABC.com',
-    'admin.finance@ABC.com',
-    'operations.lead@ABC.com'
+    'pm.manager1@Infotrend.com',
+    'pm.manager2@Infotrend.com',
+    'admin.finance@Infotrend.com',
+    'operations.lead@Infotrend.com'
   ];
 
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
