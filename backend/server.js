@@ -857,6 +857,89 @@ app.post('/api/misc-expenses/new', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+  // --- Project Setup Routes ---
+
+// POST: Create New Project Setup
+app.post('/api/projects/new', async (req, res) => {
+  const { 
+    projectName, submitterName, submissionDate, contractBasics,
+    customerName, customerType, paymentTerm, contactPerson, customerAddress,
+    contractType, contractVal, fundingVal, referenceNos, projectManager,
+    owningOrg, popStart, popEnd, billingOverrides, billingInstructions,
+    status, userId 
+  } = req.body;
+
+  try {
+    // 1. Generate a unique Prime Key for the project
+    const nextKey = await getNextVersionedKey('projects');
+
+    // 2. Insert the project data into the database
+    const query = `
+      INSERT INTO projects (
+        prime_key, project_name, submitter_name, submission_date, contract_basics,
+        customer_name, customer_type, payment_term, contact_person, customer_address,
+        contract_type, contract_val, funding_val, reference_nos, project_manager,
+        owning_org, pop_start, pop_end, billing_overrides, billing_instructions,
+        status, submitter_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+      RETURNING *`;
+
+    const values = [
+      nextKey, projectName, submitterName, submissionDate || null, contractBasics,
+      customerName, customerType, paymentTerm, contactPerson, customerAddress,
+      contractType, contractVal || 0, fundingVal || 0, referenceNos, projectManager,
+      owningOrg, popStart || null, popEnd || null, billingOverrides, billingInstructions,
+      status || 'draft', userId
+    ];
+
+    const result = await pool.query(query, values);
+
+    // 3. Trigger Email Notification for new Submissions/Approvals
+    if (status !== 'draft') {
+      await handleProjectNotify(req.body, nextKey);
+    }
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error("Project Save Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+  // GET: Fetch all projects
+app.get('/api/projects', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT p.*, u.username as creator_name 
+      FROM projects p 
+      LEFT JOIN users u ON p.submitter_id = u.id 
+      ORDER BY p.created_at DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const handleProjectNotify = async (data, primeKey) => {
+  const body = `Project Setup Update:
+Record No: ${primeKey}
+Project Name: ${data.projectName}
+Owning Org: ${data.owningOrg}
+Status: ${data.status.toUpperCase()}
+
+Manager: ${data.projectManager}
+Contract Value: $${parseFloat(data.contractVal || 0).toLocaleString()}
+
+View: https://rev-lum-em-tst.vercel.app`;
+
+  await sendNotificationEmail(
+    'Manas.Lalwani@revolvespl.com', 
+    `Project Setup Alert: ${data.projectName}`, 
+    body
+  );
+};
 // --- 12. Business Meal Expenses ---
 
 // GET: Fetch all meal reports
