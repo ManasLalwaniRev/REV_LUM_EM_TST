@@ -413,7 +413,7 @@ const ProjectSetupForm = ({
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/projects/new`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects/new`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, status: finalStatus, userId: 1 }), // Replace userId with dynamic ID
