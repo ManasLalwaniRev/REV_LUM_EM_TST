@@ -277,28 +277,27 @@ const ProjectSetupForm = ({
   const [activeTab, setActiveTab] = useState('form'); 
   const [submittedProjects, setSubmittedProjects] = useState([]);
   
-  // ALL FIELDS from Section A, B, C, and D
   const [formData, setFormData] = useState({
     projectName: '',
     submitterName: userName,
     submissionDate: new Date().toISOString().split('T')[0],
-    contractBasics: 'Select Option...', // Section B.1
-    customerName: '',                   // Section B.2
+    contractBasics: 'Select Option...', 
+    customerName: '',                   
     customerType: 'Customer Type...', 
     paymentTerm: '',
     contactPerson: '',
     customerAddress: '',
-    contractType: 'T&M (Time & Material)', // Section B.3
-    contractVal: '',                    // Section B.4
-    fundingVal: '',                     // Section B.4
-    referenceNos: '',                   // Section C.6
-    projectManager: '',                 // Section C.7
-    owningOrg: '',                      // Section C.8
-    popStart: '',                       // Section C.9
-    popEnd: '',                         // Section C.9
-    billingOverrides: '',               // Section D.11
-    billingInstructions: '',            // Section D.12
-    status: 'draft'                     // New Status Field
+    contractType: 'T&M (Time & Material)', 
+    contractVal: '',                    
+    fundingVal: '',                     
+    referenceNos: '',                   
+    projectManager: '',                 
+    owningOrg: '',                      
+    popStart: '',                       
+    popEnd: '',                         
+    billingOverrides: '',               
+    billingInstructions: '',            
+    status: 'draft'                     
   });
 
   const handleInputChange = (e) => {
@@ -306,10 +305,9 @@ const ProjectSetupForm = ({
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Excel Template Download ---
   const handleDownloadTemplate = () => {
     const templateData = [{
-      "Project Name": "Required",
+      "Project Name": "",
       "Submitter Name": userName,
       "Submission Date": formData.submissionDate,
       "Contract Basics": "New Contract",
@@ -338,7 +336,6 @@ const ProjectSetupForm = ({
     saveAs(data, "Project_Setup_Template.xlsx");
   };
 
-  // --- Excel Import Logic (Mapping all fields) ---
   const handleImport = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -349,8 +346,25 @@ const ProjectSetupForm = ({
         const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]])[0];
 
         if (json) {
+          // --- REQUIRED FIELDS VALIDATION ---
+          const requiredFields = {
+            "Project Name": json["Project Name"],
+            "Contract Type": json["Contract Type"],
+            "Owning Org": json["Owning Org"]
+          };
+
+          const missingFields = Object.entries(requiredFields)
+            .filter(([_, value]) => !value || String(value).trim() === "")
+            .map(([label]) => label);
+
+          if (missingFields.length > 0) {
+            alert(`Import Failed: Please enter the required fields in the Excel file: ${missingFields.join(", ")}`);
+            event.target.value = null; // Reset file input
+            return;
+          }
+
           setFormData({
-            projectName: json["Project Name"] || '',
+            projectName: json["Project Name"],
             submitterName: json["Submitter Name"] || userName,
             submissionDate: json["Submission Date"] || formData.submissionDate,
             contractBasics: json["Contract Basics"] || 'New Contract',
@@ -359,19 +373,19 @@ const ProjectSetupForm = ({
             paymentTerm: json["Payment Term"] || '',
             contactPerson: json["Contact Person"] || '',
             customerAddress: json["Customer Address"] || '',
-            contractType: json["Contract Type"] || 'T&M (Time & Material)',
+            contractType: json["Contract Type"],
             contractVal: json["Contract Val"] || '',
             fundingVal: json["Funding Val"] || '',
             referenceNos: json["Reference Nos"] || '',
             projectManager: json["Project Manager"] || '',
-            owningOrg: json["Owning Org"] || '',
+            owningOrg: json["Owning Org"],
             popStart: json["PoP Start"] || '',
             popEnd: json["PoP End"] || '',
             billingOverrides: json["Billing Overrides"] || '',
             billingInstructions: json["Billing Instructions"] || '',
             status: 'draft'
           });
-          alert("Data Imported! Review the form before submitting.");
+          alert("Data Imported successfully!");
         }
       };
       reader.readAsArrayBuffer(file);
@@ -379,6 +393,10 @@ const ProjectSetupForm = ({
   };
 
   const handleSubmit = (finalStatus) => {
+    if (!formData.projectName || !formData.owningOrg) {
+      alert("Please enter the required fields before submitting.");
+      return;
+    }
     const newProject = { 
       ...formData, 
       id: Date.now(), 
@@ -415,7 +433,6 @@ const ProjectSetupForm = ({
         {activeTab === 'form' ? (
           <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
             
-            {/* --- EXCEL ACTIONS --- */}
             <div className="flex gap-4 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
               <button type="button" onClick={handleDownloadTemplate} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 transition-all shadow-md">
                 <Download size={16} /> Download Excel Template
@@ -426,7 +443,6 @@ const ProjectSetupForm = ({
               </label>
             </div>
 
-            {/* Section A: Identification */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">A. Project Identification</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -445,7 +461,6 @@ const ProjectSetupForm = ({
               </div>
             </section>
 
-            {/* Section B: Contract Details */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">B. Contract Basics</h2>
               <div className="space-y-3">
@@ -463,7 +478,7 @@ const ProjectSetupForm = ({
               </div>
 
               <div className="bg-blue-50 p-6 rounded-xl space-y-4 border border-blue-100">
-                <label className="block text-sm font-bold text-gray-700">2. Customer Information (For New Contracts)</label>
+                <label className="block text-sm font-bold text-gray-700">2. Customer Information</label>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <input name="customerName" value={formData.customerName} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg bg-white text-sm md:col-span-2" type="text" placeholder="Customer Name" />
                   <select name="customerType" value={formData.customerType} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg bg-white text-sm">
@@ -496,7 +511,6 @@ const ProjectSetupForm = ({
               </div>
             </section>
 
-            {/* Section C: Project Structure */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">C. Project Structure & Workforce</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -510,7 +524,7 @@ const ProjectSetupForm = ({
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-600">8. Owning Org/Division *</label>
-                  <input name="owningOrg" value={formData.owningOrg} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
+                  <input name="owningOrg" value={formData.owningOrg} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" required />
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-600">9. PoP Dates</label>
@@ -521,7 +535,6 @@ const ProjectSetupForm = ({
                 </div>
               </div>
 
-              {/* Workforce Placeholder */}
               <div className="space-y-4 pt-2">
                 <div className="flex justify-between items-center">
                   <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider">10. Workforce Information Table</label>
@@ -556,7 +569,6 @@ const ProjectSetupForm = ({
               </div>
             </section>
 
-            {/* Section D: Billing & Overrides */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">D. Billing & Overrides</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -571,7 +583,6 @@ const ProjectSetupForm = ({
               </div>
             </section>
 
-            {/* --- FOOTER CONTROLS --- */}
             <div className="flex flex-wrap justify-end gap-4 pt-6 border-t border-gray-100">
                 <button type="button" onClick={() => handleSubmit('draft')} className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition-all text-sm shadow-sm">
                   Save as Draft
@@ -587,7 +598,6 @@ const ProjectSetupForm = ({
             </div>
           </form>
         ) : (
-          /* --- LIST VIEW --- */
           <div className="space-y-6">
             <h2 className="text-xl font-bold text-gray-800">New Projects Overview</h2>
             <div className="overflow-x-auto border border-gray-200 rounded-xl">
