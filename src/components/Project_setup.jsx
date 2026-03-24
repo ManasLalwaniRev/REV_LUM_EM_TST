@@ -262,31 +262,79 @@
 
 
 import React, { useState } from 'react';
-import { Upload, Plus, Trash2, Save, UserCircle, LogOut, List, ClipboardList } from 'lucide-react';
+import { Upload, Plus, Trash2, Save, UserCircle, LogOut, List, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 const ProjectSetupForm = ({ 
   userName = 'Admin', 
   userAvatar, 
   handleLogout 
 }) => {
-  const [activeTab, setActiveTab] = useState('form'); // 'form' or 'list'
+  const [activeTab, setActiveTab] = useState('form'); 
   const [submittedProjects, setSubmittedProjects] = useState([]);
+  
+  // State for automatic form filling and status tracking
+  const [formData, setFormData] = useState({
+    projectName: '',
+    submitterName: userName,
+    submissionDate: new Date().toISOString().split('T')[0],
+    contractBasics: 'New Contract',
+    customerName: '',
+    customerType: 'Commercial',
+    paymentTerm: '',
+    contactPerson: '',
+    customerAddress: '',
+    contractType: 'T&M (Time & Material)',
+    contractVal: '',
+    fundingVal: '',
+    referenceNos: '',
+    projectManager: '',
+    owningOrg: '',
+    popStart: '',
+    popEnd: '',
+    billingOverrides: '',
+    billingInstructions: '',
+    status: 'draft'
+  });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Import logic to auto-fill the form
+  const handleImport = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          setFormData(prev => ({
+            ...prev,
+            ...imported,
+            status: 'draft' // Reset to draft on new import
+          }));
+          alert("Project data imported successfully!");
+        } catch (err) {
+          alert("Error: Please upload a valid JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleSubmit = (e, finalStatus) => {
+    if (e) e.preventDefault();
     
-    // Capture basic data for the list view
-    const formData = new FormData(e.target);
     const newProject = {
+      ...formData,
       id: Date.now(),
-      projectName: formData.get('projectName') || 'Untitled Project',
-      submitter: formData.get('submitterName') || userName,
-      date: formData.get('submissionDate') || new Date().toLocaleDateString(),
-      type: formData.get('contractType'),
+      status: finalStatus,
+      date: formData.submissionDate || new Date().toLocaleDateString(),
     };
 
     setSubmittedProjects([...submittedProjects, newProject]);
-    alert("Project Setup Form saved and added to New Projects!");
+    alert(`Project ${finalStatus} successfully!`);
     setActiveTab('list');
   };
 
@@ -304,7 +352,6 @@ const ProjectSetupForm = ({
             </h1>
           </div>
 
-          {/* --- TAB NAVIGATION --- */}
           <div className="w-1/3 flex justify-center">
             <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
               <button 
@@ -333,37 +380,29 @@ const ProjectSetupForm = ({
                 Welcome, {userName}
               </span>
             </div>
-            <button 
-              onClick={handleLogout} 
-              className="p-3 bg-red-100 hover:bg-red-200 rounded-full text-red-600 transition-colors"
-              title="Logout"
-            >
+            <button onClick={handleLogout} className="p-3 bg-red-100 hover:bg-red-200 rounded-full text-red-600 transition-colors">
               <LogOut size={20} />
             </button>
           </div>
         </div>
 
         {activeTab === 'form' ? (
-          /* --- FORM SECTION --- */
-          <form onSubmit={handleSubmit} className="space-y-10">
-            
+          <form className="space-y-10">
             {/* Section A: Identification */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">A. Project Identification</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase">
-                    Project Name <span className="text-red-500">*</span>
-                  </label>
-                  <input name="projectName" required className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none transition-colors text-base" type="text" placeholder="e.g. Solar Phase II" />
+                  <label className="text-xs font-bold text-gray-500 uppercase">Project Name <span className="text-red-500">*</span></label>
+                  <input name="projectName" value={formData.projectName} onChange={handleInputChange} required className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none transition-colors text-base" type="text" placeholder="e.g. Solar Phase II" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 uppercase">Submitter Name</label>
-                  <input name="submitterName" className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none transition-colors text-base" type="text" />
+                  <input name="submitterName" value={formData.submitterName} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none transition-colors text-base" type="text" />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-500 uppercase">Submission Date</label>
-                  <input name="submissionDate" className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none transition-colors text-base" type="date" />
+                  <input name="submissionDate" value={formData.submissionDate} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none transition-colors text-base" type="date" />
                 </div>
               </div>
             </section>
@@ -371,55 +410,47 @@ const ProjectSetupForm = ({
             {/* Section B: Contract Details */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">B. Contract Basics</h2>
-              
               <div className="space-y-3">
-                <label className="block text-sm font-bold text-gray-700">1. Is this a New Contract or Extension of existing contract?</label>
+                <label className="block text-sm font-bold text-gray-700">1. Is this a New Contract or Extension?</label>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <select className="flex-grow p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
-                    <option>Select Option...</option>
+                  <select name="contractBasics" value={formData.contractBasics} onChange={handleInputChange} className="flex-grow p-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white">
                     <option>New Contract</option>
                     <option>Extension / Modification</option>
                   </select>
                   <button type="button" className="flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 px-6 py-2 rounded-lg border-2 border-dashed border-gray-300 transition-all text-sm font-semibold">
-                    <Upload size={16} />
-                    <span>Attach Document</span>
+                    <Upload size={16} /> <span>Attach Document</span>
                   </button>
                 </div>
               </div>
 
               <div className="bg-blue-50 p-6 rounded-xl space-y-4 border border-blue-100">
-                <label className="block text-sm font-bold text-gray-700">2. Customer Information (For New Contracts)</label>
+                <label className="block text-sm font-bold text-gray-700">2. Customer Information</label>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <input className="p-2 border border-gray-300 rounded-lg bg-white text-sm md:col-span-2" type="text" placeholder="Customer Name" />
-                  <select className="p-2 border border-gray-300 rounded-lg bg-white text-sm">
-                    <option>Customer Type...</option>
+                  <input name="customerName" value={formData.customerName} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg bg-white text-sm md:col-span-2" type="text" placeholder="Customer Name" />
+                  <select name="customerType" value={formData.customerType} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg bg-white text-sm">
                     <option>Commercial</option>
                     <option>Government</option>
                   </select>
-                  <input className="p-2 border border-gray-300 rounded-lg bg-white text-sm" type="text" placeholder="Payment Term" />
-                  <input className="p-2 border border-gray-300 rounded-lg bg-white text-sm md:col-span-2" type="text" placeholder="Contact Person" />
-                  <textarea className="md:col-span-4 p-2 border border-gray-300 rounded-lg bg-white text-sm" placeholder="Customer Address" rows="2"></textarea>
+                  <input name="paymentTerm" value={formData.paymentTerm} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg bg-white text-sm" type="text" placeholder="Payment Term" />
+                  <input name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg bg-white text-sm md:col-span-2" type="text" placeholder="Contact Person" />
+                  <textarea name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} className="md:col-span-4 p-2 border border-gray-300 rounded-lg bg-white text-sm" placeholder="Customer Address" rows="2"></textarea>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
-                  <label className="block text-sm font-bold text-gray-700">
-                    3. Contract Type <span className="text-red-500">*</span>
-                  </label>
-                  <select name="contractType" className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white">
+                  <label className="block text-sm font-bold text-gray-700">3. Contract Type <span className="text-red-500">*</span></label>
+                  <select name="contractType" value={formData.contractType} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white">
                     <option>T&M (Time & Material)</option>
                     <option>FFP (Firm Fixed Price)</option>
                     <option>CPFF (Cost Plus Fixed Fee)</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-bold text-gray-700">
-                    4. Contract & Funding Value <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-bold text-gray-700">4. Contract & Funding Value <span className="text-red-500">*</span></label>
                   <div className="flex gap-4">
-                    <input className="w-1/2 p-2 border border-gray-300 rounded-lg text-sm" type="text" placeholder="Contract Val ($)" />
-                    <input className="w-1/2 p-2 border border-gray-300 rounded-lg text-sm" type="text" placeholder="Funding Val ($)" />
+                    <input name="contractVal" value={formData.contractVal} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-sm" type="number" placeholder="Contract Val ($)" />
+                    <input name="fundingVal" value={formData.fundingVal} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-sm" type="number" placeholder="Funding Val ($)" />
                   </div>
                 </div>
               </div>
@@ -428,27 +459,24 @@ const ProjectSetupForm = ({
             {/* Section C: Project Structure */}
             <section className="space-y-6">
               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">C. Project Structure & Workforce</h2>
-              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-600">6. Prime / Sub / PO / TO Nos.</label>
-                  <input className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
+                  <input name="referenceNos" value={formData.referenceNos} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-600">7. Project Manager</label>
-                  <input className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
+                  <input name="projectManager" value={formData.projectManager} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-gray-600">
-                    8. Owning Org/Division <span className="text-red-500">*</span>
-                  </label>
-                  <input className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
+                  <label className="block text-xs font-bold text-gray-600">8. Owning Org/Division <span className="text-red-500">*</span></label>
+                  <input name="owningOrg" value={formData.owningOrg} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg text-sm" type="text" />
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-gray-600">9. PoP Dates</label>
                   <div className="flex gap-2">
-                    <input className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
-                    <input className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
+                    <input name="popStart" value={formData.popStart} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
+                    <input name="popEnd" value={formData.popEnd} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
                   </div>
                 </div>
               </div>
@@ -475,15 +503,11 @@ const ProjectSetupForm = ({
                     <tbody className="divide-y divide-gray-200 bg-white">
                       {[1, 2, 3].map(row => (
                         <tr key={row} className="hover:bg-blue-50 transition-colors">
-                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm focus:ring-1 focus:ring-blue-500" type="text" placeholder="Name..." /></td>
-                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm focus:ring-1 focus:ring-blue-500" type="text" placeholder="PLC..." /></td>
-                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm focus:ring-1 focus:ring-blue-500" type="text" placeholder="CLIN..." /></td>
-                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm focus:ring-1 focus:ring-blue-500" type="text" placeholder="0.00" /></td>
-                          <td className="p-2 text-center">
-                            <button type="button" className="text-gray-400 hover:text-red-500 transition-colors">
-                              <Trash2 size={18} className="mx-auto" />
-                            </button>
-                          </td>
+                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm" type="text" placeholder="Name..." /></td>
+                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm" type="text" placeholder="PLC..." /></td>
+                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm" type="text" placeholder="CLIN..." /></td>
+                          <td className="p-2"><input className="w-full p-2 border border-transparent hover:border-gray-200 rounded text-sm" type="text" placeholder="0.00" /></td>
+                          <td className="p-2 text-center"><button type="button" className="text-gray-400 hover:text-red-500"><Trash2 size={18} className="mx-auto" /></button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -498,77 +522,82 @@ const ProjectSetupForm = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-2">
                   <label className="block text-sm font-bold text-gray-700">11. Cost Ceiling / Burden / Fee Overrides</label>
-                  <textarea className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" rows="3" placeholder="Detail any CLIN overrides..."></textarea>
+                  <textarea name="billingOverrides" value={formData.billingOverrides} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" rows="3"></textarea>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-bold text-gray-700">12. Billing Instructions</label>
-                  <textarea className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" rows="3" placeholder="Enter format, emails, etc..."></textarea>
+                  <textarea name="billingInstructions" value={formData.billingInstructions} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm" rows="3"></textarea>
                 </div>
               </div>
             </section>
 
-            {/* --- FOOTER BUTTONS --- */}
-            <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
+            {/* --- FOOTER BUTTONS WITH STATUS & IMPORT --- */}
+            <div className="flex flex-wrap justify-end gap-4 pt-6 border-t border-gray-100">
+                <input type="file" id="import-json" className="hidden" accept=".json" onChange={handleImport} />
                 <button 
                   type="button" 
-                  className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-extrabold rounded-lg shadow-md transform transition-all active:scale-95 text-sm"
+                  onClick={() => document.getElementById('import-json').click()}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition-all text-sm shadow-sm"
                 >
-                  <Upload size={18} />
-                  Import Project Data
+                  <Upload size={18} /> Import Project Data
                 </button>
                 <button 
                   type="button" 
+                  onClick={() => handleSubmit(null, 'draft')}
                   className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-600 font-bold hover:bg-gray-100 transition-all text-sm shadow-sm"
                 >
                   Save as Draft
                 </button>
                 <button 
-                  type="submit" 
-                  className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-extrabold rounded-lg shadow-md transform transition-all active:scale-95 text-sm"
+                  type="button" 
+                  onClick={() => handleSubmit(null, 'submitted')}
+                  className="flex items-center gap-2 px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg shadow-md transition-all text-sm"
                 >
-                  <Save size={18} />
-                  Submit Project Setup Form
+                  <Save size={18} /> Submit Setup Form
                 </button>
+                {userName === 'Admin' && (
+                  <button 
+                    type="button" 
+                    onClick={() => handleSubmit(null, 'approved')}
+                    className="flex items-center gap-2 px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white font-extrabold rounded-lg shadow-md transition-all text-sm"
+                  >
+                    <CheckCircle2 size={18} /> Approve Project
+                  </button>
+                )}
             </div>
           </form>
         ) : (
-          /* --- NEW PROJECTS LIST VIEW --- */
+          /* --- LIST VIEW WITH STATUS --- */
           <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">New Projects Overview</h2>
-              <p className="text-sm text-gray-500">{submittedProjects.length} projects recorded</p>
-            </div>
-            
+            <h2 className="text-xl font-bold text-gray-800">Projects Overview</h2>
             <div className="overflow-x-auto border border-gray-200 rounded-xl">
               <table className="min-w-full divide-y divide-gray-200 text-sm">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-4 text-left font-bold text-gray-600 uppercase text-xs">Project Name</th>
                     <th className="px-6 py-4 text-left font-bold text-gray-600 uppercase text-xs">Submitter</th>
-                    <th className="px-6 py-4 text-left font-bold text-gray-600 uppercase text-xs">Submission Date</th>
-                    <th className="px-6 py-4 text-left font-bold text-gray-600 uppercase text-xs">Contract Type</th>
+                    <th className="px-6 py-4 text-left font-bold text-gray-600 uppercase text-xs">Date</th>
                     <th className="px-6 py-4 text-center font-bold text-gray-600 uppercase text-xs">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
-                  {submittedProjects.length > 0 ? (
-                    submittedProjects.map((project) => (
-                      <tr key={project.id} className="hover:bg-blue-50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-blue-700">{project.projectName}</td>
-                        <td className="px-6 py-4 text-gray-600">{project.submitter}</td>
-                        <td className="px-6 py-4 text-gray-600">{project.date}</td>
-                        <td className="px-6 py-4 text-gray-600">{project.type}</td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">Submitted</span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-10 text-center text-gray-400 italic">
-                        No projects found. Please fill out the setup form to see data here.
+                  {submittedProjects.map((project) => (
+                    <tr key={project.id} className="hover:bg-blue-50 transition-colors">
+                      <td className="px-6 py-4 font-bold text-blue-700">{project.projectName}</td>
+                      <td className="px-6 py-4 text-gray-600">{project.submitterName}</td>
+                      <td className="px-6 py-4 text-gray-600">{project.date}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
+                          project.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                          project.status === 'submitted' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {project.status}
+                        </span>
                       </td>
                     </tr>
+                  ))}
+                  {submittedProjects.length === 0 && (
+                    <tr><td colSpan="4" className="px-6 py-10 text-center text-gray-400 italic">No projects found.</td></tr>
                   )}
                 </tbody>
               </table>
