@@ -880,7 +880,7 @@ app.post('/api/projects/new', async (req, res) => {
         prime_key, project_name, submitter_name, submission_date, contract_basics,
         customer_name, customer_type, payment_term, contact_person, customer_address,
         contract_type, contract_value, funding_value, reference_nos, project_manager,
-        owning_org, pop_start, pop_end, billing_overrides, billing_instructions,
+        owning_org, pop_start_date, pop_end_date, billing_overrides, billing_instructions,
         status, submitter_id
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *`;
