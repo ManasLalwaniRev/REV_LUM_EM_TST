@@ -890,7 +890,7 @@ app.post('/api/projects/new', async (req, res) => {
       customerName, customerType, paymentTerm, contactPerson, customerAddress,
       contractType, contractVal || 0, fundingVal || 0, referenceNos, projectManager,
       owningOrg, popStart || null, popEnd || null, billingOverrides, billingInstructions,
-      status || 'draft', userId
+      status || 'draft'
     ];
 
     const result = await pool.query(query, values);
