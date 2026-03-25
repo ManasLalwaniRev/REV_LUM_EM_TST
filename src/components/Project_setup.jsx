@@ -280,6 +280,15 @@ const ProjectSetupForm = ({
   const [submittedProjects, setSubmittedProjects] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [selectedProject, setSelectedProject] = useState(null);
+const [isModalOpen, setIsModalOpen] = useState(false);
+
+// Add this handler function
+const handleRowDoubleClick = (project) => {
+  setSelectedProject(project);
+  setIsModalOpen(true);
+};
+
   // --- 1. INITIAL STATE (ALL DB FIELDS) ---
   const [formData, setFormData] = useState({
     projectName: '',
@@ -589,7 +598,9 @@ const ProjectSetupForm = ({
                 </thead>
                 <tbody className="divide-y">
                   {submittedProjects.map((p) => (
-                    <tr key={p.id} className="hover:bg-blue-50">
+                    <tr key={p.id}
+                    onDoubleClick={() => handleRowDoubleClick(p)}
+                    className="hover:bg-blue-50">
                       <td className="px-6 py-4 font-bold text-blue-700">{p.project_name}</td>
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{p.status}</span>
@@ -598,6 +609,50 @@ const ProjectSetupForm = ({
                     </tr>
                   ))}
                 </tbody>
+                  {/* DETAIL VIEW MODAL */}
+                    {isModalOpen && selectedProject && (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden border border-gray-200">
+                          {/* Modal Header */}
+                          <div className="p-6 border-b bg-blue-50 flex justify-between items-center">
+                            <div>
+                              <h2 className="text-2xl font-black text-blue-900">{selectedProject.project_name}</h2>
+                              <p className="text-sm text-blue-600 font-bold uppercase tracking-widest">Full Project Record</p>
+                            </div>
+                            <button 
+                              onClick={() => setIsModalOpen(false)} 
+                              className="text-gray-400 hover:text-red-500 text-3xl font-light transition-colors"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                          
+                          {/* Modal Content - Auto Mapping all DB fields */}
+                          <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto bg-white">
+                            {Object.entries(selectedProject).map(([key, value]) => (
+                              <div key={key} className="group">
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 group-hover:text-blue-500 transition-colors">
+                                  {key.replace(/_/g, ' ')}
+                                </label>
+                                <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 font-medium">
+                                  {value || <span className="text-gray-300 italic">No data</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Modal Footer */}
+                          <div className="p-4 border-t bg-gray-50 flex justify-end">
+                            <button 
+                              onClick={() => setIsModalOpen(false)}
+                              className="px-10 py-2 bg-blue-900 text-white rounded-lg font-bold hover:bg-blue-800 shadow-lg active:scale-95 transition-all"
+                            >
+                              Close Full View
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
               </table>
             </div>
           </div>
