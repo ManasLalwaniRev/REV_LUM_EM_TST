@@ -260,349 +260,485 @@
 
 // Deployed version above 
 
+// latest Version Below 
+
+
+// import React, { useState, useEffect } from 'react';
+// import { 
+//   Upload, Plus, Trash2, Save, UserCircle, LogOut, 
+//   List, ClipboardList, CheckCircle2, Download 
+// } from 'lucide-react';
+// import * as XLSX from 'xlsx';
+// import { saveAs } from 'file-saver';
+
+// const ProjectSetupForm = ({ 
+//   userName = 'Admin', 
+//   userAvatar, 
+//   handleLogout 
+// }) => {
+//   const [activeTab, setActiveTab] = useState('form'); 
+//   const [submittedProjects, setSubmittedProjects] = useState([]);
+//   const [isSubmitting, setIsSubmitting] = useState(false);
+
+//   // --- 1. INITIAL STATE (ALL DB FIELDS) ---
+//   const [formData, setFormData] = useState({
+//     projectName: '',
+//     submitterName: userName,
+//     submissionDate: new Date().toISOString().split('T')[0],
+//     contractBasics: 'New Contract',
+//     customerName: '',
+//     customerType: 'Commercial',
+//     paymentTerm: '',
+//     contactPerson: '',
+//     customerAddress: '',
+//     contractType: 'T&M (Time & Material)',
+//     contractVal: '',
+//     fundingVal: '',
+//     referenceNos: '',
+//     projectManager: '',
+//     owningOrg: '',
+//     popStart: '',
+//     popEnd: '',
+//     billingOverrides: '',
+//     billingInstructions: '',
+//     status: 'draft'
+//   });
+
+//   // --- 2. DATA FETCHING (GET API) ---
+//   useEffect(() => {
+//     const fetchProjects = async () => {
+//       try {
+//         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/projects`);
+//         if (response.ok) {
+//           const data = await response.json();
+//           setSubmittedProjects(data);
+//         }
+//       } catch (error) {
+//         console.error("Error fetching projects:", error);
+//       }
+//     };
+
+//     if (activeTab === 'list') {
+//       fetchProjects();
+//     }
+//   }, [activeTab]);
+
+//   const handleInputChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData(prev => ({ ...prev, [name]: value }));
+//   };
+
+//   // --- 3. EXCEL TEMPLATE DOWNLOAD ---
+//   const handleDownloadTemplate = () => {
+//     const templateData = [{
+//       "Project Name": "Required",
+//       "Submitter Name": userName,
+//       "Submission Date": formData.submissionDate,
+//       "Contract Basics": "New Contract",
+//       "Customer Name": "",
+//       "Customer Type": "Commercial",
+//       "Payment Term": "",
+//       "Contact Person": "",
+//       "Customer Address": "",
+//       "Contract Type": "T&M (Time & Material)",
+//       "Contract Val": 0,
+//       "Funding Val": 0,
+//       "Reference Nos": "",
+//       "Project Manager": "",
+//       "Owning Org": "Required",
+//       "PoP Start": "",
+//       "PoP End": "",
+//       "Billing Overrides": "",
+//       "Billing Instructions": ""
+//     }];
+
+//     const ws = XLSX.utils.json_to_sheet(templateData);
+//     const wb = XLSX.utils.book_new();
+//     XLSX.utils.book_append_sheet(wb, ws, "Template");
+//     const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+//     const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+//     saveAs(data, "Project_Setup_Template.xlsx");
+//   };
+
+//   // --- 4. EXCEL IMPORT WITH VALIDATION ---
+//   const handleImport = (event) => {
+//     const file = event.target.files[0];
+//     if (!file) return;
+
+//     const reader = new FileReader();
+//     reader.onload = (e) => {
+//       const data = new Uint8Array(e.target.result);
+//       const workbook = XLSX.read(data, { type: 'array' });
+//       const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]])[0];
+
+//       if (json) {
+//         // Required Fields Check
+//         if (!json["Project Name"] || !json["Owning Org"] || json["Project Name"] === "Required") {
+//           alert("Import Failed: Please fill in 'Project Name' and 'Owning Org' in the Excel file.");
+//           return;
+//         }
+
+//         setFormData({
+//           projectName: json["Project Name"],
+//           submitterName: json["Submitter Name"] || userName,
+//           submissionDate: json["Submission Date"] || formData.submissionDate,
+//           contractBasics: json["Contract Basics"] || 'New Contract',
+//           customerName: json["Customer Name"] || '',
+//           customerType: json["Customer Type"] || 'Commercial',
+//           paymentTerm: json["Payment Term"] || '',
+//           contactPerson: json["Contact Person"] || '',
+//           customerAddress: json["Customer Address"] || '',
+//           contractType: json["Contract Type"] || 'T&M (Time & Material)',
+//           contractVal: json["Contract Val"] || '',
+//           fundingVal: json["Funding Val"] || '',
+//           referenceNos: json["Reference Nos"] || '',
+//           projectManager: json["Project Manager"] || '',
+//           owningOrg: json["Owning Org"],
+//           popStart: json["PoP Start"] || '',
+//           popEnd: json["PoP End"] || '',
+//           billingOverrides: json["Billing Overrides"] || '',
+//           billingInstructions: json["Billing Instructions"] || '',
+//           status: 'draft'
+//         });
+//         alert("Excel data imported successfully!");
+//       }
+//     };
+//     reader.readAsArrayBuffer(file);
+//   };
+
+//   // --- 5. SUBMIT TO BACKEND (POST API) ---
+//   const handleSubmit = async (finalStatus) => {
+//     if (!formData.projectName || !formData.owningOrg) {
+//       alert("Missing Required Fields: Project Name and Owning Org are mandatory.");
+//       return;
+//     }
+
+//     setIsSubmitting(true);
+//     try {
+//       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects/new`, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ ...formData, status: finalStatus, userId: 1 }), // Replace userId with dynamic ID
+//       });
+
+//       if (response.ok) {
+//         alert(`Project ${finalStatus} successfully!`);
+//         setActiveTab('list');
+//       } else {
+//         const err = await response.json();
+//         alert(`Error: ${err.error}`);
+//       }
+//     } catch (error) {
+//       alert("Connection failed. Check if server is running.");
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
+//       <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full text-gray-800">
+        
+//         {/* HEADER */}
+//         <div className="flex justify-between items-center mb-8">
+//           <div className="w-1/3"><h1 className="text-3xl font-extrabold text-blue-800">Project Setup</h1></div>
+//           <div className="w-1/3 flex justify-center">
+//             <div className="flex bg-gray-100 p-1 rounded-lg border">
+//               <button onClick={() => setActiveTab('form')} className={`px-4 py-2 rounded-md text-sm font-bold ${activeTab === 'form' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'}`}><ClipboardList size={16} className="inline mr-2" /> Setup Form</button>
+//               <button onClick={() => setActiveTab('list')} className={`px-4 py-2 rounded-md text-sm font-bold ${activeTab === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'}`}><List size={16} className="inline mr-2" /> View List</button>
+//             </div>
+//           </div>
+//           <div className="w-1/3 flex justify-end gap-4">
+//             <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border">
+//               <UserCircle size={32} className="text-gray-400" />
+//               <span className="text-sm font-bold text-gray-700">{userName}</span>
+//               <button onClick={handleLogout} className="text-red-500 hover:bg-red-50 p-1 rounded"><LogOut size={18} /></button>
+//             </div>
+//           </div>
+//         </div>
+
+//         {activeTab === 'form' ? (
+//           <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
+            
+//             {/* EXCEL TOOLS */}
+//             <div className="flex gap-4 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+//               <button type="button" onClick={handleDownloadTemplate} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 shadow-md">
+//                 <Download size={16} /> Download Template
+//               </button>
+//               <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm cursor-pointer hover:bg-blue-700 shadow-md">
+//                 <Upload size={16} /> Import Excel
+//                 <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImport} />
+//               </label>
+//             </div>
+
+//             {/* SECTION A */}
+//             <section className="space-y-6">
+//               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">A. Project Identification</h2>
+//               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+//                 <div className="space-y-1">
+//                   <label className="text-xs font-bold text-gray-500 uppercase">Project Name *</label>
+//                   <input name="projectName" value={formData.projectName} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none" type="text" />
+//                 </div>
+//                 <div className="space-y-1">
+//                   <label className="text-xs font-bold text-gray-500 uppercase">Submitter Name</label>
+//                   <input name="submitterName" value={formData.submitterName} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none" type="text" />
+//                 </div>
+//                 <div className="space-y-1">
+//                   <label className="text-xs font-bold text-gray-500 uppercase">Submission Date</label>
+//                   <input name="submissionDate" value={formData.submissionDate} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none" type="date" />
+//                 </div>
+//               </div>
+//             </section>
+
+//             {/* SECTION B */}
+//             <section className="space-y-6">
+//               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">B. Contract Basics</h2>
+//               <div className="space-y-3">
+//                 <label className="block text-sm font-bold text-gray-700">1. New or Extension?</label>
+//                 <select name="contractBasics" value={formData.contractBasics} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg bg-white">
+//                   <option>New Contract</option>
+//                   <option>Extension / Modification</option>
+//                 </select>
+//               </div>
+
+//               <div className="bg-blue-50 p-6 rounded-xl space-y-4">
+//                 <label className="block text-sm font-bold text-gray-700">2. Customer Info</label>
+//                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+//                   <input name="customerName" value={formData.customerName} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg col-span-2" placeholder="Customer Name" />
+//                   <select name="customerType" value={formData.customerType} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg">
+//                     <option>Commercial</option>
+//                     <option>Government</option>
+//                   </select>
+//                   <input name="paymentTerm" value={formData.paymentTerm} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg" placeholder="Payment Term" />
+//                   <input name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg col-span-2" placeholder="Contact Person" />
+//                   <textarea name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} className="col-span-4 p-2 border border-gray-300 rounded-lg" placeholder="Address" rows="2" />
+//                 </div>
+//               </div>
+
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//                 <div className="space-y-2">
+//                   <label className="block text-sm font-bold text-gray-700">3. Contract Type *</label>
+//                   <select name="contractType" value={formData.contractType} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg bg-white">
+//                     <option>T&M (Time & Material)</option>
+//                     <option>FFP (Firm Fixed Price)</option>
+//                     <option>CPFF (Cost Plus Fixed Fee)</option>
+//                   </select>
+//                 </div>
+//                 <div className="space-y-2">
+//                   <label className="block text-sm font-bold text-gray-700">4. Value ($) *</label>
+//                   <div className="flex gap-4">
+//                     <input name="contractVal" value={formData.contractVal} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg" type="number" placeholder="Contract" />
+//                     <input name="fundingVal" value={formData.fundingVal} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg" type="number" placeholder="Funding" />
+//                   </div>
+//                 </div>
+//               </div>
+//             </section>
+
+//             {/* SECTION C */}
+//             <section className="space-y-6">
+//               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">C. Structure & Workforce</h2>
+//               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+//                 <input name="referenceNos" value={formData.referenceNos} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" placeholder="Prime/Sub/PO Nos" />
+//                 <input name="projectManager" value={formData.projectManager} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" placeholder="PM Name" />
+//                 <input name="owningOrg" value={formData.owningOrg} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" placeholder="Owning Org *" />
+//                 <div className="flex gap-2">
+//                   <input name="popStart" value={formData.popStart} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
+//                   <input name="popEnd" value={formData.popEnd} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
+//                 </div>
+//               </div>
+
+//               {/* Workforce Placeholder Table */}
+//               <div className="overflow-x-auto border border-gray-200 rounded-xl">
+//                 <table className="min-w-full divide-y divide-gray-200 text-sm">
+//                   <thead className="bg-gray-50">
+//                     <tr><th className="px-4 py-3 text-left">Resource</th><th className="px-4 py-3 text-left">Category</th><th className="px-4 py-3 text-left">Rate ($)</th><th className="px-4 py-3 text-center">Action</th></tr>
+//                   </thead>
+//                   <tbody>
+//                     <tr><td className="p-2"><input className="w-full border-none text-sm" placeholder="Name..." /></td><td className="p-2"><input className="w-full border-none text-sm" placeholder="PLC..." /></td><td className="p-2"><input className="w-full border-none text-sm" placeholder="0.00" /></td><td className="p-2 text-center"><Trash2 size={16} className="mx-auto text-gray-300" /></td></tr>
+//                   </tbody>
+//                 </table>
+//               </div>
+//             </section>
+
+//             {/* SECTION D */}
+//             <section className="space-y-6">
+//               <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">D. Billing & Overrides</h2>
+//               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+//                 <textarea name="billingOverrides" value={formData.billingOverrides} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" rows="3" placeholder="Billing Overrides..." />
+//                 <textarea name="billingInstructions" value={formData.billingInstructions} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" rows="3" placeholder="Billing Instructions..." />
+//               </div>
+//             </section>
+
+//             {/* FOOTER ACTIONS */}
+//             <div className="flex justify-end gap-4 pt-6 border-t">
+//               <button type="button" onClick={() => handleSubmit('draft')} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 rounded-lg font-bold hover:bg-gray-50">Save Draft</button>
+//               <button type="button" onClick={() => handleSubmit('submitted')} disabled={isSubmitting} className="px-8 py-2 bg-blue-600 text-white rounded-lg font-extrabold hover:bg-blue-700 shadow-md">Submit Setup</button>
+//               {userName === 'Admin' && (
+//                 <button type="button" onClick={() => handleSubmit('approved')} disabled={isSubmitting} className="px-8 py-2 bg-green-600 text-white rounded-lg font-extrabold hover:bg-green-700 shadow-md">Approve</button>
+//               )}
+//             </div>
+//           </form>
+//         ) : (
+//           /* LIST VIEW */
+//           <div className="space-y-6">
+//             <h2 className="text-xl font-bold text-gray-800">Projects Overview</h2>
+//             <div className="overflow-x-auto border border-gray-200 rounded-xl">
+//               <table className="min-w-full divide-y divide-gray-200 text-sm">
+//                 <thead className="bg-gray-50">
+//                   <tr><th className="px-6 py-4 text-left font-bold text-gray-600">Project Name</th><th className="px-6 py-4 text-left font-bold text-gray-600">Status</th><th className="px-6 py-4 text-left font-bold text-gray-600">Submitter</th></tr>
+//                 </thead>
+//                 <tbody className="divide-y">
+//                   {submittedProjects.map((p) => (
+//                     <tr key={p.id} className="hover:bg-blue-50">
+//                       <td className="px-6 py-4 font-bold text-blue-700">{p.project_name}</td>
+//                       <td className="px-6 py-4">
+//                         <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{p.status}</span>
+//                       </td>
+//                       <td className="px-6 py-4 text-gray-500">{p.submitter_name}</td>
+//                     </tr>
+//                   ))}
+//                 </tbody>
+//               </table>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ProjectSetupForm;
+
+
+// Latest Version Above
+
+
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Upload, Plus, Trash2, Save, UserCircle, LogOut, 
-  List, ClipboardList, CheckCircle2, Download 
-} from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
 
-const ProjectSetupForm = ({ 
-  userName = 'Admin', 
-  userAvatar, 
-  handleLogout 
-}) => {
-  const [activeTab, setActiveTab] = useState('form'); 
-  const [submittedProjects, setSubmittedProjects] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const ProjectSetup = () => {
+  const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // --- 1. INITIAL STATE (ALL DB FIELDS) ---
-  const [formData, setFormData] = useState({
-    projectName: '',
-    submitterName: userName,
-    submissionDate: new Date().toISOString().split('T')[0],
-    contractBasics: 'New Contract',
-    customerName: '',
-    customerType: 'Commercial',
-    paymentTerm: '',
-    contactPerson: '',
-    customerAddress: '',
-    contractType: 'T&M (Time & Material)',
-    contractVal: '',
-    fundingVal: '',
-    referenceNos: '',
-    projectManager: '',
-    owningOrg: '',
-    popStart: '',
-    popEnd: '',
-    billingOverrides: '',
-    billingInstructions: '',
-    status: 'draft'
-  });
-
-  // --- 2. DATA FETCHING (GET API) ---
+  // Fetch projects from the database on component mount
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/projects`);
-        if (response.ok) {
-          const data = await response.json();
-          setSubmittedProjects(data);
-        }
-      } catch (error) {
-        console.error("Error fetching projects:", error);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`);
+        if (!response.ok) throw new Error('Failed to fetch projects');
+        const data = await response.json();
+        setProjects(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (activeTab === 'list') {
-      fetchProjects();
-    }
-  }, [activeTab]);
+    fetchProjects();
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleRowDoubleClick = (project) => {
+    setSelectedProject(project);
+    setIsModalOpen(true);
   };
 
-  // --- 3. EXCEL TEMPLATE DOWNLOAD ---
-  const handleDownloadTemplate = () => {
-    const templateData = [{
-      "Project Name": "Required",
-      "Submitter Name": userName,
-      "Submission Date": formData.submissionDate,
-      "Contract Basics": "New Contract",
-      "Customer Name": "",
-      "Customer Type": "Commercial",
-      "Payment Term": "",
-      "Contact Person": "",
-      "Customer Address": "",
-      "Contract Type": "T&M (Time & Material)",
-      "Contract Val": 0,
-      "Funding Val": 0,
-      "Reference Nos": "",
-      "Project Manager": "",
-      "Owning Org": "Required",
-      "PoP Start": "",
-      "PoP End": "",
-      "Billing Overrides": "",
-      "Billing Instructions": ""
-    }];
-
-    const ws = XLSX.utils.json_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-    const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const data = new Blob([excelBuffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-    saveAs(data, "Project_Setup_Template.xlsx");
-  };
-
-  // --- 4. EXCEL IMPORT WITH VALIDATION ---
-  const handleImport = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]])[0];
-
-      if (json) {
-        // Required Fields Check
-        if (!json["Project Name"] || !json["Owning Org"] || json["Project Name"] === "Required") {
-          alert("Import Failed: Please fill in 'Project Name' and 'Owning Org' in the Excel file.");
-          return;
-        }
-
-        setFormData({
-          projectName: json["Project Name"],
-          submitterName: json["Submitter Name"] || userName,
-          submissionDate: json["Submission Date"] || formData.submissionDate,
-          contractBasics: json["Contract Basics"] || 'New Contract',
-          customerName: json["Customer Name"] || '',
-          customerType: json["Customer Type"] || 'Commercial',
-          paymentTerm: json["Payment Term"] || '',
-          contactPerson: json["Contact Person"] || '',
-          customerAddress: json["Customer Address"] || '',
-          contractType: json["Contract Type"] || 'T&M (Time & Material)',
-          contractVal: json["Contract Val"] || '',
-          fundingVal: json["Funding Val"] || '',
-          referenceNos: json["Reference Nos"] || '',
-          projectManager: json["Project Manager"] || '',
-          owningOrg: json["Owning Org"],
-          popStart: json["PoP Start"] || '',
-          popEnd: json["PoP End"] || '',
-          billingOverrides: json["Billing Overrides"] || '',
-          billingInstructions: json["Billing Instructions"] || '',
-          status: 'draft'
-        });
-        alert("Excel data imported successfully!");
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  };
-
-  // --- 5. SUBMIT TO BACKEND (POST API) ---
-  const handleSubmit = async (finalStatus) => {
-    if (!formData.projectName || !formData.owningOrg) {
-      alert("Missing Required Fields: Project Name and Owning Org are mandatory.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects/new`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, status: finalStatus, userId: 1 }), // Replace userId with dynamic ID
-      });
-
-      if (response.ok) {
-        alert(`Project ${finalStatus} successfully!`);
-        setActiveTab('list');
-      } else {
-        const err = await response.json();
-        alert(`Error: ${err.error}`);
-      }
-    } catch (error) {
-      alert("Connection failed. Check if server is running.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  if (loading) return <div className="p-6 text-white text-center">Loading projects...</div>;
+  if (error) return <div className="p-6 text-red-500 text-center">Error: {error}</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black p-4 sm:p-6 lg:p-8 text-gray-100 flex justify-center items-start">
-      <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-full text-gray-800">
-        
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-8">
-          <div className="w-1/3"><h1 className="text-3xl font-extrabold text-blue-800">Project Setup</h1></div>
-          <div className="w-1/3 flex justify-center">
-            <div className="flex bg-gray-100 p-1 rounded-lg border">
-              <button onClick={() => setActiveTab('form')} className={`px-4 py-2 rounded-md text-sm font-bold ${activeTab === 'form' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'}`}><ClipboardList size={16} className="inline mr-2" /> Setup Form</button>
-              <button onClick={() => setActiveTab('list')} className={`px-4 py-2 rounded-md text-sm font-bold ${activeTab === 'list' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'}`}><List size={16} className="inline mr-2" /> View List</button>
+    <div className="flex flex-col h-screen bg-gray-900 text-gray-100 p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-white">Project Setup List</h1>
+      </div>
+
+      {/* Scrollable Table Container */}
+      <div className="flex-1 overflow-auto border border-gray-700 rounded-xl shadow-2xl bg-gray-800">
+        <table className="w-full text-left border-collapse min-w-max">
+          <thead className="sticky top-0 bg-gray-700 z-10">
+            <tr>
+              <th className="p-4 border-b border-gray-600 font-semibold uppercase text-xs text-gray-400">Project ID</th>
+              <th className="p-4 border-b border-gray-600 font-semibold uppercase text-xs text-gray-400">Project Name</th>
+              <th className="p-4 border-b border-gray-600 font-semibold uppercase text-xs text-gray-400">Client</th>
+              <th className="p-4 border-b border-gray-600 font-semibold uppercase text-xs text-gray-400">Manager</th>
+              <th className="p-4 border-b border-gray-600 font-semibold uppercase text-xs text-gray-400">Status</th>
+              {/* Add more headers here matching your DB columns */}
+            </tr>
+          </thead>
+          <tbody>
+            {projects.length > 0 ? (
+              projects.map((project) => (
+                <tr 
+                  key={project.id || project.project_id}
+                  onDoubleClick={() => handleRowDoubleClick(project)}
+                  className="hover:bg-gray-700 cursor-pointer border-b border-gray-700 transition-colors"
+                >
+                  <td className="p-4 text-sm">{project.project_id}</td>
+                  <td className="p-4 text-sm">{project.project_name}</td>
+                  <td className="p-4 text-sm">{project.client_name}</td>
+                  <td className="p-4 text-sm">{project.project_manager}</td>
+                  <td className="p-4 text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      project.status === 'Active' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'
+                    }`}>
+                      {project.status || 'N/A'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="p-10 text-center text-gray-500">No projects found in database.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Read-Only Form Modal */}
+      {isModalOpen && selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-gray-800 border border-gray-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="p-6 border-b border-gray-700 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-blue-400">Project Details View</h2>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                &times;
+              </button>
             </div>
-          </div>
-          <div className="w-1/3 flex justify-end gap-4">
-            <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg border">
-              <UserCircle size={32} className="text-gray-400" />
-              <span className="text-sm font-bold text-gray-700">{userName}</span>
-              <button onClick={handleLogout} className="text-red-500 hover:bg-red-50 p-1 rounded"><LogOut size={18} /></button>
+            
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto">
+              {Object.entries(selectedProject).map(([key, value]) => (
+                <div key={key} className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{key.replace(/_/g, ' ')}</label>
+                  <input 
+                    type="text" 
+                    readOnly 
+                    value={value || '—'} 
+                    className="w-full bg-gray-900/50 border border-gray-700 rounded-lg p-2.5 text-gray-200 outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="p-6 bg-gray-900/50 border-t border-gray-700 flex justify-end">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition-all"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
-
-        {activeTab === 'form' ? (
-          <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
-            
-            {/* EXCEL TOOLS */}
-            <div className="flex gap-4 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-              <button type="button" onClick={handleDownloadTemplate} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 shadow-md">
-                <Download size={16} /> Download Template
-              </button>
-              <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm cursor-pointer hover:bg-blue-700 shadow-md">
-                <Upload size={16} /> Import Excel
-                <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImport} />
-              </label>
-            </div>
-
-            {/* SECTION A */}
-            <section className="space-y-6">
-              <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">A. Project Identification</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Project Name *</label>
-                  <input name="projectName" value={formData.projectName} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none" type="text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Submitter Name</label>
-                  <input name="submitterName" value={formData.submitterName} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none" type="text" />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Submission Date</label>
-                  <input name="submissionDate" value={formData.submissionDate} onChange={handleInputChange} className="w-full p-2 border-b-2 border-gray-300 focus:border-blue-600 outline-none" type="date" />
-                </div>
-              </div>
-            </section>
-
-            {/* SECTION B */}
-            <section className="space-y-6">
-              <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">B. Contract Basics</h2>
-              <div className="space-y-3">
-                <label className="block text-sm font-bold text-gray-700">1. New or Extension?</label>
-                <select name="contractBasics" value={formData.contractBasics} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg bg-white">
-                  <option>New Contract</option>
-                  <option>Extension / Modification</option>
-                </select>
-              </div>
-
-              <div className="bg-blue-50 p-6 rounded-xl space-y-4">
-                <label className="block text-sm font-bold text-gray-700">2. Customer Info</label>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <input name="customerName" value={formData.customerName} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg col-span-2" placeholder="Customer Name" />
-                  <select name="customerType" value={formData.customerType} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg">
-                    <option>Commercial</option>
-                    <option>Government</option>
-                  </select>
-                  <input name="paymentTerm" value={formData.paymentTerm} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg" placeholder="Payment Term" />
-                  <input name="contactPerson" value={formData.contactPerson} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg col-span-2" placeholder="Contact Person" />
-                  <textarea name="customerAddress" value={formData.customerAddress} onChange={handleInputChange} className="col-span-4 p-2 border border-gray-300 rounded-lg" placeholder="Address" rows="2" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-gray-700">3. Contract Type *</label>
-                  <select name="contractType" value={formData.contractType} onChange={handleInputChange} className="w-full p-2 border border-gray-300 rounded-lg bg-white">
-                    <option>T&M (Time & Material)</option>
-                    <option>FFP (Firm Fixed Price)</option>
-                    <option>CPFF (Cost Plus Fixed Fee)</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-bold text-gray-700">4. Value ($) *</label>
-                  <div className="flex gap-4">
-                    <input name="contractVal" value={formData.contractVal} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg" type="number" placeholder="Contract" />
-                    <input name="fundingVal" value={formData.fundingVal} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg" type="number" placeholder="Funding" />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* SECTION C */}
-            <section className="space-y-6">
-              <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">C. Structure & Workforce</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <input name="referenceNos" value={formData.referenceNos} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" placeholder="Prime/Sub/PO Nos" />
-                <input name="projectManager" value={formData.projectManager} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" placeholder="PM Name" />
-                <input name="owningOrg" value={formData.owningOrg} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" placeholder="Owning Org *" />
-                <div className="flex gap-2">
-                  <input name="popStart" value={formData.popStart} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
-                  <input name="popEnd" value={formData.popEnd} onChange={handleInputChange} className="w-1/2 p-2 border border-gray-300 rounded-lg text-xs" type="date" />
-                </div>
-              </div>
-
-              {/* Workforce Placeholder Table */}
-              <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
-                    <tr><th className="px-4 py-3 text-left">Resource</th><th className="px-4 py-3 text-left">Category</th><th className="px-4 py-3 text-left">Rate ($)</th><th className="px-4 py-3 text-center">Action</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr><td className="p-2"><input className="w-full border-none text-sm" placeholder="Name..." /></td><td className="p-2"><input className="w-full border-none text-sm" placeholder="PLC..." /></td><td className="p-2"><input className="w-full border-none text-sm" placeholder="0.00" /></td><td className="p-2 text-center"><Trash2 size={16} className="mx-auto text-gray-300" /></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* SECTION D */}
-            <section className="space-y-6">
-              <h2 className="text-lg font-bold text-blue-800 border-b-2 border-blue-200 pb-1">D. Billing & Overrides</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <textarea name="billingOverrides" value={formData.billingOverrides} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" rows="3" placeholder="Billing Overrides..." />
-                <textarea name="billingInstructions" value={formData.billingInstructions} onChange={handleInputChange} className="p-2 border border-gray-300 rounded-lg text-sm" rows="3" placeholder="Billing Instructions..." />
-              </div>
-            </section>
-
-            {/* FOOTER ACTIONS */}
-            <div className="flex justify-end gap-4 pt-6 border-t">
-              <button type="button" onClick={() => handleSubmit('draft')} disabled={isSubmitting} className="px-6 py-2 border border-gray-300 rounded-lg font-bold hover:bg-gray-50">Save Draft</button>
-              <button type="button" onClick={() => handleSubmit('submitted')} disabled={isSubmitting} className="px-8 py-2 bg-blue-600 text-white rounded-lg font-extrabold hover:bg-blue-700 shadow-md">Submit Setup</button>
-              {userName === 'Admin' && (
-                <button type="button" onClick={() => handleSubmit('approved')} disabled={isSubmitting} className="px-8 py-2 bg-green-600 text-white rounded-lg font-extrabold hover:bg-green-700 shadow-md">Approve</button>
-              )}
-            </div>
-          </form>
-        ) : (
-          /* LIST VIEW */
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-gray-800">Projects Overview</h2>
-            <div className="overflow-x-auto border border-gray-200 rounded-xl">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr><th className="px-6 py-4 text-left font-bold text-gray-600">Project Name</th><th className="px-6 py-4 text-left font-bold text-gray-600">Status</th><th className="px-6 py-4 text-left font-bold text-gray-600">Submitter</th></tr>
-                </thead>
-                <tbody className="divide-y">
-                  {submittedProjects.map((p) => (
-                    <tr key={p.id} className="hover:bg-blue-50">
-                      <td className="px-6 py-4 font-bold text-blue-700">{p.project_name}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>{p.status}</span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-500">{p.submitter_name}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
 
-export default ProjectSetupForm;
+export default ProjectSetup;
