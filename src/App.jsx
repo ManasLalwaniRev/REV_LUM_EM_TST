@@ -283,6 +283,11 @@ const App = () => {
   const [currentUserRole, setCurrentUserRole] = useState(() => localStorage.getItem('luminaUserRole'));
   const [currentUserAvatar, setCurrentUserAvatar] = useState(() => localStorage.getItem('luminaUserAvatar') || DEFAULT_AVATAR);
 
+  // src/App.jsx
+const [isAuthenticated, setIsAuthenticated] = useState(
+  sessionStorage.getItem('isLoggedIn') === 'true'
+);
+
   // Modal States
   const [showAddDataModal, setShowAddDataModal] = useState(false);
   const [showEditDataModal, setShowEditDataModal] = useState(false);

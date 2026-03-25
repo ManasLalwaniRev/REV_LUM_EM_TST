@@ -33,6 +33,9 @@ const LoginPage = ({ onLoginSuccess }) => {
 
       const data = await response.json();
       // This function remains unchanged and passes all data to the parent
+
+      sessionStorage.setItem('isLoggedIn', 'true');
+
       onLoginSuccess(data.userId, data.username, data.role, data.avatar); 
     } catch (err) {
       console.error('Login error:', err);
