@@ -317,7 +317,7 @@ const handleRowDoubleClick = (project) => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/projects`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`);
         if (response.ok) {
           const data = await response.json();
           setSubmittedProjects(data);
