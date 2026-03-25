@@ -617,88 +617,143 @@
 import React, { useState, useEffect } from 'react';
 
 const ProjectSetup = () => {
+  // State definitions for data, UI control, and error handling
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch data from DB on load
+  // Database connection: Load data from the API on component mount
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`)
-      .then(res => res.json())
-      .then(data => setProjects(data))
-      .catch(err => console.error("Error loading projects:", err));
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        // Ensure VITE_API_BASE_URL is defined in your .env file
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects from the server');
+        }
+        
+        const data = await response.json();
+        // Ensure the data returned is an array to prevent .map() errors
+        setProjects(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Fetch Error:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
   }, []);
 
-  const handleDoubleClick = (project) => {
+  const handleRowDoubleClick = (project) => {
     setSelectedProject(project);
     setIsModalOpen(true);
   };
 
-  return (
-    <div className="p-6 bg-gray-900 min-h-screen text-white">
-      <h2 className="text-2xl font-bold mb-4">Project List</h2>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+        <div className="text-xl animate-pulse">Loading project data...</div>
+      </div>
+    );
+  }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-red-500">
+        <div className="text-xl font-bold">Error: {error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-900 text-white p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Project Setup</h1>
+      </div>
+      
       {/* Scrollable Table Container */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px] border border-gray-700 rounded-lg">
-        <table className="min-w-full bg-gray-800">
-          <thead className="sticky top-0 bg-gray-700">
+      <div className="flex-1 overflow-auto border border-gray-700 rounded-xl bg-gray-800 shadow-2xl">
+        <table className="w-full text-left border-collapse min-w-max">
+          <thead className="sticky top-0 bg-gray-700 z-10 shadow-sm">
             <tr>
-              <th className="p-3 text-left">Project ID</th>
-              <th className="p-3 text-left">Name</th>
-              <th className="p-3 text-left">Client</th>
-              <th className="p-3 text-left">Status</th>
-              {/* Add all other fields here */}
+              <th className="p-4 border-b border-gray-600 font-semibold text-gray-300">Project ID</th>
+              <th className="p-4 border-b border-gray-600 font-semibold text-gray-300">Project Name</th>
+              <th className="p-4 border-b border-gray-600 font-semibold text-gray-300">Client</th>
+              <th className="p-4 border-b border-gray-600 font-semibold text-gray-300">Status</th>
             </tr>
           </thead>
           <tbody>
-  {Array.isArray(projects) && projects.length > 0 ? (
-    projects.map((project) => (
-      <tr 
-        key={project.project_id} 
-        onDoubleClick={() => handleRowDoubleClick(project)}
-        className="hover:bg-gray-700 cursor-pointer border-b border-gray-700"
-      >
-        <td className="p-4">{project.project_id}</td>
-        <td className="p-4">{project.project_name}</td>
-        <td className="p-4">{project.client_name}</td>
-        <td className="p-4">{project.project_manager}</td>
-        <td className="p-4">{project.status}</td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td colSpan="5" className="p-10 text-center text-gray-500">
-        {loading ? 'Loading...' : 'No projects found or server error occurred.'}
-      </td>
-    </tr>
-  )}
-</tbody>
+            {projects.length > 0 ? (
+              projects.map((project) => (
+                <tr 
+                  key={project.project_id || Math.random()} 
+                  onDoubleClick={() => handleRowDoubleClick(project)}
+                  className="hover:bg-gray-700 cursor-pointer border-b border-gray-700 transition-colors group"
+                >
+                  <td className="p-4 text-sm group-hover:text-blue-400">{project.project_id}</td>
+                  <td className="p-4 text-sm">{project.project_name}</td>
+                  <td className="p-4 text-sm">{project.client_name}</td>
+                  <td className="p-4 text-sm">
+                    <span className="bg-blue-900/50 text-blue-300 border border-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                      {project.status || 'Active'}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="p-20 text-center text-gray-500">
+                  No project records found in the database.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
 
-      {/* Form View Modal (Read Only) */}
+      {/* Read-Only Form Modal View */}
       {isModalOpen && selectedProject && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 p-8 rounded-xl max-w-2xl w-full border border-blue-500 shadow-2xl">
-            <h3 className="text-xl font-bold mb-6 text-blue-400">Project Details (Read-Only)</h3>
-            <div className="grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-gray-800 border border-gray-700 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+              <h2 className="text-xl font-bold text-blue-400">Project Details (Read-Only)</h2>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                className="text-gray-400 hover:text-white text-3xl transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
               {Object.entries(selectedProject).map(([key, value]) => (
-                <div key={key}>
-                  <label className="block text-xs uppercase text-gray-400 font-semibold mb-1">{key}</label>
+                <div key={key} className="flex flex-col space-y-1">
+                  <label className="text-xs text-gray-500 uppercase font-black tracking-widest">
+                    {key.replace(/_/g, ' ')}
+                  </label>
                   <input 
                     readOnly 
-                    value={value || ''} 
-                    className="w-full bg-gray-700 p-2 rounded border border-gray-600 text-gray-200 outline-none"
+                    value={value || '—'} 
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-gray-200 outline-none focus:border-blue-500 transition-all shadow-inner"
                   />
                 </div>
               ))}
             </div>
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="mt-8 w-full bg-blue-600 py-2 rounded font-bold hover:bg-blue-700"
-            >
-              Close
-            </button>
+
+            <div className="p-6 border-t border-gray-700 flex justify-end bg-gray-800/50">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-2.5 rounded-lg font-bold transition-all transform active:scale-95 shadow-lg"
+              >
+                Close View
+              </button>
+            </div>
           </div>
         </div>
       )}
