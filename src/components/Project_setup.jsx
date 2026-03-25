@@ -613,114 +613,149 @@
 // Latest Version Above
 
 
-
 import React, { useState, useEffect } from 'react';
 
 const ProjectSetup = () => {
+  // --- 1. STATES ---
+  // Form States (Restore these to match your original fields)
+  const [formData, setFormData] = useState({
+    project_id: '',
+    project_name: '',
+    client_name: '',
+    project_manager: '',
+    status: 'Active'
+  });
+
+  // List & UI States
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch projects from the database
+  // --- 2. DATA FETCHING ---
+  const fetchProjects = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`);
+      if (!response.ok) throw new Error('Failed to load project list');
+      const data = await response.json();
+      setProjects(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`);
-        if (!response.ok) throw new Error('Failed to fetch projects');
-        const data = await response.json();
-        setProjects(Array.isArray(data) ? data : []);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchProjects();
   }, []);
+
+  // --- 3. HANDLERS ---
+  const handleInputChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        alert('Project Saved!');
+        fetchProjects(); // Refresh the list below
+        setFormData({ project_id: '', project_name: '', client_name: '', project_manager: '', status: 'Active' });
+      }
+    } catch (err) {
+      alert('Error saving project');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRowDoubleClick = (project) => {
     setSelectedProject(project);
     setIsModalOpen(true);
   };
 
-  if (loading) return <div className="p-10 text-white text-center">Loading List...</div>;
-  if (error) return <div className="p-10 text-red-500 text-center">Error: {error}</div>;
-
   return (
-    <div className="flex flex-col h-screen bg-gray-900 text-white p-6">
-      <h1 className="text-2xl font-bold mb-6">Project List View</h1>
+    <div className="flex flex-col min-h-screen bg-gray-900 text-white p-6 space-y-8">
+      
+      {/* --- SECTION 1: THE ORIGINAL SETUP FORM --- */}
+      <section className="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-lg">
+        <h2 className="text-xl font-bold mb-6 text-blue-400">Project Entry Form</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-col">
+            <label className="text-sm text-gray-400 mb-1">Project ID</label>
+            <input name="project_id" value={formData.project_id} onChange={handleInputChange} className="bg-gray-700 border border-gray-600 p-2 rounded outline-none focus:ring-2 focus:ring-blue-500" required />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-sm text-gray-400 mb-1">Project Name</label>
+            <input name="project_name" value={formData.project_name} onChange={handleInputChange} className="bg-gray-700 border border-gray-600 p-2 rounded outline-none focus:ring-2 focus:ring-blue-500" required />
+          </div>
+          <div className="flex flex-col">
+            <label className="text-sm text-gray-400 mb-1">Client Name</label>
+            <input name="client_name" value={formData.client_name} onChange={handleInputChange} className="bg-gray-700 border border-gray-600 p-2 rounded outline-none focus:ring-2 focus:ring-blue-500" required />
+          </div>
+          <button type="submit" disabled={loading} className="md:col-span-3 bg-blue-600 hover:bg-blue-500 p-3 rounded font-bold transition-all disabled:opacity-50">
+            {loading ? 'Saving...' : 'Save Project Setup'}
+          </button>
+        </form>
+      </section>
 
-      {/* Main List View: Scrollable Table */}
-      <div className="flex-1 overflow-auto border border-gray-700 rounded-lg bg-gray-800 shadow-xl">
-        <table className="w-full text-left border-collapse min-w-max">
-          <thead className="sticky top-0 bg-gray-700 shadow-md">
-            <tr>
-              <th className="p-4 border-b border-gray-600 font-bold uppercase text-xs text-gray-400">Project ID</th>
-              <th className="p-4 border-b border-gray-600 font-bold uppercase text-xs text-gray-400">Project Name</th>
-              <th className="p-4 border-b border-gray-600 font-bold uppercase text-xs text-gray-400">Client</th>
-              <th className="p-4 border-b border-gray-600 font-bold uppercase text-xs text-gray-400">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {projects.length > 0 ? (
-              projects.map((project) => (
+      <hr className="border-gray-700" />
+
+      {/* --- SECTION 2: THE VIEW TAB (Results Table) --- */}
+      <section className="flex flex-col flex-1">
+        <h2 className="text-xl font-bold mb-4 text-sky-400">Project View (Double-click to expand)</h2>
+        <div className="overflow-auto border border-gray-700 rounded-lg bg-gray-800 max-h-[400px]">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 bg-gray-700">
+              <tr>
+                <th className="p-4 border-b border-gray-600 text-xs uppercase text-gray-400">ID</th>
+                <th className="p-4 border-b border-gray-600 text-xs uppercase text-gray-400">Name</th>
+                <th className="p-4 border-b border-gray-600 text-xs uppercase text-gray-400">Client</th>
+                <th className="p-4 border-b border-gray-600 text-xs uppercase text-gray-400">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((proj) => (
                 <tr 
-                  key={project.project_id || Math.random()} 
-                  onDoubleClick={() => handleRowDoubleClick(project)}
+                  key={proj.project_id} 
+                  onDoubleClick={() => handleRowDoubleClick(proj)}
                   className="hover:bg-gray-700 cursor-pointer border-b border-gray-700 transition-colors"
                 >
-                  <td className="p-4 text-sm">{project.project_id}</td>
-                  <td className="p-4 text-sm font-medium">{project.project_name}</td>
-                  <td className="p-4 text-sm">{project.client_name}</td>
-                  <td className="p-4 text-sm">
-                    <span className="bg-blue-900 text-blue-200 px-2 py-1 rounded text-xs">
-                      {project.status || 'Active'}
-                    </span>
-                  </td>
+                  <td className="p-4">{proj.project_id}</td>
+                  <td className="p-4">{proj.project_name}</td>
+                  <td className="p-4">{proj.client_name}</td>
+                  <td className="p-4"><span className="text-green-400 text-xs font-bold">{proj.status}</span></td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="4" className="p-10 text-center text-gray-500">No records found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      {/* Form View: Read-Only Modal */}
+      {/* --- SECTION 3: READ-ONLY MODAL --- */}
       {isModalOpen && selectedProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-gray-800 border border-gray-700 w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
-              <h2 className="text-xl font-bold text-blue-400">Project Details (Read-Only)</h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white text-2xl">&times;</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-gray-800 border border-gray-700 w-full max-w-2xl rounded-xl shadow-2xl">
+            <div className="p-6 border-b border-gray-700 flex justify-between">
+              <h2 className="text-xl font-bold text-blue-400">Full Record Details</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-2xl text-gray-500 hover:text-white">&times;</button>
             </div>
-            
-            {/* Scrollable form if there are many fields */}
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[60vh] overflow-y-auto">
+            <div className="p-6 grid grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto">
               {Object.entries(selectedProject).map(([key, value]) => (
-                <div key={key} className="flex flex-col space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">{key.replace(/_/g, ' ')}</label>
-                  <input 
-                    readOnly 
-                    value={value || 'N/A'} 
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-gray-200 outline-none cursor-default"
-                  />
+                <div key={key}>
+                  <label className="block text-[10px] text-gray-500 uppercase font-bold">{key.replace(/_/g, ' ')}</label>
+                  <input readOnly value={value || '—'} className="w-full bg-gray-900 border border-gray-700 rounded p-2 text-sm text-gray-300" />
                 </div>
               ))}
             </div>
-
-            <div className="p-6 border-t border-gray-700 flex justify-end">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold transition-all"
-              >
-                Close View
-              </button>
+            <div className="p-4 border-t border-gray-700 flex justify-end">
+              <button onClick={() => setIsModalOpen(false)} className="bg-gray-700 px-6 py-2 rounded hover:bg-gray-600">Close</button>
             </div>
           </div>
         </div>
