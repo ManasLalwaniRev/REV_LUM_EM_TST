@@ -657,16 +657,16 @@ app.get('/api/subk-travel', async (req, res) => {
 
 
 // Add this to your backend/server.js file
-app.get('/api/projects', async (req, res) => {
-    try {
-        // Query to fetch all rows from the project table
-        const [rows] = await db.execute('SELECT * FROM project_setup_table_name'); // Replace with your actual table name
-        res.status(200).json(rows);
-    } catch (error) {
-        console.error('Error fetching projects:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
-    }
-});
+// app.get('/api/projects', async (req, res) => {
+//     try {
+//         // Query to fetch all rows from the project table
+//         const [rows] = await db.execute('SELECT * FROM project_setup_table_name'); // Replace with your actual table name
+//         res.status(200).json(rows);
+//     } catch (error) {
+//         console.error('Error fetching projects:', error);
+//         res.status(500).json({ message: 'Internal Server Error' });
+//     }
+// });
 
 
 
@@ -923,19 +923,28 @@ app.post('/api/projects/new', async (req, res) => {
 });
 
   // GET: Fetch all projects
+// backend/server.js
 app.get('/api/projects', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT p.*, u.username as creator_name 
-      FROM projects p 
-      LEFT JOIN users u ON p.submitter_id = u.id 
-      ORDER BY p.created_at DESC
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        // Updated query: remove p.submitter_id or replace it with a column that exists
+        const query = `
+            SELECT 
+                p.project_id, 
+                p.project_name, 
+                p.client_name, 
+                p.project_manager, 
+                p.status
+            FROM project_setup p
+        `;
+        const { rows } = await pool.query(query); // Use your existing pool/db connection
+        res.status(200).json(rows); // This MUST return an array
+    } catch (error) {
+        console.error('Database Error:', error);
+        res.status(500).json({ message: 'Internal Server Error', details: error.message });
+    }
 });
+
+
 
 const handleProjectNotify = async (data, primeKey) => {
   const body = `Project Setup Update:

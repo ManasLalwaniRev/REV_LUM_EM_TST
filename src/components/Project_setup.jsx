@@ -651,19 +651,28 @@ const ProjectSetup = () => {
             </tr>
           </thead>
           <tbody>
-            {projects.map((proj) => (
-              <tr 
-                key={proj.id} 
-                onDoubleClick={() => handleDoubleClick(proj)}
-                className="hover:bg-gray-600 cursor-pointer border-b border-gray-700 transition-colors"
-              >
-                <td className="p-3">{proj.project_id}</td>
-                <td className="p-3">{proj.name}</td>
-                <td className="p-3">{proj.client}</td>
-                <td className="p-3">{proj.status}</td>
-              </tr>
-            ))}
-          </tbody>
+  {Array.isArray(projects) && projects.length > 0 ? (
+    projects.map((project) => (
+      <tr 
+        key={project.project_id} 
+        onDoubleClick={() => handleRowDoubleClick(project)}
+        className="hover:bg-gray-700 cursor-pointer border-b border-gray-700"
+      >
+        <td className="p-4">{project.project_id}</td>
+        <td className="p-4">{project.project_name}</td>
+        <td className="p-4">{project.client_name}</td>
+        <td className="p-4">{project.project_manager}</td>
+        <td className="p-4">{project.status}</td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan="5" className="p-10 text-center text-gray-500">
+        {loading ? 'Loading...' : 'No projects found or server error occurred.'}
+      </td>
+    </tr>
+  )}
+</tbody>
         </table>
       </div>
 
