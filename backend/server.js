@@ -934,7 +934,7 @@ app.get('/api/projects', async (req, res) => {
                 p.client_name, 
                 p.project_manager, 
                 p.status
-            FROM project_setup p
+            FROM projects p
         `;
         const { rows } = await pool.query(query); // Use your existing pool/db connection
         res.status(200).json(rows); // This MUST return an array
