@@ -929,12 +929,8 @@ app.get('/api/projects', async (req, res) => {
         // Updated query: remove p.submitter_id or replace it with a column that exists
         const query = `
             SELECT 
-                p.project_id, 
-                p.project_name, 
-                p.client_name, 
-                p.project_manager, 
-                p.status
-            FROM projects p
+              *
+            FROM projects
         `;
         const { rows } = await pool.query(query); // Use your existing pool/db connection
         res.status(200).json(rows); // This MUST return an array
