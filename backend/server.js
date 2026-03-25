@@ -941,7 +941,6 @@ app.get('/api/projects', async (req, res) => {
 });
 
 
-
 const handleProjectNotify = async (data, primeKey) => {
   const body = `Project Setup Update:
 Record No: ${primeKey}
