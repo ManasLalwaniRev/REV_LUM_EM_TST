@@ -655,6 +655,21 @@ app.get('/api/subk-travel', async (req, res) => {
 //   } catch (err) { res.status(500).json({ error: err.message }); }
 // });
 
+
+// Add this to your backend/server.js file
+app.get('/api/projects', async (req, res) => {
+    try {
+        // Query to fetch all rows from the project table
+        const [rows] = await db.execute('SELECT * FROM project_setup_table_name'); // Replace with your actual table name
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
+
+
 app.post('/api/subk-travel/new', async (req, res) => {
   const { 
     category, employeeId, employeeName, purpose, travelFrom, travelTo,
