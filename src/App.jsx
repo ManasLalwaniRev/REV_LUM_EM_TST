@@ -470,7 +470,8 @@ const [isAuthenticated, setIsAuthenticated] = useState(
       case 'subcontractor-assignments':
       return (
         <SubcontractorAssignments 
-          dataEntries={subkTravelData.filter(e => e.category === 'Subk')}
+          // dataEntries={subkTravelData.filter(e => e.category === 'Subk')}
+          dataEntries={subkTravelData}
           userName={currentUsername}
           userAvatar={currentUserAvatar}
           handleLogout={handleLogout}
