@@ -1009,24 +1009,9 @@ app.post('/api/business-meals/new', async (req, res) => {
     console.error("Meals Save Error:", err);
     res.status(500).json({ error: err.message });
   }
-});
+});  
 
-// POST: Create Subcontractor Action (New OR Modification)
-app.post('/api/subcontractor-actions/new', async (req, res) => {
-  const { 
-    requestType, // 'New' or 'Modification'
-    programManager, projectName, 
-    // New Subk Fields
-    companyName, companyAddress, companyPoc, pocPhone, pocEmail, 
-    agreementType, popStart, popEnd, hasOptionPeriods, optionPeriodsThrough, 
-    fundingAuthAmount, 
-    // Mod Fields
-    subcontractNumber, modDescription, scopeChanges,
-    // Shared
-    laborItems, totalLabor, totalTravel, totalOdc, userId 
-  } = req.body;
 
-  // GET: Fetch all Subcontractor Actions
 app.get('/api/subcontractor-actions', async (req, res) => {
 
   try{
@@ -1050,6 +1035,22 @@ app.get('/api/subcontractor-actions', async (req, res) => {
   }
 
 });
+// POST: Create Subcontractor Action (New OR Modification)
+app.post('/api/subcontractor-actions/new', async (req, res) => {
+  const { 
+    requestType, // 'New' or 'Modification'
+    programManager, projectName, 
+    // New Subk Fields
+    companyName, companyAddress, companyPoc, pocPhone, pocEmail, 
+    agreementType, popStart, popEnd, hasOptionPeriods, optionPeriodsThrough, 
+    fundingAuthAmount, 
+    // Mod Fields
+    subcontractNumber, modDescription, scopeChanges,
+    // Shared
+    laborItems, totalLabor, totalTravel, totalOdc, userId 
+  } = req.body;
+
+  // GET: Fetch all Subcontractor Actions
 
   // Calculate Grand Total
   const grandTotal = (parseFloat(totalLabor) || 0) + (parseFloat(totalTravel) || 0) + (parseFloat(totalOdc) || 0);
