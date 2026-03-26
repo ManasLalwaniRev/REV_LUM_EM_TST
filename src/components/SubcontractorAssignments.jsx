@@ -783,8 +783,11 @@ import { Layout, Plus, Save, LogOut, Eye, EyeOff, Trash2, Briefcase, FileText, U
 
 
 const SubcontractorAssignments = ({ 
-  dataEntries = [], userName, handleLogout, 
-  currentUserId, onDataChanged 
+//   dataEntries = [], userName, handleLogout, 
+//   currentUserId, onDataChanged
+    userName,
+handleLogout,
+currentUserId
 }) => {
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'new', 'mod'
   const [isPreviewOn, setIsPreviewOn] = useState(true);
