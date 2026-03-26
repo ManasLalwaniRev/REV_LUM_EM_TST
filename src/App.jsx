@@ -306,15 +306,26 @@ const [isAuthenticated, setIsAuthenticated] = useState(
   //   }
   // };
 
+  // const fetchSubkTravelData = async () => {
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/subcontractor-assignments`); 
+  //     const data = await response.json();
+  //     setSubkTravelData(data);
+  //   } catch (err) {
+  //     console.error("Error fetching Subk/Travel data:", err);
+  //   }
+  // };
+
   const fetchSubkTravelData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/subcontractor-assignments`); 
+      const response = await fetch(`${API_BASE_URL}/subcontractor-actions`); 
       const data = await response.json();
       setSubkTravelData(data);
     } catch (err) {
       console.error("Error fetching Subk/Travel data:", err);
     }
   };
+
 
   // --- 2. Helper: Snake Case to Camel Case ---
   const snakeToCamel = (obj) => {
