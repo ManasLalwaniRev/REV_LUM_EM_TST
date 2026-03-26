@@ -777,8 +777,16 @@
 // Deployed Code Above 
 
 
-import React, { useState } from 'react';
+// import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Plus, Save, LogOut, Eye, EyeOff, Trash2, Briefcase, FileText, UserCheck, List, Edit } from 'lucide-react';
+
+
+    useEffect(()=>{
+
+    loadData();
+
+    },[]);
 
 const SubcontractorAssignments = ({ 
   dataEntries = [], userName, handleLogout, 
@@ -850,14 +858,37 @@ const SubcontractorAssignments = ({
         userId: currentUserId 
     };
     
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+    // const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-    useEffect(() => {
-    loadData();
-    }, []);
+    // useEffect(() => {
+    // loadData();
+    // }, []);
 
-    const loadData = async () => {
-    try{
+    // const loadData = async () => {
+    // try{
+    //     const res = await fetch(`${API_BASE}/subcontractor-actions`);
+
+    //     if(!res.ok)
+    //     throw new Error("Failed to fetch");
+
+    //     const data = await res.json();
+
+    //     console.log("Loaded:",data);
+
+    //     setEntries(data);
+
+    // }catch(err){
+    //     console.error(err);
+    // }
+    // };
+        
+
+        const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
+        const loadData = async () => {
+
+        try{
+
         const res = await fetch(`${API_BASE}/subcontractor-actions`);
 
         if(!res.ok)
@@ -869,10 +900,13 @@ const SubcontractorAssignments = ({
 
         setEntries(data);
 
-    }catch(err){
+        }catch(err){
+
         console.error(err);
-    }
-    };
+
+        }
+
+        };
 
     try {
       const response = await fetch(`${API_BASE}/subcontractor-actions/new`, {
@@ -931,7 +965,8 @@ const SubcontractorAssignments = ({
         <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
            <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-700">Subcontractor Requests & Assignments</h2>
-              <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{dataEntries.length} Records</span>
+              {/* <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{dataEntries.length} Records</span> */}
+              <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{entries.length} Records</span>
            </div>
            <div className="overflow-x-auto border rounded-lg">
              <table className="min-w-full divide-y text-sm">
@@ -947,7 +982,7 @@ const SubcontractorAssignments = ({
                <tbody className="bg-white divide-y">
                  {/* {dataEntries.map(entry => ( */}
                  {entries.map(entry => (
-                   <tr key={entry.id} className="hover:bg-blue-50 transition-colors">
+                   <tr key={entry.id || entry.prime_key} className="hover:bg-blue-50 transition-colors">
                      <td className="px-6 py-3 font-bold text-blue-600">{entry.prime_key || entry.id}</td>
                      <td className="px-6 py-3 font-medium">{entry.project_name || entry.projectName}</td>
                      <td className="px-6 py-3 text-slate-600">{entry.request_type || 'Assignment'}</td>
