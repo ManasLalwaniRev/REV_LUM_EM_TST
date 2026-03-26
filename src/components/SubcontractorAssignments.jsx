@@ -778,9 +778,9 @@
 
 
 // import React, { useState } from 'react';
-import React, { useState, useEffect } from 'react';
-import { Layout, Plus, Save, LogOut, Eye, EyeOff, Trash2, Briefcase, FileText, UserCheck, List, Edit } from 'lucide-react';
 
+import React, { useState, useEffect, Fragment } from 'react';
+import { Layout, Plus, Save, LogOut, Eye, EyeOff, Trash2, Briefcase, FileText, UserCheck, List, Edit } from 'lucide-react';
 
 const SubcontractorAssignments = ({ 
   dataEntries = [], userName, handleLogout, 
@@ -792,8 +792,8 @@ const SubcontractorAssignments = ({
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'new', 'mod'
   const [isPreviewOn, setIsPreviewOn] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [entries, setEntries] = useState([]);
-
+//   const [entries, setEntries] = useState([]);
+  const [expandedRow,setExpandedRow]=useState(null);
   // --- FORM STATE (SHARED) ---
   const [actionForm, setActionForm] = useState({
     // Shared
@@ -973,7 +973,7 @@ const SubcontractorAssignments = ({
            {/* <div className="overflow-x-auto border rounded-lg"> */}
            <div className="overflow-x-auto border rounded-lg max-w-full">
              <table className="min-w-full divide-y text-sm">
-               <thead className="bg-slate-50 uppercase font-bold text-slate-500 text-xs">
+               <thead className="bg-slate-50 font-bold text-slate-500 text-xs">
                  {/* <tr>
                    <th className="px-6 py-3 text-left">Serial Number</th>
                    <th className="px-6 py-3 text-left">Project</th>
@@ -1007,8 +1007,8 @@ const SubcontractorAssignments = ({
                 //      <td className="px-6 py-3 font-mono font-bold text-green-700">${parseFloat(entry.grand_total || entry.charge_amount || 0).toFixed(2)}</td>
                 //      <td className="px-6 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">{entry.status}</span></td>
                 //    </tr>
-                    <tr key={entry.id || entry.prime_key}>
-
+                    <tr key={entry.id || entry.prime_key}
+                        onDoubleClick={() =>  setExpandedRow(expandedRow === entry.id ? null : entry.id )}>
                         <td className="px-6 py-3 font-bold text-blue-600">
                         {entry.prime_key}
                         </td>
@@ -1054,10 +1054,105 @@ const SubcontractorAssignments = ({
                         {entry.status || 'Submitted'}
                         </span>
                         </td>
+                 {expandedRow === entry.id && (
 
-                        </tr>
+<tr className="bg-slate-50">
 
+<td colSpan="12" className="p-6">
+
+<div className="grid grid-cols-3 gap-6 text-sm">
+
+<div>
+<div className="font-bold text-slate-500">
+Program Manager
+</div>
+<div>
+{entry.program_manager}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+Company Name
+</div>
+<div>
+{entry.company_name}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+Agreement Type
+</div>
+<div>
+{entry.agreement_type}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+POP Start
+</div>
+<div>
+{entry.pop_start?.split('T')[0]}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+POP End
+</div>
+<div>
+{entry.pop_end?.split('T')[0]}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+Funding
+</div>
+<div>
+${entry.funding_auth_amount}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+Labor Total
+</div>
+<div>
+${entry.total_labor}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+Travel
+</div>
+<div>
+${entry.total_travel}
+</div>
+</div>
+
+<div>
+<div className="font-bold text-slate-500">
+ODC
+</div>
+<div>
+${entry.total_odc}
+</div>
+</div>
+
+</div>
+
+</td>
+
+</tr>
+
+)}
+                        </tr>        
                  ))}
+                    
                </tbody>
              </table>
            </div>
