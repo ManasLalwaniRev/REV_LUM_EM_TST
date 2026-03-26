@@ -631,7 +631,7 @@ const handleRowDoubleClick = (project) => {
                           <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto bg-white">
                             {Object.entries(selectedProject).map(([key, value]) => (
                               <div key={key} className="group">
-                                <label className="block text-[10px] font-black text-gray-400 tracking-tighter mb-1 group-hover:text-blue-500 transition-colors">
+                                <label className="block text-[10px] font-black text-gray-400 normal-case tracking-tighter mb-1 group-hover:text-blue-500 transition-colors">
                                   {key.replace(/_/g, ' ')}
                                 </label>
                                 <div className="p-3 bg-gray-50 border border-gray-100 rounded-lg text-sm text-gray-700 font-medium">
