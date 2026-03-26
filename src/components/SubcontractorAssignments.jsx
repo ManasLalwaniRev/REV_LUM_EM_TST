@@ -970,27 +970,93 @@ const SubcontractorAssignments = ({
               {/* <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{dataEntries.length} Records</span> */}
               {/* <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{entries.length} Records</span> */}
            </div>
-           <div className="overflow-x-auto border rounded-lg">
+           {/* <div className="overflow-x-auto border rounded-lg"> */}
+           <div className="overflow-x-auto border rounded-lg max-w-full">
              <table className="min-w-full divide-y text-sm">
                <thead className="bg-slate-50 uppercase font-bold text-slate-500 text-xs">
-                 <tr>
-                   <th className="px-6 py-3 text-left">Ref Key</th>
+                 {/* <tr>
+                   <th className="px-6 py-3 text-left">Serial Number</th>
                    <th className="px-6 py-3 text-left">Project</th>
                    <th className="px-6 py-3 text-left">Type</th>
                    <th className="px-6 py-3 text-left">Amount</th>
                    <th className="px-6 py-3 text-left">Status</th>
-                 </tr>
+                 </tr> */}
+
+                    <tr>
+                        <th className="px-6 py-3 text-left">Serial Number</th>
+                        <th className="px-6 py-3 text-left">Project</th>
+                        <th className="px-6 py-3 text-left">Program Manager</th>
+                        <th className="px-6 py-3 text-left">Company</th>
+                        <th className="px-6 py-3 text-left">Type</th>
+                        <th className="px-6 py-3 text-left">Agreement</th>
+                        <th className="px-6 py-3 text-left">Total Labor</th>
+                        <th className="px-6 py-3 text-left">Travel</th>
+                        <th className="px-6 py-3 text-left">ODC</th>
+                        <th className="px-6 py-3 text-left">Amount</th>
+                        <th className="px-6 py-3 text-left">Status</th>
+                        </tr>
+
                </thead>
                <tbody className="bg-white divide-y">
                  {dataEntries.map(entry => (
            
-                   <tr key={entry.id || entry.prime_key} className="hover:bg-blue-50 transition-colors">
-                     <td className="px-6 py-3 font-bold text-blue-600">{entry.prime_key || entry.id}</td>
-                     <td className="px-6 py-3 font-medium">{entry.project_name || entry.projectName}</td>
-                     <td className="px-6 py-3 text-slate-600">{entry.request_type || 'Assignment'}</td>
-                     <td className="px-6 py-3 font-mono font-bold text-green-700">${parseFloat(entry.grand_total || entry.charge_amount || 0).toFixed(2)}</td>
-                     <td className="px-6 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">{entry.status}</span></td>
-                   </tr>
+                //    <tr key={entry.id || entry.prime_key} className="hover:bg-blue-50 transition-colors">
+                //      <td className="px-6 py-3 font-bold text-blue-600">{entry.prime_key || entry.id}</td>
+                //      <td className="px-6 py-3 font-medium">{entry.project_name || entry.projectName}</td>
+                //      <td className="px-6 py-3 text-slate-600">{entry.request_type || 'Assignment'}</td>
+                //      <td className="px-6 py-3 font-mono font-bold text-green-700">${parseFloat(entry.grand_total || entry.charge_amount || 0).toFixed(2)}</td>
+                //      <td className="px-6 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">{entry.status}</span></td>
+                //    </tr>
+                    <tr key={entry.id || entry.prime_key}>
+
+                        <td className="px-6 py-3 font-bold text-blue-600">
+                        {entry.prime_key}
+                        </td>
+
+                        <td className="px-6 py-3">
+                        {entry.project_name}
+                        </td>
+
+                        <td className="px-6 py-3">
+                        {entry.program_manager}
+                        </td>
+
+                        <td className="px-6 py-3">
+                        {entry.company_name || '-'}
+                        </td>
+
+                        <td className="px-6 py-3">
+                        {entry.request_type}
+                        </td>
+
+                        <td className="px-6 py-3">
+                        {entry.agreement_type}
+                        </td>
+
+                        <td className="px-6 py-3 font-mono">
+                        ${parseFloat(entry.total_labor || 0).toFixed(2)}
+                        </td>
+
+                        <td className="px-6 py-3 font-mono">
+                        ${parseFloat(entry.total_travel || 0).toFixed(2)}
+                        </td>
+
+                        <td className="px-6 py-3 font-mono">
+                        ${parseFloat(entry.total_odc || 0).toFixed(2)}
+                        </td>
+
+                        <td className="px-6 py-3 font-bold text-green-700">
+                        ${parseFloat(entry.grand_total || 0).toFixed(2)}
+                        </td>
+
+                        <td className="px-6 py-3">
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold">
+                        {entry.status || 'Submitted'}
+                        </span>
+                        </td>
+
+                        </tr>
+
                  ))}
                </tbody>
              </table>
