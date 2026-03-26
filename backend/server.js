@@ -1026,6 +1026,31 @@ app.post('/api/subcontractor-actions/new', async (req, res) => {
     laborItems, totalLabor, totalTravel, totalOdc, userId 
   } = req.body;
 
+  // GET: Fetch all Subcontractor Actions
+app.get('/api/subcontractor-actions', async (req, res) => {
+
+  try{
+
+    const result = await pool.query(`
+      SELECT *
+      FROM subcontractor_actions
+      
+    `);
+
+    res.json(result.rows);
+
+  }catch(err){
+
+    console.error("Subk Action Fetch Error:",err);
+
+    res.status(500).json({
+      error: err.message
+    });
+
+  }
+
+});
+
   // Calculate Grand Total
   const grandTotal = (parseFloat(totalLabor) || 0) + (parseFloat(totalTravel) || 0) + (parseFloat(totalOdc) || 0);
 
