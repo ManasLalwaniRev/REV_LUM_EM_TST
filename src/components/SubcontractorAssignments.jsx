@@ -997,175 +997,95 @@ const SubcontractorAssignments = ({
                         </tr>
 
                </thead>
-               <tbody className="bg-white divide-y">
-                 {dataEntries.map(entry => (
-           
-                //    <tr key={entry.id || entry.prime_key} className="hover:bg-blue-50 transition-colors">
-                //      <td className="px-6 py-3 font-bold text-blue-600">{entry.prime_key || entry.id}</td>
-                //      <td className="px-6 py-3 font-medium">{entry.project_name || entry.projectName}</td>
-                //      <td className="px-6 py-3 text-slate-600">{entry.request_type || 'Assignment'}</td>
-                //      <td className="px-6 py-3 font-mono font-bold text-green-700">${parseFloat(entry.grand_total || entry.charge_amount || 0).toFixed(2)}</td>
-                //      <td className="px-6 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">{entry.status}</span></td>
-                //    </tr>
-                    
-                    <tr key={entry.id || entry.prime_key}
-                        onDoubleClick={() =>  setExpandedRow(expandedRow === entry.id ? null : entry.id )}>
-                        <td className="px-6 py-3 font-bold text-blue-600">
-                        {entry.prime_key}
-                        </td>
+           <tbody className="bg-white divide-y">
+             {dataEntries.map(entry => (
+                <Fragment key={entry.id || entry.prime_key}>
+                <tr
+                    onDoubleClick={() =>  setExpandedRow(expandedRow === entry.id ? null : entry.id )}>
+                    <td className="px-6 py-3 font-bold text-blue-600">
+                    {entry.prime_key}
+                    </td>
 
-                        <td className="px-6 py-3">
-                        {entry.project_name}
-                        </td>
+                    <td className="px-6 py-3">
+                    {entry.project_name}
+                    </td>
 
-                        <td className="px-6 py-3">
-                        {entry.program_manager}
-                        </td>
+                    <td className="px-6 py-3">
+                    {entry.program_manager}
+                    </td>
 
-                        <td className="px-6 py-3">
-                        {entry.company_name || '-'}
-                        </td>
+                    <td className="px-6 py-3">
+                    {entry.company_name || '-'}
+                    </td>
 
-                        <td className="px-6 py-3">
-                        {entry.request_type}
-                        </td>
+                    <td className="px-6 py-3">
+                    {entry.request_type}
+                    </td>
 
-                        <td className="px-6 py-3">
-                        {entry.agreement_type}
-                        </td>
+                    <td className="px-6 py-3">
+                    {entry.agreement_type}
+                    </td>
 
-                        <td className="px-6 py-3 font-mono">
-                        ${parseFloat(entry.total_labor || 0).toFixed(2)}
-                        </td>
+                    <td className="px-6 py-3 font-mono">
+                    ${parseFloat(entry.total_labor || 0).toFixed(2)}
+                    </td>
 
-                        <td className="px-6 py-3 font-mono">
-                        ${parseFloat(entry.total_travel || 0).toFixed(2)}
-                        </td>
+                    <td className="px-6 py-3 font-mono">
+                    ${parseFloat(entry.total_travel || 0).toFixed(2)}
+                    </td>
 
-                        <td className="px-6 py-3 font-mono">
-                        ${parseFloat(entry.total_odc || 0).toFixed(2)}
-                        </td>
+                    <td className="px-6 py-3 font-mono">
+                    ${parseFloat(entry.total_odc || 0).toFixed(2)}
+                    </td>
 
-                        <td className="px-6 py-3 font-bold text-green-700">
-                        ${parseFloat(entry.grand_total || 0).toFixed(2)}
-                        </td>
+                    <td className="px-6 py-3 font-bold text-green-700">
+                    ${parseFloat(entry.grand_total || 0).toFixed(2)}
+                    </td>
 
-                        <td className="px-6 py-3">
-                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold">
-                        {entry.status || 'Submitted'}
-                        </span>
-                        </td>
-                 {expandedRow === entry.id && (
+                    <td className="px-6 py-3">
+                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold">
+                    {entry.status || 'Submitted'}
+                    </span>
+                    </td>
+                </tr>
 
-                    {dataEntries.map(entry => (
+                {expandedRow === entry.id && (
+                    <tr className="bg-slate-50">
+                    <td colSpan="11" className="p-6">
+                    <div className="grid grid-cols-3 gap-6 text-sm">
+                    <div>
+                    <div className="font-bold text-slate-500">
+                    POP Start
+                    </div>
+                    <div>
+                    {entry.pop_start?.split('T')[0]}
+                    </div>
+                    </div>
 
-<Fragment key={entry.id || entry.prime_key}>
+                    <div>
+                    <div className="font-bold text-slate-500">
+                    POP End
+                    </div>
+                    <div>
+                    {entry.pop_end?.split('T')[0]}
+                    </div>
+                    </div>
 
-<tr
-onDoubleClick={() =>
-setExpandedRow(
-expandedRow === entry.id ? null : entry.id
-)
-}
-className="hover:bg-blue-50 cursor-pointer"
->
+                    <div>
+                    <div className="font-bold text-slate-500">
+                    Funding
+                    </div>
+                    <div>
+                    ${entry.funding_auth_amount}
+                    </div>
+                    </div>
 
-<td className="px-6 py-3 font-bold text-blue-600">
-{entry.prime_key}
-</td>
-
-<td className="px-6 py-3">
-{entry.project_name}
-</td>
-
-<td className="px-6 py-3">
-{entry.program_manager}
-</td>
-
-<td className="px-6 py-3">
-{entry.company_name || '-'}
-</td>
-
-<td className="px-6 py-3">
-{entry.request_type}
-</td>
-
-<td className="px-6 py-3">
-{entry.agreement_type}
-</td>
-
-<td className="px-6 py-3">
-${parseFloat(entry.total_labor || 0).toFixed(2)}
-</td>
-
-<td className="px-6 py-3">
-${parseFloat(entry.total_travel || 0).toFixed(2)}
-</td>
-
-<td className="px-6 py-3">
-${parseFloat(entry.total_odc || 0).toFixed(2)}
-</td>
-
-<td className="px-6 py-3 font-bold text-green-700">
-${parseFloat(entry.grand_total || 0).toFixed(2)}
-</td>
-
-<td className="px-6 py-3">
-{entry.status}
-</td>
-
-</tr>
-
-{expandedRow === entry.id && (
-
-<tr className="bg-slate-50">
-
-<td colSpan="11" className="p-6">
-
-<div className="grid grid-cols-3 gap-6 text-sm">
-
-<div>
-<div className="font-bold text-slate-500">
-POP Start
-</div>
-<div>
-{entry.pop_start?.split('T')[0]}
-</div>
-</div>
-
-<div>
-<div className="font-bold text-slate-500">
-POP End
-</div>
-<div>
-{entry.pop_end?.split('T')[0]}
-</div>
-</div>
-
-<div>
-<div className="font-bold text-slate-500">
-Funding
-</div>
-<div>
-${entry.funding_auth_amount}
-</div>
-</div>
-
-</div>
-
-</td>
-
-</tr>
-
-)}
-
-</Fragment>
-
-))}
-
-                    )}
-                        </tr>        
-                 ))}
+                    </div>
+                    </td>
+                    </tr>
+                )}
+                </Fragment>
+             ))}
                     
                </tbody>
              </table>
