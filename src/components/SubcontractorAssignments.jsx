@@ -982,8 +982,8 @@ currentUserId
                  </tr>
                </thead>
                <tbody className="bg-white divide-y">
-                 {/* {dataEntries.map(entry => ( */}
-                 {entries.map(entry => (
+                 {dataEntries.map(entry => (
+           
                    <tr key={entry.id || entry.prime_key} className="hover:bg-blue-50 transition-colors">
                      <td className="px-6 py-3 font-bold text-blue-600">{entry.prime_key || entry.id}</td>
                      <td className="px-6 py-3 font-medium">{entry.project_name || entry.projectName}</td>
