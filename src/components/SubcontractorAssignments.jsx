@@ -882,33 +882,33 @@ const SubcontractorAssignments = ({
 
         const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-        const loadData = async () => {
+        // const loadData = async () => {
 
-        try{
+        // try{
 
-        const res = await fetch(`${API_BASE}/subcontractor-actions`);
+        // const res = await fetch(`${API_BASE}/subcontractor-actions`);
 
-        if(!res.ok)
-        throw new Error("Failed to fetch");
+        // if(!res.ok)
+        // throw new Error("Failed to fetch");
 
-        const data = await res.json();
+        // const data = await res.json();
 
-        console.log("Loaded:",data);
+        // console.log("Loaded:",data);
 
-        setEntries(data);
+        // setEntries(data);
 
-        }catch(err){
+        // }catch(err){
 
-        console.error(err);
+        // console.error(err);
 
-        }   
+        // }   
 
-        }; 
-        useEffect(()=>{
+        // }; 
+        // useEffect(()=>{
 
-        loadData();
+        // loadData();
 
-        },[]);
+        // },[]);
 
     try {
       const response = await fetch(`${API_BASE}/subcontractor-actions/new`, {
@@ -1007,6 +1007,7 @@ const SubcontractorAssignments = ({
                 //      <td className="px-6 py-3 font-mono font-bold text-green-700">${parseFloat(entry.grand_total || entry.charge_amount || 0).toFixed(2)}</td>
                 //      <td className="px-6 py-3"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">{entry.status}</span></td>
                 //    </tr>
+                    
                     <tr key={entry.id || entry.prime_key}
                         onDoubleClick={() =>  setExpandedRow(expandedRow === entry.id ? null : entry.id )}>
                         <td className="px-6 py-3 font-bold text-blue-600">
@@ -1056,38 +1057,72 @@ const SubcontractorAssignments = ({
                         </td>
                  {expandedRow === entry.id && (
 
+                    {dataEntries.map(entry => (
+
+<Fragment key={entry.id || entry.prime_key}>
+
+<tr
+onDoubleClick={() =>
+setExpandedRow(
+expandedRow === entry.id ? null : entry.id
+)
+}
+className="hover:bg-blue-50 cursor-pointer"
+>
+
+<td className="px-6 py-3 font-bold text-blue-600">
+{entry.prime_key}
+</td>
+
+<td className="px-6 py-3">
+{entry.project_name}
+</td>
+
+<td className="px-6 py-3">
+{entry.program_manager}
+</td>
+
+<td className="px-6 py-3">
+{entry.company_name || '-'}
+</td>
+
+<td className="px-6 py-3">
+{entry.request_type}
+</td>
+
+<td className="px-6 py-3">
+{entry.agreement_type}
+</td>
+
+<td className="px-6 py-3">
+${parseFloat(entry.total_labor || 0).toFixed(2)}
+</td>
+
+<td className="px-6 py-3">
+${parseFloat(entry.total_travel || 0).toFixed(2)}
+</td>
+
+<td className="px-6 py-3">
+${parseFloat(entry.total_odc || 0).toFixed(2)}
+</td>
+
+<td className="px-6 py-3 font-bold text-green-700">
+${parseFloat(entry.grand_total || 0).toFixed(2)}
+</td>
+
+<td className="px-6 py-3">
+{entry.status}
+</td>
+
+</tr>
+
+{expandedRow === entry.id && (
+
 <tr className="bg-slate-50">
 
-<td colSpan="12" className="p-6">
+<td colSpan="11" className="p-6">
 
 <div className="grid grid-cols-3 gap-6 text-sm">
-
-<div>
-<div className="font-bold text-slate-500">
-Program Manager
-</div>
-<div>
-{entry.program_manager}
-</div>
-</div>
-
-<div>
-<div className="font-bold text-slate-500">
-Company Name
-</div>
-<div>
-{entry.company_name}
-</div>
-</div>
-
-<div>
-<div className="font-bold text-slate-500">
-Agreement Type
-</div>
-<div>
-{entry.agreement_type}
-</div>
-</div>
 
 <div>
 <div className="font-bold text-slate-500">
@@ -1116,33 +1151,6 @@ ${entry.funding_auth_amount}
 </div>
 </div>
 
-<div>
-<div className="font-bold text-slate-500">
-Labor Total
-</div>
-<div>
-${entry.total_labor}
-</div>
-</div>
-
-<div>
-<div className="font-bold text-slate-500">
-Travel
-</div>
-<div>
-${entry.total_travel}
-</div>
-</div>
-
-<div>
-<div className="font-bold text-slate-500">
-ODC
-</div>
-<div>
-${entry.total_odc}
-</div>
-</div>
-
 </div>
 
 </td>
@@ -1150,6 +1158,12 @@ ${entry.total_odc}
 </tr>
 
 )}
+
+</Fragment>
+
+))}
+
+                    )}
                         </tr>        
                  ))}
                     
