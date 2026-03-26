@@ -968,7 +968,7 @@ const SubcontractorAssignments = ({
            <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-700">Subcontractor Requests & Assignments</h2>
               {/* <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{dataEntries.length} Records</span> */}
-              <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{entries.length} Records</span>
+              {/* <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{entries.length} Records</span> */}
            </div>
            <div className="overflow-x-auto border rounded-lg">
              <table className="min-w-full divide-y text-sm">
