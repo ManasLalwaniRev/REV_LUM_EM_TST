@@ -296,9 +296,19 @@ const [isAuthenticated, setIsAuthenticated] = useState(
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
   // --- 1. Fetch Subk & Travel Data ---
+  // const fetchSubkTravelData = async () => {
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/subk-travel`);
+  //     const data = await response.json();
+  //     setSubkTravelData(data);
+  //   } catch (err) {
+  //     console.error("Error fetching Subk/Travel data:", err);
+  //   }
+  // };
+
   const fetchSubkTravelData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/subk-travel`);
+      const response = await fetch(`${API_BASE_URL}/subcontractor-assignments`); 
       const data = await response.json();
       setSubkTravelData(data);
     } catch (err) {
