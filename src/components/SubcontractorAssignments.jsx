@@ -782,12 +782,6 @@ import React, { useState, useEffect } from 'react';
 import { Layout, Plus, Save, LogOut, Eye, EyeOff, Trash2, Briefcase, FileText, UserCheck, List, Edit } from 'lucide-react';
 
 
-    useEffect(()=>{
-
-    loadData();
-
-    },[]);
-
 const SubcontractorAssignments = ({ 
   dataEntries = [], userName, handleLogout, 
   currentUserId, onDataChanged 
@@ -904,7 +898,12 @@ const SubcontractorAssignments = ({
 
         console.error(err);
 
-        }
+        }   
+        useEffect(()=>{
+
+            loadData();
+
+            },[]);
 
         };
 
