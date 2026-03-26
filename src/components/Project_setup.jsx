@@ -1099,8 +1099,8 @@ const ProjectSetupForm = ({
                 {/* Also show CP ID in Modal if it exists */}
                 {cpProjectIds[selectedProject.id] && (
                   <div className="group">
-                    <label className="block text-[10px] font-black text-blue-500 uppercase tracking-tighter mb-1">
-                      Local CP Project ID
+                    <label className="block text-[10px] font-black text-blue-500  tracking-tighter mb-1">
+                       CP Project ID
                     </label>
                     <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm text-blue-700 font-bold">
                       {cpProjectIds[selectedProject.id]}
