@@ -899,13 +899,13 @@ const SubcontractorAssignments = ({
         console.error(err);
 
         }   
+
+        }; 
         useEffect(()=>{
 
-            loadData();
+        loadData();
 
-            },[]);
-
-        };
+        },[]);
 
     try {
       const response = await fetch(`${API_BASE}/subcontractor-actions/new`, {
