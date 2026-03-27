@@ -533,8 +533,20 @@ app.post('/api/login', async (req, res) => {
 
 // --- 7. Vendor Expenses (With Auto-Email) ---
 app.get('/api/vendor-expenses', async (req, res) => {
+  const { userId, role } = req.query; 
   try {
-    const result = await pool.query(`SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve LEFT JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC`);
+
+    let query = `SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve LEFT JOIN users u ON ve.submitter_id = u.id`;
+    let params = [];  
+
+    if (role === 'User' || role === 'PM') {
+      query += ` WHERE cc.submitter_id = $1`;
+      params.push(userId);
+    }
+
+    // const result = await pool.query(`SELECT ve.*, u.username as submitter_name FROM vendor_expenses ve LEFT JOIN users u ON ve.submitter_id = u.id ORDER BY ve.created_at DESC`);
+    query += ` ORDER BY ve.created_at DESC`;
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -636,8 +648,22 @@ app.patch('/api/credit-card-expenses/:id', async (req, res) => {
 
 // --- 9. Subk & Travel ---
 app.get('/api/subk-travel', async (req, res) => {
+  const { userId, role } = req.query;
   try {
-    const result = await pool.query(`SELECT st.*, u.username as submitter_name FROM subk_travel_expenses st LEFT JOIN users u ON st.submitter_id = u.id ORDER BY st.created_at DESC`);
+    // const result = await pool.query(`SELECT st.*, u.username as submitter_name FROM subk_travel_expenses st LEFT JOIN users u ON st.submitter_id = u.id ORDER BY st.created_at DESC`);
+    
+    let query = `SELECT st.*, u.username as submitter_name FROM subk_travel_expenses st LEFT JOIN users u ON st.submitter_id = u.id`;
+    let params = [];
+
+    if (role === 'User' || role === 'PM') {
+      query += ` WHERE st.submitter_id = $1`;
+      params.push(userId);
+    }
+
+    query += ` ORDER BY st.created_at DESC`;
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+    
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -752,12 +778,24 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 // 1. Fetch all billing records
 app.get('/api/billing', async (req, res) => {
+  const { userId, role } = req.query;
   try {
-    const result = await pool.query(`
-      SELECT b.*, u.username as submitter_name 
-      FROM billing b 
-      LEFT JOIN users u ON b.submitter_id = u.id 
-      ORDER BY b.created_at DESC`);
+    // const result = await pool.query(`
+    //   SELECT b.*, u.username as submitter_name 
+    //   FROM billing b 
+    //   LEFT JOIN users u ON b.submitter_id = u.id 
+    //   ORDER BY b.created_at DESC`);
+
+    let query = `SELECT b.*, u.username as submitter_name FROM billing b LEFT JOIN users u ON b.submitter_id = u.id`;
+    let params = [];
+
+    if (role === 'User' || role === 'PM') {
+      query += ` WHERE b.submitter_id = $1`;
+      params.push(userId);
+    }
+
+    query += ` ORDER BY b.created_at DESC`;
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1013,14 +1051,26 @@ app.post('/api/business-meals/new', async (req, res) => {
 
 
 app.get('/api/subcontractor-actions', async (req, res) => {
+  const { userId, role } = req.query;
 
   try{
 
-    const result = await pool.query(`
-      SELECT *
-      FROM subcontractor_actions
+    let query = `SELECT * FROM subcontractor_actions`;
+    let params = [];
+
+    if (role === 'User' || role === 'PM') {
+      query += ` WHERE submitter_id = $1`;
+      params.push(userId);
+    }
+
+
+    // const result = await pool.query(`
+    //   SELECT *
+    //   FROM subcontractor_actions
       
-    `);
+    // `);
+    
+    const result = await pool.query(query, params);
 
     res.json(result.rows);
 

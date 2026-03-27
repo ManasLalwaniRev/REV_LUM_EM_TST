@@ -440,13 +440,23 @@ const Vendor_Expenses = ({
     status: 'Submitted', notes: '', pdfFilePath: '',
   });
 
+  // useEffect(() => {
+  //   setLocalEntries(dataEntries || []);
+  //   fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
+  //     .then(res => res.json())
+  //     .then(data => setVendorOptions(data))
+  //     .catch(err => console.error("Error fetching vendors:", err));
+  // }, [dataEntries]);
+
   useEffect(() => {
-    setLocalEntries(dataEntries || []);
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors`)
-      .then(res => res.json())
-      .then(data => setVendorOptions(data))
-      .catch(err => console.error("Error fetching vendors:", err));
-  }, [dataEntries]);
+  setLocalEntries(dataEntries || []);
+  
+  // Use currentUserId and currentUserRole here
+  fetch(`${import.meta.env.VITE_API_BASE_URL}/vendors?userId=${currentUserId}&role=${currentUserRole}`)
+    .then(res => res.json())
+    .then(data => setVendorOptions(data))
+    .catch(err => console.error("Error fetching vendors:", err));
+}, [dataEntries, currentUserId, currentUserRole]); // Add dependencies
 
   // --- Logic ---
   const handleVendorChange = (e) => {
@@ -463,7 +473,7 @@ const Vendor_Expenses = ({
   };
 
   const setStatus = (newStatus) => {
-    if (userName !== 'Revolve') {
+    if (currentUserRole !== 'Revolve') {
       alert("Permission Denied: Only Admins can Approve or Reject records.");
       return;
     }
@@ -657,8 +667,15 @@ const Vendor_Expenses = ({
                 const hasHistory = group.length > 1;
                 return (
                   <React.Fragment key={group[0].id}>
-                    <tr onClick={() => { const s = new Set(); s.add(group[0].id); setSelectedRows(s); }} className={`hover:bg-blue-50 cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}>
-                      <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(group[0].id)} readOnly /></td>
+                    <tr onClick={() => { const s = new Set(); s.add(group[0].id); setSelectedRows(s); }} className={`hover:bg-blue-50 cursor-pointer ${selectedRows.has(group[0].id) ? 'bg-blue-50' : ''}`}>                      
+                      <td className="p-4 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedRows.has(group[0].id)} 
+                          onChange={() => {}} // Keeps React happy with controlled inputs
+                        />
+                      </td>                 
+                      {/* <td className="p-4 text-center"><input type="checkbox" checked={selectedRows.has(group[0].id)} readOnly /></td> */}
                       <td className="px-6 py-3 font-bold">
                         {hasHistory && (
                           <button onClick={(e) => { e.stopPropagation(); const next = new Set(expandedRows); next.has(baseKey) ? next.delete(baseKey) : next.add(baseKey); setExpandedRows(next); }} className="mr-2">
