@@ -308,13 +308,13 @@ export default function Sidebar({ currentPage, setCurrentPage, currentUserRole, 
       roles: ['user', 'admin', 'accountant'] 
     },
     
-    { page: 'accountant', label: 'SLA', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin', 'accountant'] },
-    { 
-      page: 'dashboard', 
-      label: 'Financial Dashboard', 
-      icon: <LayoutDashboard className="h-5 w-5" />, 
-      roles: ['user', 'admin', 'accountant'] 
-    },
+    // { page: 'accountant', label: 'SLA', icon: <ShieldCheck className="h-5 w-5" />, roles: ['admin', 'accountant'] },
+    // { 
+    //   page: 'dashboard', 
+    //   label: 'Financial Dashboard', 
+    //   icon: <LayoutDashboard className="h-5 w-5" />, 
+    //   roles: ['user', 'admin', 'accountant'] 
+    // },
     { page: 'user-profile', label: 'Settings & Profile', icon: <Settings className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
     { page: 'about', label: 'About', icon: <Info className="h-5 w-5" />, roles: ['user', 'admin', 'accountant'] },
 
