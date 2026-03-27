@@ -895,7 +895,7 @@ const ProjectSetupForm = ({
           <form className="space-y-10" onSubmit={(e) => e.preventDefault()}>
             
             {/* EXCEL TOOLS */}
-            <div className="flex gap-4 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            {/* <div className="flex gap-4 p-4 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
               <button type="button" onClick={handleDownloadTemplate} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 shadow-md">
                 <Download size={16} /> Download Template
               </button>
@@ -903,7 +903,7 @@ const ProjectSetupForm = ({
                 <Upload size={16} /> Import Excel
                 <input type="file" className="hidden" accept=".xlsx, .xls" onChange={handleImport} />
               </label>
-            </div>
+            </div> */}
 
             {/* SECTION A */}
             <section className="space-y-6">
