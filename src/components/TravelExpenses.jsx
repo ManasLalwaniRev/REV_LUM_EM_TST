@@ -130,7 +130,7 @@
 
 //       if (response.ok) {
 //         const data = await response.json();
-//         alert(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report Saved! \nRecord ID: ${data.prime_key}`);
+//         alert(`${activeTab.charAt(0).to() + activeTab.slice(1)} Report Saved! \nRecord ID: ${data.prime_key}`);
 //         if (onDataChanged) onDataChanged();
 //         window.location.reload();
 //       } else {
@@ -315,17 +315,17 @@
 //             {activeTab === 'travel' && (
 //               <div className="max-w-5xl mx-auto border-[1px] border-black p-8 text-blue-900 bg-white shadow-2xl">
 //                  {/* ... (Kept existing Travel Preview) ... */}
-//                  <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
+//                  <h1 className="text-center text-2xl font-black  mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
 //                  {/* (Rest of Travel Preview Code from previous step) */}
 //                  <div className="grid grid-cols-4 gap-4 text-[11px] mb-4">
-//                   <div className="col-span-2 border-b border-black pb-1 flex gap-2"><strong>Employee:</strong> <span className="text-black uppercase">{travelForm.employeeName}</span></div>
+//                   <div className="col-span-2 border-b border-black pb-1 flex gap-2"><strong>Employee:</strong> <span className="text-black ">{travelForm.employeeName}</span></div>
 //                   <div className="border-b border-black pb-1 flex gap-2"><strong>Employee #:</strong> <span className="text-black">{travelForm.employeeId}</span></div>
 //                   <div className="border-b border-black pb-1 flex gap-2"><strong>Date Prepared:</strong> <span className="text-black">{travelForm.datePrepared}</span></div>
-//                   <div className="col-span-4 border-b border-black pb-1 pt-2 flex gap-2"><strong>Purpose of Trip:</strong> <span className="text-black uppercase">{travelForm.purpose}</span></div>
+//                   <div className="col-span-4 border-b border-black pb-1 pt-2 flex gap-2"><strong>Purpose of Trip:</strong> <span className="text-black ">{travelForm.purpose}</span></div>
 //                 </div>
 //                 <table className="w-full border-collapse border-[1px] border-black text-[10px]">
 //                   <tbody>
-//                     <tr className="bg-blue-50/50 font-bold uppercase">
+//                     <tr className="bg-blue-50/50 font-bold ">
 //                       <td className="border border-black p-1 w-1/4">Date</td>
 //                       <td className="border border-black p-1" colSpan="6"></td>
 //                       <td className="border border-black p-2 w-[280px] text-center align-top bg-white" rowSpan="6">
@@ -333,23 +333,23 @@
 //                         <div className="font-normal normal-case leading-tight text-slate-500 text-[9px] mt-1">* Receipts are required for all items (excluding M&IE perdiems & mileage)</div>
 //                       </td>
 //                     </tr>
-//                     <tr><td className="border border-black p-1 font-bold">Travel From:</td><td className="border border-black p-1 uppercase text-black" colSpan="6">{travelForm.travelFrom}</td></tr>
-//                     <tr><td className="border border-black p-1 font-bold">Travel To:</td><td className="border border-black p-1 uppercase text-black" colSpan="6">{travelForm.travelTo}</td></tr>
+//                     <tr><td className="border border-black p-1 font-bold">Travel From:</td><td className="border border-black p-1  text-black" colSpan="6">{travelForm.travelFrom}</td></tr>
+//                     <tr><td className="border border-black p-1 font-bold">Travel To:</td><td className="border border-black p-1  text-black" colSpan="6">{travelForm.travelTo}</td></tr>
 //                     <tr><td className="border border-black p-1 font-bold">Per Diem: Lodging</td><td className="border border-black p-1 bg-slate-100 text-center italic">Input</td><td className="border border-black p-1 text-center font-bold text-black" colSpan="5">{travelForm.perDiemLodging || 0}</td></tr>
 //                     <tr><td className="border border-black p-1 font-bold">Per Diem: M&IE</td><td className="border border-black p-1 bg-slate-100 text-center italic">Input</td><td className="border border-black p-1 text-center font-bold text-black" colSpan="5">{travelForm.perDiemMIE || 0}</td></tr>
-//                     <tr><td className="border border-black p-1 font-bold uppercase tracking-tighter">Project Name :</td><td className="border border-black p-1 uppercase text-black font-bold" colSpan="6">{travelForm.projectName}</td></tr>
-//                     <tr className="bg-slate-100 font-black text-center uppercase text-[9px] tracking-tighter"><td className="border border-black p-1 text-left">Description</td><td className="border border-black p-1">Ref No.</td><td className="border border-black p-1" colSpan="5">Total Paid by Employee</td><td className="border border-black p-1">Excess FAR</td><td className="border border-black p-1">Comments</td></tr>
+//                     <tr><td className="border border-black p-1 font-bold  tracking-tighter">Project Name :</td><td className="border border-black p-1  text-black font-bold" colSpan="6">{travelForm.projectName}</td></tr>
+//                     <tr className="bg-slate-100 font-black text-center  text-[9px] tracking-tighter"><td className="border border-black p-1 text-left">Description</td><td className="border border-black p-1">Ref No.</td><td className="border border-black p-1" colSpan="5">Total Paid by Employee</td><td className="border border-black p-1">Excess FAR</td><td className="border border-black p-1">Comments</td></tr>
 //                     <tr><td className="border border-black p-1">Personal Auto Miles</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right text-slate-400">$ -</td><td className="border border-black p-1"></td><td className="border border-black p-1 text-center text-blue-500 italic">Airport</td></tr>
 //                     <tr><td className="border border-black p-1 font-bold italic">Mileage ( 0.655 cents / mile)</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-black text-black">${(travelForm.personalMiles * 0.655).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
 //                     <tr><td className="border border-black p-1">Transport (Airline/Train) **</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.transportCost || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
 //                     <tr><td className="border border-black p-1">M&IE (Per Diem only)</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.miePerDiem || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1 italic text-blue-500">No Receipt</td></tr>
 //                     <tr className="bg-[#B87333]/30 text-slate-900 font-bold"><td className="border border-black p-1">Lodging room (actuals) **</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-black">${parseFloat(travelForm.lodgingActual || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
 //                     <tr className="bg-[#B87333]/30 font-bold"><td className="border border-black p-1">Lodging taxes (actuals) **</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-black">${parseFloat(travelForm.lodgingTaxes || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
-//                     <tr className="bg-[#B87333]/30 font-black italic text-[9px] uppercase tracking-tighter"><td className="border border-black p-2" colSpan="8">Please do not enter any values in the shaded boxes</td><td className="border border-black p-1 text-center text-blue-800">UNALLOWABLE</td></tr>
+//                     <tr className="bg-[#B87333]/30 font-black italic text-[9px]  tracking-tighter"><td className="border border-black p-2" colSpan="8">Please do not enter any values in the shaded boxes</td><td className="border border-black p-1 text-center text-blue-800">UNALLOWABLE</td></tr>
 //                     <tr><td className="border border-black p-1">Car Rental, Taxis *</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.rentalTaxi || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
 //                     <tr><td className="border border-black p-1">Parking, Tolls *</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.parkingTolls || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
 //                     <tr><td className="border border-black p-1">Other ( {travelForm.otherSpecify || 'specify'} ) *</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.otherCost || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
-//                     <tr className="bg-blue-700 text-white font-black text-xs uppercase tracking-widest">
+//                     <tr className="bg-blue-700 text-white font-black text-xs  tracking-widest">
 //                       <td className="border border-black p-3 text-right" colSpan="7">Total Expenses Paid</td>
 //                       <td className="border border-black p-3 text-right text-lg font-black">${travelTotal.toFixed(2)}</td>
 //                       <td className="border border-black p-1"></td><td className="border border-black p-1"></td>
@@ -366,7 +366,7 @@
 //                       <div className="flex justify-between border-b border-slate-200"><span>Total Expenses Paid</span><span className="font-bold">${travelTotal.toFixed(2)}</span></div>
 //                       <div className="flex justify-between border-b border-slate-200"><span>Less Travel Advance</span><span className="font-bold">(${parseFloat(travelForm.travelAdvance || 0).toFixed(2)})</span></div>
 //                       <div className="flex justify-between pt-2 border-t-2 border-blue-600">
-//                          <span className="font-black text-blue-700 uppercase">Amount Due Employee</span>
+//                          <span className="font-black text-blue-700 ">Amount Due Employee</span>
 //                          <span className="text-2xl font-black text-black tracking-tighter">${travelDue.toFixed(2)}</span>
 //                       </div>
 //                    </div>
@@ -378,10 +378,10 @@
 //             {activeTab === 'misc' && (
 //                <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
 //                   <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1></div>
-//                   <div className="text-center mb-10"><h2 className="text-xl font-bold uppercase underline tracking-wider">Miscellaneous Expense Report</h2></div>
+//                   <div className="text-center mb-10"><h2 className="text-xl font-bold  underline tracking-wider">Miscellaneous Expense Report</h2></div>
 //                   <div className="grid grid-cols-1 gap-4 mb-8 text-sm max-w-lg">
-//                      <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Employee Name:</span><span className="border-b border-black uppercase px-2">{miscForm.employeeName}</span></div>
-//                      <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Office Location:</span><span className="border-b border-black uppercase px-2">{miscForm.officeLocation}</span></div>
+//                      <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Employee Name:</span><span className="border-b border-black  px-2">{miscForm.employeeName}</span></div>
+//                      <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Office Location:</span><span className="border-b border-black  px-2">{miscForm.officeLocation}</span></div>
 //                   </div>
 //                   <p className="mb-2 text-sm font-bold">The following table:</p>
 //                   <div className="flex-grow">
@@ -411,7 +411,7 @@
 //                         </tbody>
 //                         <tfoot>
 //                            <tr className="font-bold">
-//                               <td className="border border-black p-2 text-right uppercase" colSpan="4">Totals</td>
+//                               <td className="border border-black p-2 text-right " colSpan="4">Totals</td>
 //                               <td className="border border-black p-2 text-right text-sm bg-yellow-50">${miscTotal.toFixed(2)}</td>
 //                            </tr>
 //                         </tfoot>
@@ -429,11 +429,11 @@
 //             {activeTab === 'meals' && (
 //               <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
 //                   <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1></div>
-//                   <div className="text-center mb-10"><h2 className="text-xl font-bold uppercase underline tracking-wider">Business Meal Expense Report</h2></div>
+//                   <div className="text-center mb-10"><h2 className="text-xl font-bold  underline tracking-wider">Business Meal Expense Report</h2></div>
                   
 //                   <div className="grid grid-cols-[140px_1fr] items-end mb-8 text-sm w-1/2">
 //                       <span className="font-bold">Employee Name:</span>
-//                       <span className="border-b border-black uppercase px-2">{mealsForm.employeeName}</span>
+//                       <span className="border-b border-black  px-2">{mealsForm.employeeName}</span>
 //                   </div>
 
 //                   <p className="mb-2 text-sm font-bold">The following table:</p>
@@ -507,7 +507,7 @@
 
 //                   {/* Total Amount Due */}
 //                   <div className="mt-8 flex justify-end items-center gap-4 border-t-2 border-black pt-4">
-//                      <span className="font-bold text-lg uppercase">Total Amount Due to the Employee:</span>
+//                      <span className="font-bold text-lg ">Total Amount Due to the Employee:</span>
 //                      <span className="text-2xl font-black underline">${mealsTotalAllowable.toFixed(2)}</span>
 //                   </div>
 
@@ -688,7 +688,7 @@ const ExpenseManagementSystem = ({
 
       if (response.ok) {
         const data = await response.json();
-        alert(`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Report Saved! \nRecord ID: ${data.prime_key}`);
+        alert(`${activeTab.charAt(0).to() + activeTab.slice(1)} Report Saved! \nRecord ID: ${data.prime_key}`);
         if (onDataChanged) onDataChanged();
         setActiveTab('list'); // Switch back to record view after saving
         window.location.reload();
@@ -736,7 +736,7 @@ const ExpenseManagementSystem = ({
               <div className="flex justify-between items-center mb-6 pb-2 border-b">
                 <div className="flex items-center gap-2">
                   <List className="text-blue-600" size={20} />
-                  <h2 className="font-black text-slate-700 tracking-wide text-sm uppercase">Recent Expense Filings</h2>
+                  <h2 className="font-black text-slate-700 tracking-wide text-sm ">Recent Expense Filings</h2>
                 </div>
                 <button onClick={fetchAllRecords} className="text-blue-600 hover:bg-blue-50 p-2 rounded-full">
                   <Loader2 className={isLoadingRecords ? "animate-spin" : ""} size={18} />
@@ -746,7 +746,7 @@ const ExpenseManagementSystem = ({
               <div className="flex-grow overflow-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-400 font-black uppercase tracking-widest border-b">
+                    <tr className="bg-slate-50 text-slate-400 font-black  tracking-widest border-b">
                       <th className="p-4">Date</th>
                       <th className="p-4">Type</th>
                       <th className="p-4">Employee</th>
@@ -769,15 +769,15 @@ const ExpenseManagementSystem = ({
                             {rec.type}
                           </span>
                         </td>
-                        <td className="p-4 uppercase text-slate-500">{rec.employeeName}</td>
+                        <td className="p-4  text-slate-500">{rec.employeeName}</td>
                         <td className="p-4 font-medium text-slate-700">{rec.projectName || rec.purpose || rec.items?.[0]?.description || 'N/A'}</td>
                         <td className="p-4 text-right font-black text-slate-900">${parseFloat(rec.amount || 0).toFixed(2)}</td>
                         <td className="p-4 text-center">
-                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter">Submitted</span>
+                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-[9px] font-black  tracking-tighter">Submitted</span>
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan="6" className="p-10 text-center text-slate-400 font-bold uppercase tracking-widest">No Records Found</td></tr>
+                      <tr><td colSpan="6" className="p-10 text-center text-slate-400 font-bold  tracking-widest">No Records Found</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -932,16 +932,16 @@ const ExpenseManagementSystem = ({
             {/* TRAVEL PREVIEW */}
             {activeTab === 'travel' && (
               <div className="max-w-5xl mx-auto border-[1px] border-black p-8 text-blue-900 bg-white shadow-2xl">
-                 <h1 className="text-center text-2xl font-black uppercase mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
+                 <h1 className="text-center text-2xl font-black mb-6 tracking-tight">Infotrend Inc Travel Expense Statement</h1>
                  <div className="grid grid-cols-4 gap-4 text-[11px] mb-4">
-                  <div className="col-span-2 border-b border-black pb-1 flex gap-2"><strong>Employee:</strong> <span className="text-black uppercase">{travelForm.employeeName}</span></div>
+                  <div className="col-span-2 border-b border-black pb-1 flex gap-2"><strong>Employee:</strong> <span className="text-black ">{travelForm.employeeName}</span></div>
                   <div className="border-b border-black pb-1 flex gap-2"><strong>Employee #:</strong> <span className="text-black">{travelForm.employeeId}</span></div>
                   <div className="border-b border-black pb-1 flex gap-2"><strong>Date Prepared:</strong> <span className="text-black">{travelForm.datePrepared}</span></div>
-                  <div className="col-span-4 border-b border-black pb-1 pt-2 flex gap-2"><strong>Purpose of Trip:</strong> <span className="text-black uppercase">{travelForm.purpose}</span></div>
+                  <div className="col-span-4 border-b border-black pb-1 pt-2 flex gap-2"><strong>Purpose of Trip:</strong> <span className="text-black ">{travelForm.purpose}</span></div>
                 </div>
                 <table className="w-full border-collapse border-[1px] border-black text-[10px]">
                   <tbody>
-                    <tr className="bg-blue-50/50 font-bold uppercase">
+                    <tr className="bg-blue-50/50 font-bold ">
                       <td className="border border-black p-1 w-1/4">Date</td>
                       <td className="border border-black p-1" colSpan="6"></td>
                       <td className="border border-black p-2 w-[280px] text-center align-top bg-white" rowSpan="6">
@@ -949,23 +949,23 @@ const ExpenseManagementSystem = ({
                         <div className="font-normal normal-case leading-tight text-slate-500 text-[9px] mt-1">* Receipts are required for all items (excluding M&IE perdiems & mileage)</div>
                       </td>
                     </tr>
-                    <tr><td className="border border-black p-1 font-bold">Travel From:</td><td className="border border-black p-1 uppercase text-black" colSpan="6">{travelForm.travelFrom}</td></tr>
-                    <tr><td className="border border-black p-1 font-bold">Travel To:</td><td className="border border-black p-1 uppercase text-black" colSpan="6">{travelForm.travelTo}</td></tr>
+                    <tr><td className="border border-black p-1 font-bold">Travel From:</td><td className="border border-black p-1  text-black" colSpan="6">{travelForm.travelFrom}</td></tr>
+                    <tr><td className="border border-black p-1 font-bold">Travel To:</td><td className="border border-black p-1  text-black" colSpan="6">{travelForm.travelTo}</td></tr>
                     <tr><td className="border border-black p-1 font-bold">Per Diem: Lodging</td><td className="border border-black p-1 bg-slate-100 text-center italic">Input</td><td className="border border-black p-1 text-center font-bold text-black" colSpan="5">{travelForm.perDiemLodging || 0}</td></tr>
                     <tr><td className="border border-black p-1 font-bold">Per Diem: M&IE</td><td className="border border-black p-1 bg-slate-100 text-center italic">Input</td><td className="border border-black p-1 text-center font-bold text-black" colSpan="5">{travelForm.perDiemMIE || 0}</td></tr>
-                    <tr><td className="border border-black p-1 font-bold uppercase tracking-tighter">Project Name :</td><td className="border border-black p-1 uppercase text-black font-bold" colSpan="6">{travelForm.projectName}</td></tr>
-                    <tr className="bg-slate-100 font-black text-center uppercase text-[9px] tracking-tighter"><td className="border border-black p-1 text-left">Description</td><td className="border border-black p-1">Ref No.</td><td className="border border-black p-1" colSpan="5">Total Paid by Employee</td><td className="border border-black p-1">Excess FAR</td><td className="border border-black p-1">Comments</td></tr>
+                    <tr><td className="border border-black p-1 font-bold  tracking-tighter">Project Name :</td><td className="border border-black p-1  text-black font-bold" colSpan="6">{travelForm.projectName}</td></tr>
+                    <tr className="bg-slate-100 font-black text-center  text-[9px] tracking-tighter"><td className="border border-black p-1 text-left">Description</td><td className="border border-black p-1">Ref No.</td><td className="border border-black p-1" colSpan="5">Total Paid by Employee</td><td className="border border-black p-1">Excess FAR</td><td className="border border-black p-1">Comments</td></tr>
                     <tr><td className="border border-black p-1">Personal Auto Miles</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right text-slate-400">$ -</td><td className="border border-black p-1"></td><td className="border border-black p-1 text-center text-blue-500 italic">Airport</td></tr>
                     <tr><td className="border border-black p-1 font-bold italic">Mileage ( 0.655 cents / mile)</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-black text-black">${(travelForm.personalMiles * 0.655).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
                     <tr><td className="border border-black p-1">Transport (Airline/Train) **</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.transportCost || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
                     <tr><td className="border border-black p-1">M&IE (Per Diem only)</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.miePerDiem || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1 italic text-blue-500">No Receipt</td></tr>
                     <tr className="bg-[#B87333]/30 text-slate-900 font-bold"><td className="border border-black p-1">Lodging room (actuals) **</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-black">${parseFloat(travelForm.lodgingActual || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
                     <tr className="bg-[#B87333]/30 font-bold"><td className="border border-black p-1">Lodging taxes (actuals) **</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-black">${parseFloat(travelForm.lodgingTaxes || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
-                    <tr className="bg-[#B87333]/30 font-black italic text-[9px] uppercase tracking-tighter"><td className="border border-black p-2" colSpan="8">Please do not enter any values in the shaded boxes</td><td className="border border-black p-1 text-center text-blue-800">UNALLOWABLE</td></tr>
+                    <tr className="bg-[#B87333]/30 font-black italic text-[9px]  tracking-tighter"><td className="border border-black p-2" colSpan="8">Please do not enter any values in the shaded boxes</td><td className="border border-black p-1 text-center text-blue-800">UNALLOWABLE</td></tr>
                     <tr><td className="border border-black p-1">Car Rental, Taxis *</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.rentalTaxi || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
                     <tr><td className="border border-black p-1">Parking, Tolls *</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.parkingTolls || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
                     <tr><td className="border border-black p-1">Other ( {travelForm.otherSpecify || 'specify'} ) *</td><td className="border border-black p-1" colSpan="6"></td><td className="border border-black p-1 text-right font-bold text-black">${parseFloat(travelForm.otherCost || 0).toFixed(2)}</td><td className="border border-black p-1"></td><td className="border border-black p-1"></td></tr>
-                    <tr className="bg-blue-700 text-white font-black text-xs uppercase tracking-widest">
+                    <tr className="bg-blue-700 text-white font-black text-xs  tracking-widest">
                       <td className="border border-black p-3 text-right" colSpan="7">Total Expenses Paid</td>
                       <td className="border border-black p-3 text-right text-lg font-black">${travelTotal.toFixed(2)}</td>
                       <td className="border border-black p-1"></td><td className="border border-black p-1"></td>
@@ -982,7 +982,7 @@ const ExpenseManagementSystem = ({
                       <div className="flex justify-between border-b border-slate-200"><span>Total Expenses Paid</span><span className="font-bold">${travelTotal.toFixed(2)}</span></div>
                       <div className="flex justify-between border-b border-slate-200"><span>Less Travel Advance</span><span className="font-bold">(${parseFloat(travelForm.travelAdvance || 0).toFixed(2)})</span></div>
                       <div className="flex justify-between pt-2 border-t-2 border-blue-600">
-                         <span className="font-black text-blue-700 uppercase">Amount Due Employee</span>
+                         <span className="font-black text-blue-700 ">Amount Due Employee</span>
                          <span className="text-2xl font-black text-black tracking-tighter">${travelDue.toFixed(2)}</span>
                       </div>
                    </div>
@@ -994,10 +994,10 @@ const ExpenseManagementSystem = ({
             {activeTab === 'misc' && (
                <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
                   <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1></div>
-                  <div className="text-center mb-10"><h2 className="text-xl font-bold uppercase underline tracking-wider">Miscellaneous Expense Report</h2></div>
+                  <div className="text-center mb-10"><h2 className="text-xl font-bold  underline tracking-wider">Miscellaneous Expense Report</h2></div>
                   <div className="grid grid-cols-1 gap-4 mb-8 text-sm max-w-lg">
-                     <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Employee Name:</span><span className="border-b border-black uppercase px-2">{miscForm.employeeName}</span></div>
-                     <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Office Location:</span><span className="border-b border-black uppercase px-2">{miscForm.officeLocation}</span></div>
+                     <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Employee Name:</span><span className="border-b border-black  px-2">{miscForm.employeeName}</span></div>
+                     <div className="grid grid-cols-[140px_1fr] items-end"><span className="font-bold">Office Location:</span><span className="border-b border-black  px-2">{miscForm.officeLocation}</span></div>
                   </div>
                   <p className="mb-2 text-sm font-bold">The following table:</p>
                   <div className="flex-grow">
@@ -1027,7 +1027,7 @@ const ExpenseManagementSystem = ({
                         </tbody>
                         <tfoot>
                            <tr className="font-bold">
-                              <td className="border border-black p-2 text-right uppercase" colSpan="4">Totals</td>
+                              <td className="border border-black p-2 text-right " colSpan="4">Totals</td>
                               <td className="border border-black p-2 text-right text-sm bg-yellow-50">${miscTotal.toFixed(2)}</td>
                            </tr>
                         </tfoot>
@@ -1045,11 +1045,11 @@ const ExpenseManagementSystem = ({
             {activeTab === 'meals' && (
               <div className="max-w-4xl mx-auto border-[1px] border-black p-12 text-black bg-white min-h-[900px] flex flex-col shadow-2xl relative">
                   <div className="mb-8"><h1 className="text-3xl font-serif font-bold text-black tracking-wide">Infotrend Inc</h1></div>
-                  <div className="text-center mb-10"><h2 className="text-xl font-bold uppercase underline tracking-wider">Business Meal Expense Report</h2></div>
+                  <div className="text-center mb-10"><h2 className="text-xl font-bold  underline tracking-wider">Business Meal Expense Report</h2></div>
                   
                   <div className="grid grid-cols-[140px_1fr] items-end mb-8 text-sm w-1/2">
                       <span className="font-bold">Employee Name:</span>
-                      <span className="border-b border-black uppercase px-2">{mealsForm.employeeName}</span>
+                      <span className="border-b border-black  px-2">{mealsForm.employeeName}</span>
                   </div>
 
                   <p className="mb-2 text-sm font-bold">The following table:</p>
@@ -1118,7 +1118,7 @@ const ExpenseManagementSystem = ({
                   </div>
 
                   <div className="mt-8 flex justify-end items-center gap-4 border-t-2 border-black pt-4">
-                     <span className="font-bold text-lg uppercase">Total Amount Due to the Employee:</span>
+                     <span className="font-bold text-lg ">Total Amount Due to the Employee:</span>
                      <span className="text-2xl font-black underline">${mealsTotalAllowable.toFixed(2)}</span>
                   </div>
 
